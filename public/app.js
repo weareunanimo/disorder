@@ -112,7 +112,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const $ = id => document.getElementById(id);
 
 /* ===== Estado e armazenamento ===== */
-const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards' };
+const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', selecting: false, sel: [] };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
 let backend = null;
 
@@ -212,6 +212,9 @@ async function remove(col, id) {
 }
 
 /* ===== Consultas ===== */
+const hashN = str => { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; };
+const colorOf = f => (f && Number.isInteger(f.cor)) ? f.cor % 8 : hashN((f && f.id) || '') % 8;
+const newFolder = nome => ({ id: uid(), nome, cor: S.folders.length % 8, criadaEm: Date.now() });
 const folderById = id => S.folders.find(f => f.id === id) || null;
 const sortedFolders = () => S.folders.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 function inView(l) {
@@ -236,7 +239,7 @@ function visibleLinks() {
 /* ===== Renderização ===== */
 function render() {
   if (S.view !== 'all' && S.view !== 'none' && !folderById(S.view)) S.view = 'all';
-  renderNav(); renderDest(); renderBanner(); renderHead(); renderTools(); renderList();
+  renderNav(); renderDest(); renderBanner(); renderHead(); renderTools(); renderList(); renderBulk();
 }
 function renderNav() {
   const total = S.links.length, none = S.links.filter(l => !l.pastaId || !folderById(l.pastaId)).length;
@@ -286,6 +289,7 @@ function renderTools() {
   const present = Object.keys(PLAT).filter(k => counts[k]);
   if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
   let h = '<label class="sr" for="q">Buscar nos links</label><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '">' +
+    '<button type="button" class="btn outline" data-act="select-mode" aria-pressed="' + S.selecting + '">Selecionar</button>' +
     '<div class="seg" role="group" aria-label="Visualização">' +
     '<button type="button" data-layout="cards" aria-pressed="' + (S.layout !== 'list') + '" aria-label="Ver em cartões" title="Ver em cartões"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></button>' +
     '<button type="button" data-layout="list" aria-pressed="' + (S.layout === 'list') + '" aria-label="Ver em lista" title="Ver em lista"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg></button></div>';
@@ -307,9 +311,11 @@ function linkHtml(l) {
   const p = PLAT[l.plataforma] || PLAT.web;
   const f = folderById(l.pastaId);
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
-  const folderOpts = ['<option value="">Sem pasta</option>'].concat(sortedFolders().map(x => '<option value="' + esc(x.id) + '"' + (x.id === l.pastaId ? ' selected' : '') + '>' + esc(x.nome) + '</option>')).concat(['<option value="__new__">+ Nova pasta…</option>']).join('');
+  const d0 = S.draft && S.draft.id === l.id ? S.draft : null; const curPasta = d0 && d0.pasta !== undefined ? d0.pasta : (l.pastaId || '');
+  const folderOpts = ['<option value="">Sem pasta</option>'].concat(sortedFolders().map(x => '<option value="' + esc(x.id) + '"' + (x.id === curPasta ? ' selected' : '') + '>' + esc(x.nome) + '</option>')).concat(['<option value="__new__">+ Nova pasta…</option>']).join('');
   const d = S.draft && S.draft.id === l.id ? S.draft : null;
-  let h = '<article class="link' + (S.flash === l.id ? ' flash' : '') + '" data-id="' + esc(l.id) + '">' +
+  let h = '<article class="link' + (S.flash === l.id ? ' flash' : '') + '" data-id="' + esc(l.id) + '" aria-selected="' + (S.sel.indexOf(l.id) >= 0) + '">' +
+    '<button type="button" class="pick" data-act="pick" role="checkbox" aria-checked="' + (S.sel.indexOf(l.id) >= 0) + '" aria-label="Selecionar link"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg></button>' +
     '<div class="preview" aria-hidden="true">' + p.short + (thumbOf(l) ? '<img src="' + esc(thumbOf(l)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>' +
     '<div class="ltext"><h3 class="ttl">' + esc(titulo) + '</h3>' +
     '<p class="meta"><span>' + p.label + ' · ' + esc(l.tipo || 'Link') + '</span><span>' + ago(l.criadoEm || Date.now()) + '</span>' +
@@ -318,13 +324,15 @@ function linkHtml(l) {
     (l.nota ? '<p class="note">' + esc(l.nota) + '</p>' : '') +
     '</div>' +
     '<div class="acts">' +
-    '<a class="btn primary sm" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + 'Abrir' + '</a>' +
+    (f ? '<span class="tag" data-c="' + colorOf(f) + '" title="' + esc(f.nome) + '">' + esc(f.nome) + '</span>' : '') +
     '<button class="btn outline sm icon" data-act="copy" aria-label="Copiar link" title="Copiar link"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2"/></svg></button>' +
+    '<a class="btn outline sm icon" href="https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp" title="Enviar no WhatsApp"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8a6.2 6.2 0 0 0-5.3 9.4L1.9 14l2.9-.8A6.2 6.2 0 1 0 8 1.8z"/><path d="M5.9 5.4c.3 2.3 2.3 4.3 4.7 4.7l.7-1.2-1.5-.8-.6.5c-.8-.3-1.5-1-1.8-1.8l.5-.6-.8-1.5z"/></svg></a>' +
     '<button class="btn outline sm icon" data-act="edit" aria-pressed="' + (S.editing === l.id) + '" aria-label="' + (S.editing === l.id ? 'Fechar edição' : 'Editar') + '" title="' + (S.editing === l.id ? 'Fechar edição' : 'Editar') + '"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' +
-    '<label><span class="sr">Mover para a pasta</span><select class="sel" data-act="move">' + folderOpts + '</select></label>' +
+    '<a class="btn primary sm" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
     '</div>';
   if (S.editing === l.id) {
     h += '<form class="edit" data-act="editform"><label>Título<input name="titulo" type="text" maxlength="140" placeholder="' + esc(autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></label>' +
+      '<label>Pasta<select class="sel" name="pasta">' + folderOpts + '</select></label>' +
       '<label>Nota<textarea name="nota" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></label>' +
       '<div class="row"><button type="button" class="btn danger sm" data-act="del" style="margin-right:auto">Excluir link</button><button type="button" class="btn outline sm" data-act="edit">Cancelar</button><button type="submit" class="btn primary sm">Salvar alterações</button></div></form>';
   }
@@ -332,14 +340,14 @@ function linkHtml(l) {
 }
 function renderList() {
   const el = $('list');
-  el.className = 'list ' + (S.layout === 'list' ? 'compact' : 'grid');
+  el.className = 'list ' + (S.layout === 'list' ? 'compact' : 'grid') + (S.selecting && S.links.length ? ' selecting' : '');
   if (!S.loaded && !S.loadError) { el.innerHTML = '<div class="empty"><b>Carregando seus links</b></div>'; return; }
   if (S.loadError) { el.innerHTML = ''; return; }
   const ls = visibleLinks();
   const base = S.links.filter(inView).length;
   if (S.editing) {
     const f = el.querySelector('.edit');
-    if (f) S.draft = { id: S.editing, titulo: f.elements.titulo.value, nota: f.elements.nota.value };
+    if (f) S.draft = { id: S.editing, titulo: f.elements.titulo.value, nota: f.elements.nota.value, pasta: f.elements.pasta.value === '__new__' ? undefined : f.elements.pasta.value };
   }
   if (!ls.length) {
     let t, p;
@@ -493,16 +501,13 @@ function submitFolder(e) {
   const err = $('ferr');
   if (!nome) { err.textContent = 'Dê um nome para a pasta.'; fm.nome.focus(); return; }
   if (S.folders.some(f => f.id !== editId && f.nome.toLowerCase() === nome.toLowerCase())) { err.textContent = 'Você já tem uma pasta com esse nome.'; fm.nome.focus(); return; }
-  const rec = editId ? Object.assign({}, folderById(editId), { nome }) : { id: uid(), nome, criadaEm: Date.now() };
+  const rec = editId ? Object.assign({}, folderById(editId), { nome }) : newFolder(nome);
   closeModal();
   save('folders', rec);
   const th = m.then;
   if (!editId && th && th.type === 'dest') { S.dest = rec.id; render(); say('Pasta ' + rec.nome + ' criada. O link vai para ela.'); }
-  else if (!editId && th && th.type === 'move') {
-    const l = S.links.find(x => x.id === th.linkId);
-    if (l) { save('links', Object.assign({}, l, { pastaId: rec.id })); toast('Movido para ' + rec.nome + '.'); }
-    render();
-  }
+  else if (!editId && th && th.type === 'edit-pasta') { if (S.draft && S.draft.id === th.linkId) S.draft.pasta = rec.id; render(); }
+  else if (!editId && th && th.type === 'move-many') { bulkMove(rec.id); }
   else if (!editId) { S.view = rec.id; S.dest = rec.id; render(); }
 }
 async function deleteFolder(id) {
@@ -515,10 +520,57 @@ async function deleteFolder(id) {
   toast('Pasta ' + f.nome + ' excluída.');
 }
 
+
+/* ===== Seleção em massa ===== */
+function pruneSel() { const vis = visibleLinks().map(l => l.id); S.sel = S.sel.filter(id => vis.indexOf(id) >= 0); }
+function renderBulk() {
+  const b = $('bulk'); const on = S.selecting && S.links.length;
+  $('list').classList.toggle('selecting', !!on);
+  if (!on) { b.hidden = true; b.innerHTML = ''; return; }
+  pruneSel();
+  const n = S.sel.length, all = visibleLinks().length;
+  const opts = '<option value="__none__" selected disabled>Mover para</option><option value="">Sem pasta</option>' + sortedFolders().map(x => '<option value="' + esc(x.id) + '">' + esc(x.nome) + '</option>').join('') + '<option value="__new__">+ Nova pasta…</option>';
+  const had = document.activeElement && document.activeElement.closest && document.activeElement.closest('#bulk');
+  b.hidden = false;
+  b.innerHTML = '<span class="n">' + (n ? n + (n === 1 ? ' selecionado' : ' selecionados') : 'Selecione os links') + '</span>' +
+    '<button type="button" class="btn outline sm" data-act="bulk-all">' + (n && n === all ? 'Limpar' : 'Selecionar todos') + '</button>' +
+    '<label><span class="sr">Mover selecionados para a pasta</span><select class="sel" data-act="bulk-move"' + (n ? '' : ' disabled') + '>' + opts + '</select></label>' +
+    '<button type="button" class="btn danger sm" data-act="bulk-del"' + (n ? '' : ' disabled') + '>Excluir</button>' +
+    '<button type="button" class="btn outline sm" data-act="bulk-cancel">Cancelar</button>';
+  if (had) { const x = b.querySelector('[data-act="bulk-all"]'); if (x) x.focus(); }
+}
+function setSelecting(v) { S.selecting = v; if (!v) S.sel = []; if (v) { S.editing = null; S.draft = null; } render(); }
+function toggleSel(id) { const i = S.sel.indexOf(id); if (i < 0) S.sel.push(id); else S.sel.splice(i, 1); renderList(); renderBulk(); }
+function bulkMove(dest) {
+  const items = S.links.filter(l => S.sel.indexOf(l.id) >= 0 && (l.pastaId || null) !== dest);
+  const prev = items.map(l => ({ id: l.id, pastaId: l.pastaId || null }));
+  items.forEach(l => save('links', Object.assign({}, l, { pastaId: dest })));
+  const fo = folderById(dest), n = items.length;
+  setSelecting(false);
+  if (!n) { toast('Esses links já estão nessa pasta.'); return; }
+  toast((n === 1 ? '1 link movido para ' : n + ' links movidos para ') + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => prev.forEach(p => { const cur = S.links.find(x => x.id === p.id); if (cur) save('links', Object.assign({}, cur, { pastaId: p.pastaId })); }));
+}
+function bulkDelete() {
+  const items = S.links.filter(l => S.sel.indexOf(l.id) >= 0).map(l => Object.assign({}, l));
+  if (!items.length) return;
+  items.forEach(l => remove('links', l.id));
+  setSelecting(false);
+  toast(items.length === 1 ? 'Link excluído.' : items.length + ' links excluídos.', 'Desfazer', () => items.forEach(l => save('links', l)));
+}
+
 /* ===== Eventos ===== */
 document.addEventListener('click', e => {
+  if (S.selecting) {
+    const card = e.target.closest('.link');
+    if (card && !e.target.closest('a,select,input,textarea,label,.edit,[data-act]:not([data-act="pick"])')) { toggleSel(card.dataset.id); return; }
+  }
   const t = e.target.closest('[data-view],[data-plat],[data-act],[data-m]');
   if (!t) return;
+  if (t.dataset.act === 'select-mode') { setSelecting(!S.selecting); return; }
+  if (t.dataset.act === 'bulk-cancel') { setSelecting(false); return; }
+  if (t.dataset.act === 'bulk-all') { const vis = visibleLinks().map(l => l.id); S.sel = (S.sel.length === vis.length) ? [] : vis; renderList(); renderBulk(); return; }
+  if (t.dataset.act === 'bulk-del') { bulkDelete(); return; }
+  if (t.dataset.act === 'pick') { toggleSel(t.closest('.link').dataset.id); return; }
   if (t.dataset.m) {
     const k = t.dataset.m;
     if (k === 'overlay') { if (e.target === t) closeModal(); return; }
@@ -531,7 +583,7 @@ document.addEventListener('click', e => {
   if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
   const act = t.dataset.act;
   if (act === 'new-folder') { openModal({ kind: 'new' }); return; }
-  if (act === 'starter') { const rec = { id: uid(), nome: t.dataset.name, criadaEm: Date.now() }; S.view = rec.id; S.dest = rec.id; save('folders', rec); return; }
+  if (act === 'starter') { const rec = newFolder(t.dataset.name); S.view = rec.id; S.dest = rec.id; save('folders', rec); return; }
   if (act === 'edit-folder') { openModal({ kind: 'edit', id: S.view }); return; }
   const row = t.closest('.link'); const id = row && row.dataset.id; const l = id && S.links.find(x => x.id === id);
   if (!l) return;
@@ -545,14 +597,20 @@ document.addEventListener('change', e => {
     if (t.value === '__new__') { t.value = S.dest || ''; openModal({ kind: 'new', then: { type: 'dest' } }); return; }
     S.dest = t.value; return;
   }
-  if (t.matches('select[data-act="move"]')) {
-    const row = t.closest('.link'); const l = S.links.find(x => x.id === row.dataset.id); if (!l) return;
-    if (t.value === '__new__') { t.value = l.pastaId || ''; openModal({ kind: 'new', then: { type: 'move', linkId: l.id } }); return; }
-    const fo = folderById(t.value), antes = l.pastaId || null;
-    if ((t.value || null) === antes) return;
-    save('links', Object.assign({}, l, { pastaId: t.value || null }));
-    S.flash = l.id; setTimeout(() => { S.flash = null; }, 1800);
-    toast('Movido para ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => { const cur = S.links.find(x => x.id === l.id); if (cur) save('links', Object.assign({}, cur, { pastaId: antes })); });
+  if (t.matches('.edit select[name="pasta"]')) {
+    if (t.value === '__new__') {
+      const f = t.form, l = S.links.find(x => x.id === S.editing);
+      t.value = (S.draft && S.draft.pasta !== undefined ? S.draft.pasta : (l && l.pastaId)) || '';
+      S.draft = { id: S.editing, titulo: f.elements.titulo.value, nota: f.elements.nota.value, pasta: t.value };
+      openModal({ kind: 'new', then: { type: 'edit-pasta', linkId: S.editing } });
+    }
+    return;
+  }
+  if (t.matches('select[data-act="bulk-move"]')) {
+    const v = t.value; t.value = '__none__';
+    if (v === '__none__') return;
+    if (v === '__new__') { openModal({ kind: 'new', then: { type: 'move-many' } }); return; }
+    bulkMove(v || null); return;
   }
 });
 document.addEventListener('input', e => {
@@ -566,8 +624,11 @@ document.addEventListener('submit', e => {
   else if (f.dataset && f.dataset.act === 'editform') {
     e.preventDefault();
     const l = S.links.find(x => x.id === S.editing); if (!l) return;
-    const rec = Object.assign({}, l, { titulo: f.elements.titulo.value.trim(), nota: f.elements.nota.value.trim() });
-    S.editing = null; S.draft = null; save('links', rec); toast('Alterações salvas.');
+    const novaPasta = f.elements.pasta.value || null, antes = l.pastaId || null;
+    const rec = Object.assign({}, l, { titulo: f.elements.titulo.value.trim(), nota: f.elements.nota.value.trim(), pastaId: novaPasta });
+    S.editing = null; S.draft = null; save('links', rec);
+    if (novaPasta !== antes) { const fo = folderById(novaPasta); toast('Movido para ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => { const cur = S.links.find(x => x.id === l.id); if (cur) save('links', Object.assign({}, cur, { pastaId: antes })); }); }
+    else toast('Alterações salvas.');
   }
 });
 $('url').addEventListener('paste', e => {
@@ -579,6 +640,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (S.modal) { closeModal(); return; }
     if (S.editing) { S.editing = null; S.draft = null; render(); }
+    else if (S.selecting) setSelecting(false);
   }
   if (e.key === 'Tab' && S.modal) {
     const els = Array.from($('modal-root').querySelectorAll('button, input, select, textarea, a[href]')).filter(x => !x.disabled && x.offsetParent !== null);
