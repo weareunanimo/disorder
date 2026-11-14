@@ -317,6 +317,9 @@ function accountExtras() { return sb ? '<div class="srow"><div class="st"><b>Sai
 function dataExtras() { return CFG.previewApi ? '<div class="srow"><div class="st"><b>Atualizar previews</b><span>Busca de novo o título e a imagem de todos os links não arquivados.</span></div><button type="button" class="btn" data-act="refresh-previews" data-fk="refresh"' + (refreshing ? ' disabled' : '') + '>' + (refreshing ? 'Atualizando' : 'Atualizar previews') + '</button></div>' : ''; }
 function storageNote() { return S.mode === 'cloud' ? 'Seus links ficam salvos na sua conta e aparecem em qualquer aparelho.' : 'Modo local: seus links ficam só neste navegador.'; }
 const SW_NAMES = ['Rosa', 'Laranja', 'Amarelo', 'Verde', 'Ciano', 'Azul', 'Lilás', 'Lima'];
+const ICO_BACK = '<svg class="gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8h-11M7 3.5 2.5 8 7 12.5"/></svg>';
+function backView() { const v = S.prevView || 'all'; return (v === 'all' || v === 'none' || v === 'archived' || folderById(v)) ? v : 'all'; }
+function backTitle() { const v = backView(); return v === 'all' ? 'Todos os links' : v === 'none' ? 'Sem pasta' : v === 'archived' ? 'Arquivados' : folderById(v).nome; }
 const ICO_SET = '<svg class="gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.45 3.24L6.65 1.23L9.35 1.23L9.55 3.24L11.35 4.28L13.19 3.45L14.53 5.78L12.89 6.96L12.89 9.04L14.53 10.22L13.19 12.55L11.35 11.72L9.55 12.76L9.35 14.77L6.65 14.77L6.45 12.76L4.65 11.72L2.81 12.55L1.47 10.22L3.11 9.04L3.11 6.96L1.47 5.78L2.81 3.45L4.65 4.28Z"/><circle cx="8" cy="8" r="1.9"/></svg>';
 function settingsHtml() {
   const fs = sortedFolders(), act = active();
@@ -480,7 +483,8 @@ function renderHead() {
   $('head').innerHTML = '<div class="ht"><div class="tl"><h1 id="view-title">' + esc(viewTitle()) + '</h1>' +
     (f ? '<button class="btn icon ghost" data-act="edit-folder" aria-label="Editar pasta ' + esc(f.nome) + '" title="Editar pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' : '') +
     '</div></div><div class="hr">' +
-    (S.view !== 'settings' ? '<button class="btn icon ghost set-btn" data-view="settings" aria-label="Ajustes" title="Ajustes">' + ICO_SET + '</button>' : '') +
+    (S.view !== 'settings' ? '<button class="btn icon ghost set-btn" data-view="settings" aria-label="Ajustes" title="Ajustes">' + ICO_SET + '</button>'
+      : '<button class="btn icon ghost set-btn" data-view="' + esc(backView()) + '" aria-label="Voltar para ' + esc(backTitle()) + '" title="Voltar">' + ICO_BACK + '</button>') +
     (S.view !== 'archived' && S.view !== 'settings' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '') + '</div>';
   document.body.classList.toggle('v-arch', S.view === 'archived');
   document.body.classList.toggle('v-set', S.view === 'settings');
@@ -947,7 +951,7 @@ document.addEventListener('click', e => {
     else if (k === 'confirm-purge') purge(S.modal.ids);
     return;
   }
-  if (t.dataset.view) { S.view = t.dataset.view; S.pal = null; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') S.dest = S.view; render(); checkClipboard(); return; }
+  if (t.dataset.view) { if (t.dataset.view === 'settings' && S.view !== 'settings') S.prevView = S.view; S.view = t.dataset.view; S.pal = null; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') S.dest = S.view; render(); checkClipboard(); return; }
   if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
   const act = t.dataset.act;
   if (settingsAct(act, t)) return;
