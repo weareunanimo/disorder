@@ -484,7 +484,7 @@ function renderHead() {
     (f ? '<button class="btn icon ghost" data-act="edit-folder" aria-label="Editar pasta ' + esc(f.nome) + '" title="Editar pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' : '') +
     '</div></div><div class="hr">' +
     (S.view !== 'settings' ? '<button class="btn icon ghost set-btn" data-view="settings" aria-label="Ajustes" title="Ajustes">' + ICO_SET + '</button>'
-      : '<button class="btn icon ghost set-btn" data-view="' + esc(backView()) + '" aria-label="Voltar para ' + esc(backTitle()) + '" title="Voltar">' + ICO_BACK + '</button>') +
+      : '<button class="btn icon ghost set-btn back-btn" data-view="' + esc(backView()) + '" aria-label="Voltar para ' + esc(backTitle()) + '" title="Voltar">' + ICO_BACK + '</button>') +
     (S.view !== 'archived' && S.view !== 'settings' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '') + '</div>';
   document.body.classList.toggle('v-arch', S.view === 'archived');
   document.body.classList.toggle('v-set', S.view === 'settings');

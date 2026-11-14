@@ -564,3 +564,6 @@ body { font-weight: 500; }
 
 /* Ícone de ajustes */
 .btn.icon svg.gear { width: 20px; height: 20px; stroke-width: 1.5; }
+
+/* Seta de voltar em Ajustes: aparece em todas as larguras */
+.set-btn.back-btn { display: inline-flex; }
