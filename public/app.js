@@ -493,7 +493,7 @@ function renderModal() {
       '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-purge">Excluir de vez</button></div>';
   } else if (m.kind === 'confirm') {
     const f = folderById(m.id); const n = S.links.filter(l => l.pastaId === m.id).length;
-    body = '<h2 id="mt">Excluir a pasta ' + esc(f ? f.nome : '') + '?</h2><p>' + (n ? (n === 1 ? 'O 1 link dela vai' : 'Os ' + n + ' links dela vão') + ' para Sem pasta. Nenhum link é apagado.' : 'A pasta está vazia.') + '</p>' +
+    body = '<h2 id="mt">Excluir a pasta ' + esc(f ? f.nome : '') + '?</h2><p>' + (n ? (n === 1 ? 'O link dela vai' : 'Os ' + n + ' links dela vão') + ' para Arquivados. Nenhum link é apagado, e você pode restaurar depois.' : 'A pasta está vazia.') + '</p>' +
       '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-del">Excluir pasta</button></div>';
   } else {
     const f = m.kind === 'edit' ? folderById(m.id) : null;
@@ -527,11 +527,17 @@ function submitFolder(e) {
 async function deleteFolder(id) {
   const f = folderById(id); if (!f) return;
   const affected = S.links.filter(l => l.pastaId === id);
-  closeModal();
-  S.view = 'none';
-  for (const l of affected) { const r = Object.assign({}, l, { pastaId: null }); await save('links', r); }
+  const prev = affected.map(l => ({ id: l.id, pastaId: l.pastaId, arquivadoEm: l.arquivadoEm || null }));
+  const folder = Object.assign({}, f), now = Date.now();
+  closeModal(); clearSel();
+  S.view = affected.some(l => !isArch(l)) ? 'archived' : 'all';
+  if (S.dest === id) S.dest = '';
+  for (const l of affected) await save('links', Object.assign({}, l, { pastaId: null, arquivadoEm: l.arquivadoEm || now }));
   await remove('folders', id);
-  toast('Pasta ' + f.nome + ' excluída.');
+  const n = affected.length;
+  toast('Pasta ' + f.nome + ' excluída.' + (n ? ' ' + (n === 1 ? 'O link foi para Arquivados.' : 'Os ' + n + ' links foram para Arquivados.') : ''), 'Desfazer', async () => {
+    await save('folders', folder); undoPatch(prev); S.view = folder.id; render();
+  });
 }
 
 

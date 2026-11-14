@@ -287,7 +287,7 @@ button { cursor: pointer; }
 .ds .t1 { font: 700 40px/1.05 var(--f-display); letter-spacing: -0.045em; }
 .toast.static, .modal.static { position: static; transform: none; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">brica-braca · Design System · v2.1</p><h1>Design system do brica-braca</h1>
+<header><p class="meta" style="margin-bottom:8px">brica-braca · Design System · v2.2</p><h1>Design system do brica-braca</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no brica-braca vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -376,7 +376,7 @@ button { cursor: pointer; }
 
 <div class="spec"><header><h3>Menu de pastas</h3><p>Lista de destino do Mover, aberta acima da barra. Mostra Sem pasta, as pastas como tags na cor delas e Nova pasta no fim. A pasta em que todos os selecionados já estão fica desabilitada com o aviso já está aqui. Abre com foco no primeiro item, setas navegam, Enter escolhe e Esc fecha. Classe <code>.menu</code>.</p></header></div>
 
-<div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar.</p></header></div>
+<div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar. Excluir uma pasta não apaga links, os links dela vão para Arquivados, sem pasta, e o toast oferece Desfazer, que recria a pasta e devolve os links.</p></header></div>
 
 <div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage"><main class="login" style="padding:0"><div class="brand"><b>brica-braca</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
 
