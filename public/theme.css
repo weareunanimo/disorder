@@ -313,10 +313,10 @@ body { font-weight: 500; }
 .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: transform .08s ease, box-shadow .08s ease, background-color .08s ease; }
 @media (prefers-reduced-motion: reduce) { .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: none; } }
 
-/* Marca: faixa de topo, largura total, só os 39% de baixo do logo aparecem */
-.brand { container-type: inline-size; position: relative; overflow: hidden; width: 100%; background: var(--accent); color: var(--on-accent); border-bottom: 2px solid var(--ink);
-  --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.3588); }
-.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.4612); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
+/* Marca: faixa de topo, largura total, só os 57% de baixo do logo aparecem */
+.brand { container-type: inline-size; position: relative; overflow: hidden; width: 100%; color: var(--fg);
+  --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.5244); }
+.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.2956); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
 
 /* Navegação */
 .nav { gap: 6px; }
