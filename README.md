@@ -1,4 +1,4 @@
-# brica-braca
+# disorder
 
 Salve links do X, Threads, Instagram, TikTok e YouTube em pastas. O app puxa o título e a imagem de cada link, como o WhatsApp faz.
 

@@ -1,2 +1,2 @@
-{ "name": "brica-braca", "version": "0.1.0", "private": true, "engines": { "node": ">=20" },
+{ "name": "disorder", "version": "0.1.0", "private": true, "engines": { "node": ">=20" },
   "scripts": { "dev": "node dev.js", "test": "node tests/preview.test.js" } }

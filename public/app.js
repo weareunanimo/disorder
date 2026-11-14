@@ -164,7 +164,7 @@ function authHeaders() {
   return sb ? sb.auth.getSession().then(r => { const t = r.data && r.data.session && r.data.session.access_token; return t ? { Authorization: 'Bearer ' + t } : {}; }) : Promise.resolve({});
 }
 function renderLogin(msg, kind) {
-  document.body.innerHTML = '<main class="login"><div class="brand"><b>brica-braca</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p>' +
+  document.body.innerHTML = '<main class="login"><div class="brand"><b>disorder</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p>' +
     '<form id="login-form"><label class="f">E-mail<input type="email" id="login-email" autocomplete="email" required placeholder="voce@email.com"></label>' +
     '<button class="btn primary" type="submit">Enviar link</button></form><p class="msg ' + (kind || '') + '" id="login-msg" role="status" aria-live="polite">' + esc(msg || '') + '</p></main>';
   $('login-form').addEventListener('submit', async e => {
@@ -272,7 +272,7 @@ function renderDest() {
 }
 function renderBanner() {
   let h = '';
-  if (S.loadError) h = '<div class="banner" role="alert">Não consegui carregar seus links agora. Feche e abra o brica-braca de novo em alguns instantes.</div>';
+  if (S.loadError) h = '<div class="banner" role="alert">Não consegui carregar seus links agora. Feche e abra o disorder de novo em alguns instantes.</div>';
   $('banner').innerHTML = h;
 }
 function renderHead() {
@@ -540,7 +540,7 @@ function renderModal() {
       '<div class="row mfoot">' + left + '<span class="sp"></span><button type="button" class="btn outline" data-m="cancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div></form>';
   } else if (m.kind === 'purge') {
     const n = m.ids.length;
-    body = '<h2 id="mt">' + (n === 1 ? 'Excluir este link de vez?' : 'Excluir ' + n + ' links de vez?') + '</h2><p>Eles somem do brica-braca e não dá para desfazer. Se quiser só tirar da frente, deixe arquivado.</p>' +
+    body = '<h2 id="mt">' + (n === 1 ? 'Excluir este link de vez?' : 'Excluir ' + n + ' links de vez?') + '</h2><p>Eles somem do disorder e não dá para desfazer. Se quiser só tirar da frente, deixe arquivado.</p>' +
       '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-purge">Excluir de vez</button></div>';
   } else if (m.kind === 'confirm') {
     const f = folderById(m.id); const n = S.links.filter(l => l.pastaId === m.id).length;

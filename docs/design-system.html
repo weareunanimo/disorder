@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>brica-braca Design System</title>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>disorder Design System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Oi&display=swap" rel="stylesheet">
 <style>
 /* Minimalista, preto e branco com cinzas claros. Sem vidro, sem sombras, sem textura. Claro e escuro. */
 :root {
@@ -14,6 +14,7 @@
   --p-x: #0A0A0A; --p-threads: #0A0A0A; --p-instagram: #0A0A0A; --p-tiktok: #0A0A0A; --p-youtube: #0A0A0A; --p-web: #0A0A0A; --p-fg: #FFFFFF;
   --f-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-display: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-logo: "Oi", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --tag0-bg: #FDE8E8; --tag0-fg: #9B1C1C; --tag1-bg: #FDEBDD; --tag1-fg: #9A4A0B; --tag2-bg: #FBF0CC; --tag2-fg: #7A5A00; --tag3-bg: #DDF3E4; --tag3-fg: #166534; --tag4-bg: #D8F0EE; --tag4-fg: #0F5F5A; --tag5-bg: #DFEBFC; --tag5-fg: #1E4FA3; --tag6-bg: #EAE4FA; --tag6-fg: #5B34A8; --tag7-bg: #FBE4F1; --tag7-fg: #9D2467;
   color-scheme: light;
 }
@@ -58,7 +59,7 @@ button { cursor: pointer; }
 .side { padding: 0; display: flex; flex-direction: column; gap: 28px; position: sticky; top: 32px; align-self: start; max-height: calc(100vh - 64px); overflow-y: auto; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; }
 .brand img { width: 34px; height: 34px; border-radius: 50%; background: var(--muted); filter: grayscale(1); }
-.brand b { font: 700 22px/1 var(--f-display); letter-spacing: -0.04em; }
+.brand b { font: 400 26px/1 var(--f-logo); letter-spacing: 0; text-transform: lowercase; }
 .nav { display: flex; flex-direction: column; gap: 1px; }
 .nav-h { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 6px; padding: 0 10px; font: 500 12px/14px var(--f-body); letter-spacing: .04em; color: var(--muted-fg); }
 .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; background: transparent; border-radius: 10px; text-align: left; min-height: 40px; font-weight: 500; }
@@ -336,11 +337,11 @@ body.locked { overflow: hidden; }
 .ds .t1 { font: 700 40px/1.05 var(--f-display); letter-spacing: -0.045em; }
 .toast.static, .modal.static { position: static; transform: none; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">brica-braca · Design System · v3.0</p><h1>Design system do brica-braca</h1>
-<p class="lead">Fonte única de verdade visual do produto. Tudo que existe no brica-braca vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v3.1</p><h1>Design system do disorder</h1>
+<p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
-<li>Toda interface do brica-braca usa só tokens e componentes deste documento. Isso vale mesmo quando um pedido pontual sugerir outra coisa.</li>
+<li>Toda interface do disorder usa só tokens e componentes deste documento. Isso vale mesmo quando um pedido pontual sugerir outra coisa.</li>
 <li>Se um pedido exigir um componente, variante ou token que não existe aqui, o Claude cria o item neste documento primeiro e só depois usa no produto. Não precisa de aprovação prévia.</li>
 <li>O item novo precisa seguir os princípios abaixo e os tokens existentes, sem valores soltos, e vir com descrição e exemplo.</li>
 <li>Toda mudança no design system é avisada na resposta, com o nome do componente criado ou alterado.</li></ol></section>
@@ -363,7 +364,7 @@ body.locked { overflow: hidden; }
 <div class="sw"><i style="background:var(--primary)"></i><div><b>primary / primary-fg</b><code>ação principal e filtro ativo</code><code>#0A0A0A / #FFFFFF · invertido</code></div></div>
 <div class="sw"><i style="background:var(--danger)"></i><div><b>danger</b><code>excluir e erro. Única cor.</code><code>#B3261E · #FF8A80</code></div></div></div></section>
 
-<section><h2>Tipografia</h2><p class="lead">Uma família só, Instrument Sans, de 400 a 700. Títulos com tracking apertado.</p>
+<section><h2>Tipografia</h2><p class="lead">Instrument Sans, de 400 a 700, para todo o texto da interface. Títulos com tracking apertado. A única exceção é o logo, que usa a fonte Oi (token --f-logo), só em minúsculas e só para o nome.</p>
 <div class="spec"><div class="stage col" style="gap:18px">
 <div><span class="t1">Título da página</span><br><code>h1 · 28 a 40px · 700 · -0.045em</code></div>
 <div><b style="font:700 22px/1.15 var(--f-display);letter-spacing:-0.035em">Título de modal</b><br><code>modal h2 · 22px · 700 · -0.035em</code></div>
@@ -440,7 +441,7 @@ body.locked { overflow: hidden; }
 
 <div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar. Excluir uma pasta não apaga links, os links dela vão para Arquivados, sem pasta, e o toast oferece Desfazer, que recria a pasta e devolve os links.</p></header></div>
 
-<div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage"><main class="login" style="padding:0"><div class="brand"><b>brica-braca</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
+<div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage"><main class="login" style="padding:0"><div class="brand"><b>disorder</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
 
 <div class="spec"><header><h3>Banner</h3><p>Faixa informativa em muted. A versão com ação traz botões sm à direita.</p></header><div class="stage col">
 <div class="banner">Você está no modo local. Os links ficam só neste navegador.</div>
@@ -460,7 +461,7 @@ body.locked { overflow: hidden; }
 
 <section><h2>Comportamento</h2><table><tr><th>Tema</th><td>Segue o aparelho, claro ou escuro. Os dois sempre com contraste AA.</td></tr>
 <tr><th>Preview</th><td>O quadrado já existe. Título e imagem automáticos, como no WhatsApp, só entram com um servidor que leia o link, na fase de backend.</td></tr>
-<tr><th>Marca</th><td>Só o nome "brica-braca" em texto, sem avatar.</td></tr>
+<tr><th>Marca</th><td>Só o nome "disorder" em texto, sem avatar, em Oi 400 a 26px, minúsculas, sem tracking.</td></tr>
 <tr><th>Captura</th><td>Colar no lugar de Salvar até haver link válido. Faixa "link copiado" nunca cita a rede.</td></tr>
 <tr><th>Pastas</th><td>Sem cor e sem ponto. Criação também pelo select, com a opção "+ Nova pasta…".</td></tr>
 <tr><th>Movimento</th><td>Só o destaque curto do link recém salvo. Respeita redução de movimento.</td></tr></table></section>
