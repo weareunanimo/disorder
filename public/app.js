@@ -117,10 +117,10 @@ try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } 
 const touchMq = window.matchMedia ? window.matchMedia('(hover: none)') : { matches: false };
 const wideMq = window.matchMedia ? window.matchMedia('(min-width: 901px)') : { matches: true };
 const isList = () => S.layout === 'list' && wideMq.matches;
-/* Limite do título do cartão: 157 caracteres em notebook e desktop, menos em telas menores */
+/* Limite do título do cartão: 138 caracteres em notebook e desktop, menos em telas menores */
 const midMq = window.matchMedia ? window.matchMedia('(min-width: 641px)') : { matches: true };
 const smMq = window.matchMedia ? window.matchMedia('(min-width: 401px)') : { matches: true };
-const titleMax = () => wideMq.matches ? 157 : midMq.matches ? 120 : smMq.matches ? 90 : 70;
+const titleMax = () => wideMq.matches ? 138 : midMq.matches ? 105 : smMq.matches ? 80 : 60;
 function clipTitle(t) {
   const max = titleMax(); t = String(t || '');
   if (t.length <= max) return t;
