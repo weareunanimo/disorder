@@ -179,22 +179,45 @@ function renderLogin(msg, kind) {
 
 /* ===== Preview automático (título e imagem) ===== */
 const enriching = new Set();
-async function enrich(l) {
-  if (!CFG.previewApi || l.enriquecido || enriching.has(l.id)) return;
+async function enrich(l, force) {
+  if (!CFG.previewApi || (l.enriquecido && !force) || enriching.has(l.id)) return false;
   enriching.add(l.id);
   try {
     const r = await fetch(CFG.previewApi + '?url=' + encodeURIComponent(l.url), { headers: await authHeaders() });
     const d = r.ok ? await r.json() : null;
     const cur = S.links.find(x => x.id === l.id);
-    if (!cur) return;
+    if (!cur) return false;
     const next = Object.assign({}, cur, { enriquecido: true });
-    if (d && d.title) next.tituloAuto = d.title;
-    if (d && d.image) next.thumb = d.image;
+    let got = false;
+    if (d && d.title) { next.tituloAuto = d.title; got = true; }
+    if (d && d.image) { next.thumb = d.image; got = true; }
     if (r.ok) await save('links', next);
-  } catch (e) { /* tenta de novo na próxima visita */ }
+    return got;
+  } catch (e) { return false; /* tenta de novo na próxima visita */ }
   finally { enriching.delete(l.id); }
 }
+let refreshing = false;
+async function refreshPreviews(auto) {
+  if (!CFG.previewApi || refreshing) return;
+  const all = S.links.filter(l => !l.arquivadoEm).slice(0, 300);
+  if (!all.length) { if (!auto) toast('Nenhum link para atualizar.'); return; }
+  refreshing = true; setRefreshBtn(true);
+  let i = 0, ok = 0;
+  const worker = async () => { while (i < all.length) { if (await enrich(all[i++], true)) ok++; } };
+  await Promise.all([worker(), worker(), worker()]);
+  refreshing = false; setRefreshBtn(false);
+  render();
+  toast(ok + ' de ' + all.length + ' links com título e imagem atualizados.');
+}
+function setRefreshBtn(busy) {
+  const el = document.getElementById('side-act'); if (!el) return;
+  el.innerHTML = '<button type="button" class="btn sm" id="refresh-previews"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Atualizando…' : 'Atualizar previews') + '</button>';
+  const b = document.getElementById('refresh-previews'); if (b) b.onclick = () => refreshPreviews(false);
+}
 function enrichPending() {
+  setRefreshBtn(false);
+  let done = false; try { done = localStorage.getItem('disorder.refresh.v1') === '1'; } catch (e) {}
+  if (!done && S.links.length) { try { localStorage.setItem('disorder.refresh.v1', '1'); } catch (e) {} refreshPreviews(true); return; }
   const pend = S.links.filter(l => !l.enriquecido).slice(0, 40);
   let i = 0;
   const worker = async () => { while (i < pend.length) await enrich(pend[i++]); };
@@ -276,11 +299,10 @@ function renderBanner() {
   $('banner').innerHTML = h;
 }
 function renderHead() {
-  const n = visibleLinks().length, base = S.links.filter(inView).length;
   const f = (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') ? folderById(S.view) : null;
   $('head').innerHTML = '<div class="ht"><div class="tl"><h1 id="view-title">' + esc(viewTitle()) + '</h1>' +
     (f ? '<button class="btn icon ghost" data-act="edit-folder" aria-label="Editar pasta ' + esc(f.nome) + '" title="Editar pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' : '') +
-    '</div><p>' + (base === 1 ? '1 link' : base + ' links') + (n !== base ? ' · ' + n + ' no filtro' : '') + '</p></div>' +
+    '</div></div>' +
     (S.view !== 'archived' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '');
   document.body.classList.toggle('v-arch', S.view === 'archived');
 }
@@ -289,19 +311,24 @@ function setLayout(v) {
   try { localStorage.setItem('brica.layout', S.layout); } catch (e) {}
   renderTools(); renderList();
 }
-$('tools').addEventListener('click', e => { const b = e.target.closest('[data-layout]'); if (b) setLayout(b.dataset.layout); });
+$('tools').addEventListener('click', e => {
+  const b = e.target.closest('[data-layout]'); if (b) { setLayout(b.dataset.layout); return; }
+  if (e.target.closest('[data-act=filters]')) { S.filtersOpen = !(S.filtersOpen || S.plat !== 'all'); if (!S.filtersOpen) S.plat = 'all'; renderTools(); renderList(); }
+});
 function renderTools() {
   const base = S.links.filter(inView);
   if (!S.links.length) { $('tools').innerHTML = ''; return; }
   const counts = {}; base.forEach(l => { counts[l.plataforma] = (counts[l.plataforma] || 0) + 1; });
   const present = Object.keys(PLAT).filter(k => counts[k]);
   if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
+  const open = present.length > 1 && (S.filtersOpen || S.plat !== 'all');
   let h = '<label class="sr" for="q">Buscar nos links</label><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '">' +
+    (present.length > 1 ? '<button type="button" class="btn filt" data-act="filters" aria-expanded="' + open + '" aria-controls="chips"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>Filtros' + (S.plat !== 'all' ? '<span class="dot" aria-label="filtro ativo"></span>' : '') + '</button>' : '') +
     '<div class="seg" role="group" aria-label="Visualização">' +
     '<button type="button" data-layout="cards" aria-pressed="' + (S.layout !== 'list') + '" aria-label="Ver em cartões" title="Ver em cartões"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></button>' +
     '<button type="button" data-layout="list" aria-pressed="' + (S.layout === 'list') + '" aria-label="Ver em lista" title="Ver em lista"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg></button></div>';
-  if (present.length > 1) {
-    h += '<div class="chips" role="group" aria-label="Filtrar por rede"><button class="chip" data-plat="all" aria-pressed="' + (S.plat === 'all') + '">Tudo<span class="n">' + base.length + '</span></button>' +
+  if (open) {
+    h += '<div class="chips" id="chips" role="group" aria-label="Filtrar por rede"><button class="chip" data-plat="all" aria-pressed="' + (S.plat === 'all') + '">Tudo<span class="n">' + base.length + '</span></button>' +
       present.map(k => '<button class="chip" data-plat="' + k + '" aria-pressed="' + (S.plat === k) + '">' + PLAT[k].label + '<span class="n">' + counts[k] + '</span></button>').join('') + '</div>';
   }
   const had = document.activeElement && document.activeElement.id === 'q';
@@ -334,7 +361,7 @@ function linkHtml(l) {
     '<div class="acts">' +
     (f ? '<span class="tag" data-c="' + colorOf(f) + '" title="' + esc(f.nome) + '">' + esc(f.nome) + '</span>' : '') +
     '<button class="btn outline sm icon" data-act="copy" aria-label="Copiar link" title="Copiar link"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2"/></svg></button>' +
-    '<a class="btn outline sm icon" href="https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp" title="Enviar no WhatsApp"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8a6.2 6.2 0 0 0-5.3 9.4L1.9 14l2.9-.8A6.2 6.2 0 1 0 8 1.8z"/><path d="M5.9 5.4c.3 2.3 2.3 4.3 4.7 4.7l.7-1.2-1.5-.8-.6.5c-.8-.3-1.5-1-1.8-1.8l.5-.6-.8-1.5z"/></svg></a>' +
+    '<a class="btn outline sm icon" href="https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp" title="Enviar no WhatsApp"><svg class="fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>' +
     '<button class="btn outline sm icon" data-act="edit" aria-label="Editar" title="Editar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' +
     '<a class="btn outline sm" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
     '</div>';

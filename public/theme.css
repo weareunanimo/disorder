@@ -1,45 +1,45 @@
 /* Street, brutalista e neobrutalista. Bordas pretas grossas, sombras duras sem desfoque, cantos retos, cores chapadas. Claro e escuro. */
 :root {
-  --bg: #F2EEE3; --surface: #FFFFFF; --fg: #0A0A0A; --muted-fg: #4A4A4A;
-  --field: #FFFFFF; --muted: #E7E2D2; --hover: #E7E2D2; --tint: #E7E2D2;
-  --ink: #0A0A0A; --sh: #0A0A0A; --gray-line: #9A9A9A;
-  --border: #0A0A0A; --border-strong: #0A0A0A;
-  --accent: #FFE14D; --on-accent: #0A0A0A;
-  --primary: #FF5A36; --primary-fg: #0A0A0A;
-  --danger: #D6001C; --ok: #0A0A0A; --ring: rgba(10,10,10,.18);
-  --toast-bg: #0A0A0A; --toast-fg: #FFFFFF; --bar-warn: #FF8A80; --scrim: rgba(10,10,10,.6);
-  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%230A0A0A' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
-  --p-x: #0A0A0A; --p-threads: #0A0A0A; --p-instagram: #0A0A0A; --p-tiktok: #0A0A0A; --p-youtube: #0A0A0A; --p-web: #0A0A0A; --p-fg: #FFFFFF;
+  --bg: #F2EEE3; --surface: #FFFDF7; --fg: #121212; --muted-fg: #4A4A4A;
+  --field: #FFFDF7; --muted: #E7E2D2; --hover: #E7E2D2; --tint: #E7E2D2;
+  --ink: #121212; --sh: #121212; --gray-line: #9A9A9A;
+  --border: #121212; --border-strong: #121212;
+  --accent: #FFE14D; --on-accent: #121212;
+  --primary: #FF5A36; --primary-fg: #121212;
+  --danger: #D6001C; --ok: #121212; --ring: rgba(10,10,10,.18);
+  --toast-bg: #121212; --toast-fg: #FFFDF7; --bar-warn: #FF8A80; --scrim: rgba(10,10,10,.6);
+  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23121212' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
+  --p-x: #121212; --p-threads: #121212; --p-instagram: #121212; --p-tiktok: #121212; --p-youtube: #121212; --p-web: #121212; --p-fg: #FFFDF7;
   --f-body: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-display: "Archivo", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --f-mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --f-logo: "Oi", "Archivo", ui-sans-serif, system-ui, sans-serif;
-  --tag0-bg: #FF8FB8; --tag0-fg: #0A0A0A; --tag1-bg: #FFA94D; --tag1-fg: #0A0A0A; --tag2-bg: #FFE14D; --tag2-fg: #0A0A0A; --tag3-bg: #6EE7A0; --tag3-fg: #0A0A0A;
-  --tag4-bg: #5DE0E6; --tag4-fg: #0A0A0A; --tag5-bg: #8FB4FF; --tag5-fg: #0A0A0A; --tag6-bg: #C9A6FF; --tag6-fg: #0A0A0A; --tag7-bg: #D4F25A; --tag7-fg: #0A0A0A;
+  --tag0-bg: #FF8FB8; --tag0-fg: #121212; --tag1-bg: #FFA94D; --tag1-fg: #121212; --tag2-bg: #FFE14D; --tag2-fg: #121212; --tag3-bg: #6EE7A0; --tag3-fg: #121212;
+  --tag4-bg: #5DE0E6; --tag4-fg: #121212; --tag5-bg: #8FB4FF; --tag5-fg: #121212; --tag6-bg: #C9A6FF; --tag6-fg: #121212; --tag7-bg: #D4F25A; --tag7-fg: #121212;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0B0B0B; --surface: #151515; --fg: #F5F5F5; --muted-fg: #B5B5B5;
-    --field: #151515; --muted: #1E1E1E; --hover: #2B2B2B; --tint: #2B2B2B;
-    --ink: #F5F5F5; --sh: #F5F5F5; --gray-line: #6B6B6B;
-    --border: #F5F5F5; --border-strong: #F5F5F5;
-    --danger: #FF6B6B; --ok: #F5F5F5; --ring: rgba(245,245,245,.25);
-    --toast-bg: #F5F5F5; --toast-fg: #0A0A0A; --bar-warn: #B3261E; --scrim: rgba(0,0,0,.7);
-    --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23F5F5F5' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
-    --p-x: #F5F5F5; --p-threads: #F5F5F5; --p-instagram: #F5F5F5; --p-tiktok: #F5F5F5; --p-youtube: #F5F5F5; --p-web: #F5F5F5; --p-fg: #0A0A0A;
+    --bg: #121212; --surface: #1C1C1C; --fg: #FFFDF7; --muted-fg: #B5B5B5;
+    --field: #1C1C1C; --muted: #242424; --hover: #2E2E2E; --tint: #2E2E2E;
+    --ink: #FFFDF7; --sh: #FFFDF7; --gray-line: #6B6B6B;
+    --border: #FFFDF7; --border-strong: #FFFDF7;
+    --danger: #FF6B6B; --ok: #FFFDF7; --ring: rgba(245,245,245,.25);
+    --toast-bg: #FFFDF7; --toast-fg: #121212; --bar-warn: #B3261E; --scrim: rgba(0,0,0,.7);
+    --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23FFFDF7' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
+    --p-x: #FFFDF7; --p-threads: #FFFDF7; --p-instagram: #FFFDF7; --p-tiktok: #FFFDF7; --p-youtube: #FFFDF7; --p-web: #FFFDF7; --p-fg: #121212;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0B0B0B; --surface: #151515; --fg: #F5F5F5; --muted-fg: #B5B5B5;
-  --field: #151515; --muted: #1E1E1E; --hover: #2B2B2B; --tint: #2B2B2B;
-  --ink: #F5F5F5; --sh: #F5F5F5; --gray-line: #6B6B6B;
-  --border: #F5F5F5; --border-strong: #F5F5F5;
-  --danger: #FF6B6B; --ok: #F5F5F5; --ring: rgba(245,245,245,.25);
-  --toast-bg: #F5F5F5; --toast-fg: #0A0A0A; --bar-warn: #B3261E; --scrim: rgba(0,0,0,.7);
-  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23F5F5F5' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
-  --p-x: #F5F5F5; --p-threads: #F5F5F5; --p-instagram: #F5F5F5; --p-tiktok: #F5F5F5; --p-youtube: #F5F5F5; --p-web: #F5F5F5; --p-fg: #0A0A0A;
+  --bg: #121212; --surface: #1C1C1C; --fg: #FFFDF7; --muted-fg: #B5B5B5;
+  --field: #1C1C1C; --muted: #242424; --hover: #2E2E2E; --tint: #2E2E2E;
+  --ink: #FFFDF7; --sh: #FFFDF7; --gray-line: #6B6B6B;
+  --border: #FFFDF7; --border-strong: #FFFDF7;
+  --danger: #FF6B6B; --ok: #FFFDF7; --ring: rgba(245,245,245,.25);
+  --toast-bg: #FFFDF7; --toast-fg: #121212; --bar-warn: #B3261E; --scrim: rgba(0,0,0,.7);
+  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23FFFDF7' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E");
+  --p-x: #FFFDF7; --p-threads: #FFFDF7; --p-instagram: #FFFDF7; --p-tiktok: #FFFDF7; --p-youtube: #FFFDF7; --p-web: #FFFDF7; --p-fg: #121212;
   color-scheme: dark;
 }
 
@@ -80,7 +80,7 @@ button { cursor: pointer; }
 .cap-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cap-row label { font-size: 13px; color: var(--muted-fg); }
 .sel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: min(100%, 260px); appearance: none; border: 1px solid var(--border-strong); background: var(--field) var(--arrow) no-repeat right 11px center; border-radius: 10px; padding: 8px 32px 8px 12px; min-height: 40px; }
-.sel option { color: #0A0A0A; background: #FFFFFF; }
+.sel option { color: #121212; background: #FFFDF7; }
 .msg { font-size: 14px; min-height: 20px; }
 .msg.err { color: var(--danger); font-weight: 500; } .msg.ok { color: var(--ok); font-weight: 500; }
 .msg button { border: 0; background: none; color: var(--fg); text-decoration: underline; padding: 0 2px; font-weight: 600; }
@@ -395,7 +395,7 @@ body { font-weight: 500; }
 .preview.sm { border-radius: 0; }
 
 /* Tags de pasta */
-.tag { border: 2px solid #0A0A0A; border-radius: 0; padding: 2px 8px; font: 700 11px/1.5 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; }
+.tag { border: 2px solid #121212; border-radius: 0; padding: 2px 8px; font: 700 11px/1.5 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; }
 
 /* Seleção */
 .pick .box { width: 22px; height: 22px; border: 2px solid var(--ink); border-radius: 0; background: var(--surface); }
@@ -432,3 +432,15 @@ body { font-weight: 500; }
   .modal { border-radius: 0; border-width: 3px 0 0; box-shadow: none; }
   .compact .link { box-shadow: none; }
 }
+
+/* Ícones legíveis e botão Filtros */
+.btn.icon svg, .seg svg, .bar svg, .btn svg, .head .btn svg { stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.btn.icon svg.fill, .btn svg.fill { fill: currentColor; stroke: none; width: 18px; height: 18px; }
+.pick svg { stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.fab svg { stroke-width: 2.4; stroke-linecap: round; }
+.btn.filt { min-height: 40px; box-shadow: 3px 3px 0 var(--sh); }
+.btn.filt[aria-expanded="true"] { background: var(--fg); color: var(--bg); }
+.btn.filt .dot { width: 8px; height: 8px; background: var(--primary); border: 2px solid var(--ink); }
+.tools .chips { margin-top: 2px; }
+#side-act { margin-top: 0; padding: 0 10px; }
+@media (max-width: 820px) { #side-act { display: none; } }
