@@ -164,7 +164,7 @@ function authHeaders() {
   return sb ? sb.auth.getSession().then(r => { const t = r.data && r.data.session && r.data.session.access_token; return t ? { Authorization: 'Bearer ' + t } : {}; }) : Promise.resolve({});
 }
 function renderLogin(msg, kind) {
-  document.body.innerHTML = '<main class="login"><div class="brand"><b>disorder</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p>' +
+  document.body.innerHTML = '<div class="brand" role="banner" aria-label="disorder"><b aria-hidden="true">disorder</b></div><main class="login"><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p>' +
     '<form id="login-form"><label class="f">E-mail<input type="email" id="login-email" autocomplete="email" required placeholder="voce@email.com"></label>' +
     '<button class="btn primary" type="submit">Enviar link</button></form><p class="msg ' + (kind || '') + '" id="login-msg" role="status" aria-live="polite">' + esc(msg || '') + '</p></main>';
   $('login-form').addEventListener('submit', async e => {

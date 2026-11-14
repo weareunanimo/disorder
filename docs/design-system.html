@@ -59,9 +59,6 @@ button { cursor: pointer; }
 
 .app { display: grid; grid-template-columns: 252px minmax(0, 1fr); gap: 40px; min-height: 100vh; max-width: 1440px; margin: 0 auto; padding: 32px 24px; }
 .side { padding: 0; display: flex; flex-direction: column; gap: 28px; position: sticky; top: 32px; align-self: start; max-height: calc(100vh - 64px); overflow-y: auto; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; }
-.brand img { width: 34px; height: 34px; border-radius: 50%; background: var(--muted); filter: grayscale(1); }
-.brand b { font: 400 26px/1 var(--f-logo); letter-spacing: 0; text-transform: lowercase; }
 .nav { display: flex; flex-direction: column; gap: 1px; }
 .nav-h { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 6px; padding: 0 10px; font: 500 12px/14px var(--f-body); letter-spacing: .04em; color: var(--muted-fg); }
 .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; background: transparent; border-radius: 10px; text-align: left; min-height: 40px; font-weight: 500; }
@@ -255,7 +252,6 @@ button { cursor: pointer; }
 
 /* Tela de entrada */
 .login { max-width: 400px; margin: 0 auto; padding: 96px 24px; display: flex; flex-direction: column; gap: 16px; }
-.login .brand { padding: 0; }
 .login .lead { color: var(--muted-fg); font-size: 15px; }
 .login form { display: flex; flex-direction: column; gap: 12px; }
 .login .f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted-fg); }
@@ -321,9 +317,10 @@ body { font-weight: 500; }
 .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: transform .08s ease, box-shadow .08s ease, background-color .08s ease; }
 @media (prefers-reduced-motion: reduce) { .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: none; } }
 
-/* Marca: adesivo */
-.brand b { display: inline-block; background: var(--accent); color: var(--on-accent); border: 2px solid var(--ink); padding: 7px 12px 5px; box-shadow: 3px 3px 0 var(--sh); transform: rotate(-2deg); }
-.login .brand b { font-size: 40px; }
+/* Marca: faixa de topo, largura total, só os 39% de baixo do logo aparecem */
+.brand { container-type: inline-size; position: relative; overflow: hidden; width: 100%; background: var(--accent); color: var(--on-accent); border-bottom: 2px solid var(--ink);
+  --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.3588); }
+.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.4612); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
 
 /* Navegação */
 .nav { gap: 6px; }
@@ -474,7 +471,7 @@ body { font-weight: 500; }
 .ds .t1 { font: 900 40px/1 var(--f-display); letter-spacing: -0.03em; text-transform: uppercase; }
 .toast.static, .modal.static { position: static; transform: none; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v4.1</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v4.2</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -584,7 +581,9 @@ body { font-weight: 500; }
 
 <div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar. Excluir uma pasta não apaga links, os links dela vão para Arquivados, sem pasta, e o toast oferece Desfazer, que recria a pasta e devolve os links.</p></header></div>
 
-<div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage"><main class="login" style="padding:0"><div class="brand"><b>disorder</b></div><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
+<div class="spec"><header><h3>Marca</h3><p>Faixa colada no topo e nas duas laterais, em largura total, antes de todo o resto da página. Fundo accent, borda inferior de 2px. O texto "disorder" em Oi usa <code>--fs = 100cqw / 7,185</code> para encostar nas duas bordas, e a faixa tem 39% da altura do logo (0,3588 × --fs), então só a parte de baixo das letras aparece. Fica em tela de entrada e no app, no celular e no desktop.</p></header><div class="stage col" style="align-items:stretch;padding:0"><div class="brand"><b>disorder</b></div></div></div>
+
+<div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="brand"><b>disorder</b></div><main class="login" style="padding:16px 0 0;max-width:none"><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
 
 <div class="spec"><header><h3>Banner</h3><p>Faixa informativa em muted. A versão com ação traz botões sm à direita.</p></header><div class="stage col">
 <div class="banner">Você está no modo local. Os links ficam só neste navegador.</div>
@@ -604,7 +603,7 @@ body { font-weight: 500; }
 
 <section><h2>Comportamento</h2><table><tr><th>Tema</th><td>Segue o aparelho, claro ou escuro. Os dois sempre com contraste AA.</td></tr>
 <tr><th>Preview</th><td>O quadrado já existe. Título e imagem automáticos, como no WhatsApp, só entram com um servidor que leia o link, na fase de backend.</td></tr>
-<tr><th>Marca</th><td>Só o nome "disorder", em Oi 400 a 26px, minúsculas, dentro de um adesivo accent com borda ink, sombra 3px e rotação de -2°. Sem avatar.</td></tr>
+<tr><th>Marca</th><td>Faixa accent colada no topo e nas laterais, largura total, com borda inferior de 2px. O nome "disorder" em Oi, minúsculas, escala para ocupar toda a largura e só os 39% de baixo do logo aparecem, cortados pelo topo da tela. Classe <code>.brand</code>. Sem avatar.</td></tr>
 <tr><th>Captura</th><td>Colar no lugar de Salvar até haver link válido. Faixa "link copiado" nunca cita a rede.</td></tr>
 <tr><th>Pastas</th><td>Sem cor e sem ponto. Criação também pelo select, com a opção "+ Nova pasta…".</td></tr>
 <tr><th>Movimento</th><td>Só o destaque curto do link recém salvo. Respeita redução de movimento.</td></tr></table></section>
