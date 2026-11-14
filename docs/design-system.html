@@ -511,7 +511,6 @@ body { font-weight: 500; }
 .pv .st { font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; }
 
 /* Troca de visualização só em notebook e desktop. Abaixo de 901px, sempre grade. */
-@media (max-width: 900px) { .seg { display: none; } }
 
 /* Seleção: a caixa aparece no hover ou no foco. No toque, tocar no cartão seleciona. */
 @media (hover: hover) {
@@ -523,6 +522,49 @@ body { font-weight: 500; }
   .pick[aria-checked="true"], .has-sel .pick { opacity: 1; }
   #list .link { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 }
+
+/* Ajustes */
+@media (max-width: 900px) { .tools .seg { display: none; } }
+.hr { display: flex; align-items: center; gap: 8px; flex: none; }
+.set-btn { display: none; width: 40px; min-width: 40px; }
+.v-set .fab { display: none; }
+@media (max-width: 900px) { .set-btn { display: inline-flex; } .nav-btn.set { display: none; } }
+.nav-btn.set { margin-top: 12px; }
+.nav-btn.arch + .nav-btn.set { margin-top: 0; }
+.settings { display: flex; flex-direction: column; gap: 28px; max-width: 760px; }
+.sblock { border: 2px solid var(--ink); background: var(--surface); box-shadow: 5px 5px 0 var(--sh); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sblock h2 { font: 900 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: -0.02em; }
+.shead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings .f { display: flex; flex-direction: column; gap: 6px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
+.settings input[type=text] { border: 2px solid var(--ink); border-radius: 0; background: var(--field); color: var(--fg); font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; padding: 8px 12px; min-height: 40px; width: 100%; min-width: 0; }
+.settings input[type=text]:focus { outline: none; box-shadow: 4px 4px 0 var(--sh); }
+.sval { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.snote { font: 400 12px/1.5 var(--f-mono); color: var(--muted-fg); }
+.seg.txt { align-self: flex-start; }
+.seg.txt button { width: auto; padding: 0 14px; font: 700 14px/1 var(--f-body); text-transform: none; letter-spacing: 0; }
+.seg.txt button + button { border-left: 2px solid var(--ink); }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; padding-top: 16px; border-top: 2px solid var(--ink); }
+.srow .st { display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px; min-width: 0; }
+.srow .st b { font: 800 15px/1.3 var(--f-display); }
+.srow .st span { font-size: 14px; color: var(--muted-fg); }
+.flist { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.frow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 8px 10px; padding: 10px 0; border-bottom: 2px solid var(--ink); background: var(--surface); }
+.frow.drag { opacity: .4; }
+.frow.over { box-shadow: inset 0 4px 0 var(--primary); }
+.frow .fct { font: 400 12px/1 var(--f-mono); color: var(--muted-fg); white-space: nowrap; }
+.frow .fa { display: flex; gap: 6px; }
+.sw-btn { width: 34px; height: 34px; padding: 0; border: 2px solid #121212; border-radius: 0; cursor: pointer; }
+.sw-btn:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--sh); }
+.sw-btn[aria-expanded="true"], .sw-btn[aria-checked="true"] { outline: 3px solid var(--fg); outline-offset: 2px; }
+.pal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 0 4px; }
+@media (max-width: 640px) {
+  .sblock { padding: 16px; box-shadow: 4px 4px 0 var(--sh); }
+  .frow { grid-template-columns: 34px minmax(0, 1fr) auto; }
+  .frow .fa { grid-column: 1 / -1; justify-content: flex-end; }
+  .srow .btn { width: 100%; }
+}
+@media (pointer: coarse) { .sw-btn { width: 40px; height: 40px; } .frow { grid-template-columns: 40px minmax(0, 1fr) auto auto; } .seg.txt button { height: 42px; } }
+@media (pointer: coarse) and (max-width: 640px) { .frow { grid-template-columns: 40px minmax(0, 1fr) auto; } }
 
 /* somente desta página de documentação */
 .ds { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; display: flex; flex-direction: column; gap: 56px; }
@@ -549,7 +591,7 @@ body { font-weight: 500; }
 .ds .t1 { font: 900 40px/1 var(--f-display); letter-spacing: -0.03em; text-transform: uppercase; }
 .toast.static, .modal.static { position: static; transform: none; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v4.8</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v5.0</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -678,6 +720,18 @@ body { font-weight: 500; }
 <div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar. Excluir uma pasta não apaga links, os links dela vão para Arquivados, sem pasta, e o toast oferece Desfazer, que recria a pasta e devolve os links.</p></header></div>
 
 <div class="spec"><header><h3>Marca</h3><p>Texto colado no topo e nas duas laterais, em largura total, antes de todo o resto da página. Sem fundo nem borda, na cor fg. O texto "disorder" em Oi usa <code>--fs = 100cqw / 7,185</code> para encostar nas duas bordas, e a faixa tem 66% da altura do logo (0,6072 × --fs), então só os 66% de baixo das letras aparecem. Fica em tela de entrada e no app, no celular e no desktop.</p></header><div class="stage col" style="align-items:stretch;padding:0"><div class="brand"><b>disorder</b></div></div></div>
+
+<div class="spec"><header><h3>Tela de ajustes</h3><p>Tela inteira, como Arquivados, com o título "Ajustes" e três blocos em coluna de até 760px: Perfil, Pastas e Dados. Entrada pelo item "Ajustes" no fim do menu lateral e, abaixo de 901px, por um botão de ícone no cabeçalho. Nesta tela não há busca, filtros, botão Salvar nem botão flutuante. Classe <code>.settings</code>.</p></header></div>
+
+<div class="spec"><header><h3>Bloco de ajustes</h3><p>Cartão com borda ink e sombra de 5px, título em Archivo 900 caixa alta. Dentro dele, campos com rótulo mono, notas em mono muted e linhas de ação: texto à esquerda (título e uma frase) e um botão neutro à direita, separadas por divisor de 2px. No celular o botão ocupa a largura toda. Classes <code>.sblock</code>, <code>.srow</code>, <code>.snote</code>.</p></header><div class="stage col" style="align-items:stretch"><section class="settings"><div class="sblock"><h2>Dados</h2><p class="snote">Modo local: seus links ficam só neste navegador.</p><div class="srow"><div class="st"><b>Exportar</b><span>Baixa um arquivo com 12 links e 3 pastas, incluindo os arquivados.</span></div><button type="button" class="btn">Exportar arquivo</button></div><div class="srow"><div class="st"><b>Importar</b><span>Lê um arquivo exportado pelo disorder. Soma ao que já existe, sem duplicar links e sem apagar nada.</span></div><button type="button" class="btn">Importar arquivo</button></div></div></section></div></div>
+
+<div class="spec"><header><h3>Seletor segmentado com texto</h3><p>Variante do seletor de visualização com rótulos em vez de ícones, para escolhas de 2 a 4 opções como o tema. Ativo em fg invertido. Classe <code>.seg.txt</code>.</p></header><div class="stage"><div class="seg txt"><button type="button" aria-pressed="true">Sistema</button><button type="button" aria-pressed="false">Claro</button><button type="button" aria-pressed="false">Escuro</button></div></div></div>
+
+<div class="spec"><header><h3>Linha de pasta</h3><p>Uma pasta por linha: amostra de cor, nome editável no próprio campo, contagem em mono e três botões de ícone (subir, descer, excluir). O nome salva ao sair do campo ou com Enter, e nome vazio ou repetido é recusado com aviso. A ordem muda pelas setas, que funcionam por teclado e toque, e também arrastando a linha com o mouse. Excluir abre a confirmação de sempre, e os links vão para Arquivados. No celular os botões descem para uma segunda linha. Classes <code>.flist</code>, <code>.frow</code>.</p></header><div class="stage col" style="align-items:stretch"><ul class="flist"><li class="frow"><button type="button" class="sw-btn" style="background:var(--tag0-bg)" aria-label="Cor"></button><input type="text" class="fname" value="Receitas" aria-label="Nome da pasta" style="border:2px solid var(--ink);padding:8px 12px;min-height:40px;font:500 15px/1.4 var(--f-body);background:var(--field);color:var(--fg);width:100%;min-width:0"><span class="fct">8 links</span><span class="fa"><button type="button" class="btn sm icon" disabled aria-label="Subir"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button><button type="button" class="btn sm icon" aria-label="Descer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg></button><button type="button" class="btn sm icon danger" aria-label="Excluir"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></svg></button></span></li></ul></div></div>
+
+<div class="spec"><header><h3>Paleta de cor</h3><p>Tocar na amostra de cor da pasta abre, logo abaixo da linha, as 8 cores de tag como grupo de opções. A cor atual tem contorno fg de 3px. Escolher uma cor salva e fecha. Amostra de 34px, 40px no toque. Classes <code>.sw-btn</code>, <code>.pal</code>.</p></header><div class="stage"><div class="pal" role="radiogroup" aria-label="Cor da pasta"><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag0-bg)" aria-label="Rosa"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag1-bg)" aria-label="Laranja"></button><button type="button" class="sw-btn" role="radio" aria-checked="true" style="background:var(--tag2-bg)" aria-label="Amarelo"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag3-bg)" aria-label="Verde"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag4-bg)" aria-label="Ciano"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag5-bg)" aria-label="Azul"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag6-bg)" aria-label="Lilás"></button><button type="button" class="sw-btn" role="radio" aria-checked="false" style="background:var(--tag7-bg)" aria-label="Lima"></button></div></div></div>
+
+<div class="spec"><header><h3>Exportar e importar</h3><p>Exportar baixa um arquivo JSON com todas as pastas e links, incluindo arquivados. Importar lê esse arquivo e soma ao que já existe: pasta com o mesmo nome é reaproveitada, link que já existe é ignorado, endereço inválido fica de fora, e nada é apagado. Limite de 5 MB e 5.000 links por arquivo. O resultado aparece em um aviso com as contagens.</p></header></div>
 
 <div class="spec"><header><h3>Tela de entrada</h3><p>Coluna única de 400px, marca, uma frase, campo de e-mail e botão primary. O login é por link no e-mail, sem senha. A mensagem de retorno usa o componente de mensagem inline. Classe <code>.login</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="brand"><b>disorder</b></div><main class="login" style="padding:16px 0 0;max-width:none"><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p><form><label class="f">E-mail<input type="email" placeholder="voce@email.com"></label><button class="btn primary" type="button">Enviar link</button></form><p class="msg ok">Link enviado para voce@email.com.</p></main></div></div>
 

@@ -205,21 +205,15 @@ async function refreshPreviews(auto) {
   if (!CFG.previewApi || refreshing) return;
   const all = S.links.filter(l => !l.arquivadoEm).slice(0, 300);
   if (!all.length) { if (!auto) toast('Nenhum link para atualizar.'); return; }
-  refreshing = true; setRefreshBtn(true);
+  refreshing = true; if (S.view === 'settings') render();
   let i = 0, ok = 0;
   const worker = async () => { while (i < all.length) { if (await enrich(all[i++], true)) ok++; } };
   await Promise.all([worker(), worker(), worker()]);
-  refreshing = false; setRefreshBtn(false);
+  refreshing = false;
   render();
   toast(ok + ' de ' + all.length + ' links com título e imagem atualizados.');
 }
-function setRefreshBtn(busy) {
-  const el = document.getElementById('side-act'); if (!el) return;
-  el.innerHTML = '<button type="button" class="btn sm" id="refresh-previews"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Atualizando…' : 'Atualizar previews') + '</button>';
-  const b = document.getElementById('refresh-previews'); if (b) b.onclick = () => refreshPreviews(false);
-}
 function enrichPending() {
-  setRefreshBtn(false);
   let done = false; try { done = localStorage.getItem('disorder.refresh.v1') === '1'; } catch (e) {}
   if (!done && S.links.length) { try { localStorage.setItem('disorder.refresh.v1', '1'); } catch (e) {} refreshPreviews(true); return; }
   const pend = S.links.filter(l => !l.enriquecido).slice(0, 40);
@@ -250,6 +244,12 @@ function applyShare() {
 takeShare();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
+/* ===== Ajustes: ações que dependem da conta ===== */
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-act="refresh-previews"]')) { refreshPreviews(false); return; }
+  if (e.target.closest('[data-act="sign-out"]') && sb) { sb.auth.signOut().then(() => location.reload()); }
+});
+
 function upsert(arr, rec) { const i = arr.findIndex(x => x.id === rec.id); if (i < 0) arr.push(rec); else arr[i] = rec; }
 async function save(col, rec) {
   upsert(S[col], rec); render();
@@ -263,12 +263,14 @@ async function remove(col, id) {
 /* ===== Consultas ===== */
 const hashN = str => { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; };
 const colorOf = f => (f && Number.isInteger(f.cor)) ? f.cor % 8 : hashN((f && f.id) || '') % 8;
-const newFolder = nome => ({ id: uid(), nome, cor: S.folders.length % 8, criadaEm: Date.now() });
+const ordOf = f => Number.isFinite(f.ordem) ? f.ordem : 1e9;
+const newFolder = nome => { const f = { id: uid(), nome, cor: S.folders.length % 8, criadaEm: Date.now() }; const o = S.folders.filter(x => Number.isFinite(x.ordem)).map(x => x.ordem); if (o.length) f.ordem = Math.max.apply(null, o) + 1; return f; };
 const folderById = id => S.folders.find(f => f.id === id) || null;
-const sortedFolders = () => S.folders.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+const sortedFolders = () => S.folders.slice().sort((a, b) => (ordOf(a) - ordOf(b)) || (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 const isArch = l => !!l.arquivadoEm;
 const active = () => S.links.filter(l => !isArch(l));
 function inView(l) {
+  if (S.view === 'settings') return false;
   if (S.view === 'archived') return isArch(l);
   if (isArch(l)) return false;
   if (S.view === 'all') return true;
@@ -279,6 +281,7 @@ function viewTitle() {
   if (S.view === 'all') return 'Todos os links';
   if (S.view === 'none') return 'Sem pasta';
   if (S.view === 'archived') return 'Arquivados';
+  if (S.view === 'settings') return 'Ajustes';
   const f = folderById(S.view); return f ? f.nome : 'Todos os links';
 }
 function visibleLinks() {
@@ -290,9 +293,145 @@ function visibleLinks() {
   }).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 }
 
+/* ===== Ajustes: perfil, pastas e dados ===== */
+const PROFILE = { nome: '', email: '' };
+try { PROFILE.nome = localStorage.getItem('disorder.nome') || ''; } catch (e) {}
+let THEME = 'system';
+try { THEME = localStorage.getItem('disorder.theme') || 'system'; } catch (e) {}
+function applyTheme(t) { const r = document.documentElement; if (t === 'light' || t === 'dark') r.dataset.theme = t; else delete r.dataset.theme; }
+applyTheme(THEME);
+function persistName(n) { try { localStorage.setItem('disorder.nome', n); } catch (e) {} return sb ? sb.auth.updateUser({ data: { nome: n } }).then(r => { if (r.error) throw r.error; }) : Promise.resolve(); }
+function accountExtras() { return sb ? '<div class="srow"><div class="st"><b>Sair</b><span>Encerra a sessão neste aparelho. Seus links continuam na conta.</span></div><button type="button" class="btn" data-act="sign-out" data-fk="sign-out">Sair da conta</button></div>' : ''; }
+function dataExtras() { return CFG.previewApi ? '<div class="srow"><div class="st"><b>Atualizar previews</b><span>Busca de novo o título e a imagem de todos os links não arquivados.</span></div><button type="button" class="btn" data-act="refresh-previews" data-fk="refresh"' + (refreshing ? ' disabled' : '') + '>' + (refreshing ? 'Atualizando' : 'Atualizar previews') + '</button></div>' : ''; }
+function storageNote() { return S.mode === 'cloud' ? 'Seus links ficam salvos na sua conta e aparecem em qualquer aparelho.' : 'Modo local: seus links ficam só neste navegador.'; }
+const SW_NAMES = ['Rosa', 'Laranja', 'Amarelo', 'Verde', 'Ciano', 'Azul', 'Lilás', 'Lima'];
+const ICO_SET = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h6.5M12.5 4.5H14M2 11.5h1.5M7.5 11.5H14"/><circle cx="10.5" cy="4.5" r="2"/><circle cx="5.5" cy="11.5" r="2"/></svg>';
+function settingsHtml() {
+  const fs = sortedFolders(), act = active();
+  const seg = [['system', 'Sistema'], ['light', 'Claro'], ['dark', 'Escuro']].map(o => '<button type="button" data-act="theme" data-theme-v="' + o[0] + '" data-fk="theme:' + o[0] + '" aria-pressed="' + (THEME === o[0]) + '">' + o[1] + '</button>').join('');
+  let h = '<section class="sblock" aria-labelledby="s-perfil"><h2 id="s-perfil">Perfil</h2>' +
+    '<label class="f">Nome<input type="text" id="pf-nome" data-fk="pf-nome" maxlength="60" autocomplete="name" placeholder="Como você quer ser chamado" value="' + esc(PROFILE.nome) + '"></label>' +
+    (PROFILE.email ? '<div class="f">E-mail<p class="sval">' + esc(PROFILE.email) + '</p></div>' : '') +
+    '<div class="f" role="group" aria-labelledby="s-tema"><span id="s-tema">Tema</span><div class="seg txt">' + seg + '</div></div>' + accountExtras() + '</section>';
+  h += '<section class="sblock" aria-labelledby="s-pastas"><div class="shead"><h2 id="s-pastas">Pastas</h2><button type="button" class="btn sm" data-act="f-new" data-fk="f-new">Nova pasta</button></div>';
+  if (!fs.length) h += '<p class="snote">Nenhuma pasta ainda. Crie a primeira para organizar seus links.</p>';
+  else {
+    h += '<p class="snote">Use as setas para mudar a ordem. Com mouse, também dá para arrastar. A ordem vale para o menu e para a lista de pastas ao salvar.</p><ul class="flist" id="flist">';
+    fs.forEach((f, i) => {
+      const n = act.filter(l => l.pastaId === f.id).length, c = colorOf(f), id = esc(f.id), nm = esc(f.nome);
+      h += '<li class="frow" draggable="true" data-id="' + id + '">' +
+        '<button type="button" class="sw-btn" style="background:var(--tag' + c + '-bg)" data-act="f-color" data-id="' + id + '" data-fk="color:' + id + '" aria-expanded="' + (S.pal === f.id) + '" aria-label="Cor da pasta ' + nm + ', ' + SW_NAMES[c] + '. Trocar cor" title="Trocar cor"></button>' +
+        '<input type="text" class="fname" data-fname="' + id + '" data-fk="name:' + id + '" maxlength="40" autocomplete="off" aria-label="Nome da pasta" value="' + nm + '">' +
+        '<span class="fct">' + plural(n, '1 link', 'links') + '</span>' +
+        '<span class="fa"><button type="button" class="btn sm icon" data-act="f-up" data-id="' + id + '" data-fk="up:' + id + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Subir ' + nm + '" title="Subir"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button>' +
+        '<button type="button" class="btn sm icon" data-act="f-down" data-id="' + id + '" data-fk="down:' + id + '"' + (i === fs.length - 1 ? ' disabled' : '') + ' aria-label="Descer ' + nm + '" title="Descer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg></button>' +
+        '<button type="button" class="btn sm icon danger" data-act="f-del" data-id="' + id + '" data-fk="del:' + id + '" aria-label="Excluir pasta ' + nm + '" title="Excluir pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></svg></button></span>' +
+        (S.pal === f.id ? '<div class="pal" role="radiogroup" aria-label="Cor da pasta ' + nm + '">' + SW_NAMES.map((name, k) => '<button type="button" class="sw-btn" role="radio" aria-checked="' + (k === c) + '" style="background:var(--tag' + k + '-bg)" data-act="f-setcolor" data-id="' + id + '" data-cor="' + k + '" data-fk="pal:' + id + ':' + k + '" aria-label="' + name + '" title="' + name + '"></button>').join('') + '</div>' : '') +
+        '</li>';
+    });
+    h += '</ul>';
+  }
+  h += '</section>';
+  h += '<section class="sblock" aria-labelledby="s-dados"><h2 id="s-dados">Dados</h2><p class="snote">' + esc(storageNote()) + '</p>' +
+    '<div class="srow"><div class="st"><b>Exportar</b><span>Baixa um arquivo com ' + plural(S.links.length, '1 link', 'links') + ' e ' + plural(S.folders.length, '1 pasta', 'pastas') + ', incluindo os arquivados.</span></div><button type="button" class="btn" data-act="export" data-fk="export"' + (S.links.length || S.folders.length ? '' : ' disabled') + '>Exportar arquivo</button></div>' +
+    '<div class="srow"><div class="st"><b>Importar</b><span>Lê um arquivo exportado pelo disorder. Soma ao que já existe, sem duplicar links e sem apagar nada.</span></div><button type="button" class="btn" data-act="import" data-fk="import">Importar arquivo</button><input type="file" id="imp-file" accept="application/json,.json" hidden></div>' +
+    dataExtras() + '</section>';
+  return h;
+}
+function renderSettings(el) {
+  const ae = document.activeElement, fk = ae && ae.dataset ? ae.dataset.fk : null;
+  el.className = 'settings'; el.innerHTML = settingsHtml();
+  if (fk) {
+    let n = el.querySelector('[data-fk="' + fk + '"]');
+    if (n && n.disabled) { const row = n.closest('.frow'); n = row && row.querySelector('button:not([disabled])[data-act^="f-"]'); }
+    if (n) n.focus();
+  }
+}
+function renameFolder(id, value) {
+  const f = folderById(id), nome = String(value || '').trim();
+  if (!f || nome === f.nome) { render(); return; }
+  if (!nome) { toast('A pasta precisa de um nome.'); render(); return; }
+  if (S.folders.some(x => x.id !== id && x.nome.toLowerCase() === nome.toLowerCase())) { toast('Você já tem uma pasta com esse nome.'); render(); return; }
+  save('folders', Object.assign({}, f, { nome }));
+}
+function moveFolder(id, to) {
+  const arr = sortedFolders(), i = arr.findIndex(f => f.id === id);
+  if (i < 0 || to < 0 || to >= arr.length || to === i) return;
+  const f = arr.splice(i, 1)[0]; arr.splice(to, 0, f);
+  arr.forEach((x, k) => {
+    if (x.ordem === k) return;
+    const rec = Object.assign({}, x, { ordem: k }); upsert(S.folders, rec);
+    Promise.resolve(backend.set('folders', rec.id, rec)).catch(() => toast('Não consegui salvar a ordem agora. Tente de novo.'));
+  });
+  render();
+}
+function exportData() {
+  const data = { app: 'disorder', versao: 1, exportadoEm: new Date().toISOString(), folders: sortedFolders(), links: S.links };
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = 'disorder-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('Arquivo exportado.');
+  } catch (e) { toast('Não consegui gerar o arquivo neste navegador.'); }
+}
+async function importData(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Arquivo grande demais. O limite é 5 MB.'); return; }
+  let d;
+  try { d = JSON.parse(await file.text()); } catch (e) { toast('Não consegui ler esse arquivo. Use um arquivo exportado pelo disorder.'); return; }
+  const fs = Array.isArray(d && d.folders) ? d.folders : [], ls = Array.isArray(d && d.links) ? d.links : [];
+  if (!fs.length && !ls.length) { toast('Esse arquivo não tem links nem pastas do disorder.'); return; }
+  const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+  const map = {}, jobs = []; let nf = 0, nl = 0, dup = 0, bad = 0;
+  fs.slice(0, 500).forEach(f => {
+    const nome = str(f && f.nome, 40).trim(); if (!nome) return;
+    const same = S.folders.find(x => x.nome.toLowerCase() === nome.toLowerCase());
+    if (same) { map[f.id] = same.id; return; }
+    const rec = newFolder(nome); if (Number.isInteger(f.cor)) rec.cor = ((f.cor % 8) + 8) % 8;
+    map[f.id] = rec.id; S.folders.push(rec); jobs.push(['folders', rec]); nf++;
+  });
+  ls.slice(0, 5000).forEach(l => {
+    const p = parseLink(str(l && l.url, 2000));
+    if (p.error) { bad++; return; }
+    if (S.links.some(x => x.chave === p.key)) { dup++; return; }
+    const rec = { id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, titulo: str(l.titulo, 140), nota: str(l.nota, 600), pastaId: (l.pastaId && map[l.pastaId]) || null, criadoEm: Number.isFinite(l.criadoEm) ? l.criadoEm : Date.now(), enriquecido: !!l.enriquecido };
+    const ta = str(l.tituloAuto, 300), th = str(l.thumb, 2000);
+    if (ta) rec.tituloAuto = ta;
+    if (/^https:\/\//i.test(th)) rec.thumb = th;
+    if (Number.isFinite(l.arquivadoEm)) rec.arquivadoEm = l.arquivadoEm;
+    S.links.push(rec); jobs.push(['links', rec]); nl++;
+  });
+  render();
+  if (!jobs.length) { toast('Nada novo para importar.' + (dup ? ' ' + plural(dup, '1 link já existia', 'links já existiam') + '.' : '')); return; }
+  toast('Importando ' + plural(nl, '1 link', 'links') + '.');
+  let fail = 0;
+  for (const j of jobs) { try { await backend.set(j[0], j[1].id, j[1]); } catch (e) { fail++; } }
+  render();
+  toast(plural(nl, '1 link importado', 'links importados') + ' e ' + plural(nf, '1 pasta criada', 'pastas criadas') + '.' + (dup ? ' ' + plural(dup, '1 já existia', 'já existiam') + '.' : '') + (bad ? ' ' + plural(bad, '1 endereço inválido ficou de fora', 'endereços inválidos ficaram de fora') + '.' : '') + (fail ? ' ' + plural(fail, '1 item não foi salvo', 'itens não foram salvos') + ', tente importar de novo.' : ''));
+}
+function settingsAct(act, t) {
+  const id = t.dataset.id;
+  if (act === 'theme') { THEME = t.dataset.themeV; try { localStorage.setItem('disorder.theme', THEME); } catch (e) {} applyTheme(THEME); render(); return true; }
+  if (act === 'f-new') { openModal({ kind: 'new', then: { type: 'stay' } }); return true; }
+  if (act === 'f-color') { S.pal = S.pal === id ? null : id; render(); return true; }
+  if (act === 'f-setcolor') { const f = folderById(id); S.pal = null; if (f) save('folders', Object.assign({}, f, { cor: Number(t.dataset.cor) })); const b = document.querySelector('[data-fk="color:' + id + '"]'); if (b) b.focus(); return true; }
+  if (act === 'f-up' || act === 'f-down') { const i = sortedFolders().findIndex(f => f.id === id); moveFolder(id, i + (act === 'f-up' ? -1 : 1)); return true; }
+  if (act === 'f-del') { openModal({ kind: 'confirm', id }); return true; }
+  if (act === 'export') { exportData(); return true; }
+  if (act === 'import') { const i = $('imp-file'); if (i) { i.value = ''; i.click(); } return true; }
+  return false;
+}
+let dragId = null;
+document.addEventListener('dragstart', e => { const r = e.target.closest && e.target.closest('.frow'); if (!r || e.target.closest('input')) return; dragId = r.dataset.id; r.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch (x) {} });
+document.addEventListener('dragover', e => { if (!dragId) return; const r = e.target.closest && e.target.closest('.frow'); if (!r) return; e.preventDefault(); document.querySelectorAll('.frow.over').forEach(x => x.classList.remove('over')); if (r.dataset.id !== dragId) r.classList.add('over'); });
+document.addEventListener('drop', e => { if (!dragId) return; const r = e.target.closest && e.target.closest('.frow'); const id = dragId; dragId = null; if (!r) { render(); return; } e.preventDefault(); const to = sortedFolders().findIndex(f => f.id === r.dataset.id); if (to >= 0 && r.dataset.id !== id) moveFolder(id, to); else render(); });
+document.addEventListener('dragend', () => { if (dragId) { dragId = null; render(); } });
+
 /* ===== Renderização ===== */
 function render() {
-  if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && !folderById(S.view)) S.view = 'all';
+  if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings' && !folderById(S.view)) S.view = 'all';
   renderNav(); renderDest(); renderBanner(); renderHead(); renderTools(); renderList(); renderBar();
 }
 function renderNav() {
@@ -310,8 +449,8 @@ function renderNav() {
   if (S.loaded && !S.folders.length) {
     h += '<div class="starter"><p>Comece por uma destas:</p>' + ['Receitas', 'Decoração', 'Pet'].map(n => '<button class="chip" data-act="starter" data-name="' + n + '">' + n + '</button>').join('') + '</div>';
   }
+  h += '<button class="nav-btn set" data-view="settings"' + cur('settings') + '><span class="nm">Ajustes</span></button>';
   $('nav').innerHTML = h;
-  $('foot').textContent = S.mode === 'cloud' ? 'Seus links ficam salvos na sua conta e aparecem em qualquer aparelho.' : 'Modo local: seus links ficam só neste navegador.';
 }
 function renderDest() {
   const sel = $('dest');
@@ -325,12 +464,14 @@ function renderBanner() {
   $('banner').innerHTML = h;
 }
 function renderHead() {
-  const f = (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') ? folderById(S.view) : null;
+  const f = (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') ? folderById(S.view) : null;
   $('head').innerHTML = '<div class="ht"><div class="tl"><h1 id="view-title">' + esc(viewTitle()) + '</h1>' +
     (f ? '<button class="btn icon ghost" data-act="edit-folder" aria-label="Editar pasta ' + esc(f.nome) + '" title="Editar pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' : '') +
-    '</div></div>' +
-    (S.view !== 'archived' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '');
+    '</div></div><div class="hr">' +
+    (S.view !== 'settings' ? '<button class="btn icon ghost set-btn" data-view="settings" aria-label="Ajustes" title="Ajustes">' + ICO_SET + '</button>' : '') +
+    (S.view !== 'archived' && S.view !== 'settings' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '') + '</div>';
   document.body.classList.toggle('v-arch', S.view === 'archived');
+  document.body.classList.toggle('v-set', S.view === 'settings');
 }
 function setLayout(v) {
   S.layout = v === 'list' ? 'list' : 'cards';
@@ -343,7 +484,7 @@ $('tools').addEventListener('click', e => {
 });
 function renderTools() {
   const base = S.links.filter(inView);
-  if (!S.links.length) { $('tools').innerHTML = ''; return; }
+  if (!S.links.length || S.view === 'settings') { $('tools').innerHTML = ''; return; }
   const counts = {}; base.forEach(l => { counts[l.plataforma] = (counts[l.plataforma] || 0) + 1; });
   const present = Object.keys(PLAT).filter(k => counts[k]);
   if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
@@ -395,6 +536,7 @@ function linkHtml(l) {
 }
 function renderList() {
   const el = $('list');
+  if (S.view === 'settings' && S.loaded) { renderSettings(el); return; }
   el.className = 'list ' + (isList() ? 'compact' : 'grid') + (S.sel.length ? ' has-sel' : '');
   if (!S.loaded && !S.loadError) { el.innerHTML = '<div class="empty"><b>Carregando seus links</b></div>'; return; }
   if (S.loadError) { el.innerHTML = ''; return; }
@@ -486,7 +628,7 @@ function showClip(c) {
   el.hidden = false;
 }
 async function checkClipboard() {
-  if (clipBusy || !S.loaded || S.modal || S.adding || S.view === 'archived') return;
+  if (clipBusy || !S.loaded || S.modal || S.adding || S.view === 'archived' || S.view === 'settings') return;
   if (!navigator.clipboard || !navigator.clipboard.readText) return;
   clipBusy = true;
   try {
@@ -513,7 +655,7 @@ window.addEventListener('focus', checkClipboard);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkClipboard(); });
 function currentDest() {
   if (S.view === 'all') return S.dest || '';
-  if (S.view === 'none' || S.view === 'archived') return '';
+  if (S.view === 'none' || S.view === 'archived' || S.view === 'settings') return '';
   return folderById(S.view) ? S.view : '';
 }
 function saveLinks(raw, dest) {
@@ -582,7 +724,7 @@ $('add-root').addEventListener('click', e => {
   if (e.target.dataset.add === 'overlay' || e.target.closest('[data-add="close"]')) closeAdd();
 });
 document.addEventListener('paste', e => {
-  if (S.modal || S.adding || !S.loaded || S.view === 'archived') return;
+  if (S.modal || S.adding || !S.loaded || S.view === 'archived' || S.view === 'settings') return;
   if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
   const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
   if (!/https?:\/\/\S|^\s*www\./i.test(txt)) return;
@@ -648,6 +790,7 @@ function submitFolder(e) {
   if (!editId && th && th.type === 'dest') { S.dest = rec.id; render(); renderDest(); say('Pasta ' + rec.nome + ' criada.', 'ok'); $('url').focus(); }
   else if (!editId && th && th.type === 'edit-pasta') { if (S.draft && S.draft.id === th.linkId) S.draft.pasta = rec.id; render(); openModal({ kind: 'link', id: th.linkId }); }
   else if (!editId && th && th.type === 'move-many') { bulkMove(rec.id); }
+  else if (!editId && th && th.type === 'stay') { render(); toast('Pasta ' + rec.nome + ' criada.'); }
   else if (!editId) { S.view = rec.id; S.dest = rec.id; clearSel(); render(); }
 }
 async function deleteFolder(id) {
@@ -656,13 +799,14 @@ async function deleteFolder(id) {
   const prev = affected.map(l => ({ id: l.id, pastaId: l.pastaId, arquivadoEm: l.arquivadoEm || null }));
   const folder = Object.assign({}, f), now = Date.now();
   closeModal(); clearSel();
-  S.view = affected.some(l => !isArch(l)) ? 'archived' : 'all';
+  const stay = S.view === 'settings';
+  if (!stay) S.view = affected.some(l => !isArch(l)) ? 'archived' : 'all';
   if (S.dest === id) S.dest = '';
   for (const l of affected) await save('links', Object.assign({}, l, { pastaId: null, arquivadoEm: l.arquivadoEm || now }));
   await remove('folders', id);
   const n = affected.length;
   toast('Pasta ' + f.nome + ' excluída.' + (n ? ' ' + (n === 1 ? 'O link foi para Arquivados.' : 'Os ' + n + ' links foram para Arquivados.') : ''), 'Desfazer', async () => {
-    await save('folders', folder); undoPatch(prev); S.view = folder.id; render();
+    await save('folders', folder); undoPatch(prev); if (!stay) S.view = folder.id; render();
   });
 }
 
@@ -791,9 +935,10 @@ document.addEventListener('click', e => {
     else if (k === 'confirm-purge') purge(S.modal.ids);
     return;
   }
-  if (t.dataset.view) { S.view = t.dataset.view; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') S.dest = S.view; render(); checkClipboard(); return; }
+  if (t.dataset.view) { S.view = t.dataset.view; S.pal = null; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') S.dest = S.view; render(); checkClipboard(); return; }
   if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
   const act = t.dataset.act;
+  if (settingsAct(act, t)) return;
   if (act === 'new-folder') { openModal({ kind: 'new' }); return; }
   if (act === 'open-add') { openAdd(); return; }
   if (act === 'starter') { const rec = newFolder(t.dataset.name); S.view = rec.id; S.dest = rec.id; save('folders', rec); return; }
@@ -808,6 +953,9 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.dataset && t.dataset.fname) { renameFolder(t.dataset.fname, t.value); return; }
+  if (t.id === 'pf-nome') { const n = t.value.trim(); PROFILE.nome = n; persistName(n).then(() => toast('Nome salvo.')).catch(() => toast('Não consegui salvar o nome agora. Tente de novo.')); return; }
+  if (t.id === 'imp-file') { importData(t.files && t.files[0]); return; }
   if (t.id === 'dest') {
     if (t.value === '__new__') { t.value = S.dest || ''; openModal({ kind: 'new', then: { type: 'dest' } }); return; }
     S.dest = t.value; return;
@@ -877,6 +1025,9 @@ async function boot() {
     const r = await sb.auth.getSession();
     session = r.data && r.data.session;
     if (!session) { renderLogin(); sb.auth.onAuthStateChange((ev, s) => { if (s) location.reload(); }); return; }
+    PROFILE.email = (session.user && session.user.email) || '';
+    const mdNome = session.user && session.user.user_metadata && session.user.user_metadata.nome;
+    if (typeof mdNome === 'string') PROFILE.nome = mdNome;
     backend = supabaseBackend(sb);
   } else {
     backend = localBackend();

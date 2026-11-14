@@ -507,7 +507,6 @@ body { font-weight: 500; }
 .pv .st { font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; }
 
 /* Troca de visualização só em notebook e desktop. Abaixo de 901px, sempre grade. */
-@media (max-width: 900px) { .seg { display: none; } }
 
 /* Seleção: a caixa aparece no hover ou no foco. No toque, tocar no cartão seleciona. */
 @media (hover: hover) {
@@ -519,3 +518,46 @@ body { font-weight: 500; }
   .pick[aria-checked="true"], .has-sel .pick { opacity: 1; }
   #list .link { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 }
+
+/* Ajustes */
+@media (max-width: 900px) { .tools .seg { display: none; } }
+.hr { display: flex; align-items: center; gap: 8px; flex: none; }
+.set-btn { display: none; width: 40px; min-width: 40px; }
+.v-set .fab { display: none; }
+@media (max-width: 900px) { .set-btn { display: inline-flex; } .nav-btn.set { display: none; } }
+.nav-btn.set { margin-top: 12px; }
+.nav-btn.arch + .nav-btn.set { margin-top: 0; }
+.settings { display: flex; flex-direction: column; gap: 28px; max-width: 760px; }
+.sblock { border: 2px solid var(--ink); background: var(--surface); box-shadow: 5px 5px 0 var(--sh); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sblock h2 { font: 900 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: -0.02em; }
+.shead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings .f { display: flex; flex-direction: column; gap: 6px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
+.settings input[type=text] { border: 2px solid var(--ink); border-radius: 0; background: var(--field); color: var(--fg); font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; padding: 8px 12px; min-height: 40px; width: 100%; min-width: 0; }
+.settings input[type=text]:focus { outline: none; box-shadow: 4px 4px 0 var(--sh); }
+.sval { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.snote { font: 400 12px/1.5 var(--f-mono); color: var(--muted-fg); }
+.seg.txt { align-self: flex-start; }
+.seg.txt button { width: auto; padding: 0 14px; font: 700 14px/1 var(--f-body); text-transform: none; letter-spacing: 0; }
+.seg.txt button + button { border-left: 2px solid var(--ink); }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; padding-top: 16px; border-top: 2px solid var(--ink); }
+.srow .st { display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px; min-width: 0; }
+.srow .st b { font: 800 15px/1.3 var(--f-display); }
+.srow .st span { font-size: 14px; color: var(--muted-fg); }
+.flist { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.frow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 8px 10px; padding: 10px 0; border-bottom: 2px solid var(--ink); background: var(--surface); }
+.frow.drag { opacity: .4; }
+.frow.over { box-shadow: inset 0 4px 0 var(--primary); }
+.frow .fct { font: 400 12px/1 var(--f-mono); color: var(--muted-fg); white-space: nowrap; }
+.frow .fa { display: flex; gap: 6px; }
+.sw-btn { width: 34px; height: 34px; padding: 0; border: 2px solid #121212; border-radius: 0; cursor: pointer; }
+.sw-btn:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--sh); }
+.sw-btn[aria-expanded="true"], .sw-btn[aria-checked="true"] { outline: 3px solid var(--fg); outline-offset: 2px; }
+.pal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 0 4px; }
+@media (max-width: 640px) {
+  .sblock { padding: 16px; box-shadow: 4px 4px 0 var(--sh); }
+  .frow { grid-template-columns: 34px minmax(0, 1fr) auto; }
+  .frow .fa { grid-column: 1 / -1; justify-content: flex-end; }
+  .srow .btn { width: 100%; }
+}
+@media (pointer: coarse) { .sw-btn { width: 40px; height: 40px; } .frow { grid-template-columns: 40px minmax(0, 1fr) auto auto; } .seg.txt button { height: 42px; } }
+@media (pointer: coarse) and (max-width: 640px) { .frow { grid-template-columns: 40px minmax(0, 1fr) auto; } }
