@@ -567,3 +567,7 @@ body { font-weight: 500; }
 
 /* Seta de voltar em Ajustes: aparece em todas as larguras */
 .set-btn.back-btn { display: inline-flex; }
+
+/* Em Ajustes, o cabeçalho tem a largura dos blocos, para a seta alinhar com a borda direita deles */
+.v-set .head { max-width: 760px; }
+.v-set .back-btn { justify-content: flex-end; }
