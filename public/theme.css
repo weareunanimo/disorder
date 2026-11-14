@@ -508,3 +508,14 @@ body { font-weight: 500; }
 
 /* Troca de visualização só em notebook e desktop. Abaixo de 901px, sempre grade. */
 @media (max-width: 900px) { .seg { display: none; } }
+
+/* Seleção: a caixa aparece no hover ou no foco. No toque, tocar no cartão seleciona. */
+@media (hover: hover) {
+  .pick { opacity: 0; }
+  .link:hover .pick, .link:focus-within .pick, .pick:focus-visible, .pick[aria-checked="true"], .has-sel .pick { opacity: 1; }
+}
+@media (hover: none) {
+  .pick { opacity: 0; pointer-events: none; }
+  .pick[aria-checked="true"], .has-sel .pick { opacity: 1; }
+  #list .link { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+}

@@ -114,6 +114,7 @@ const $ = id => document.getElementById(id);
 /* ===== Estado e armazenamento ===== */
 const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false, adding: false };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
+const touchMq = window.matchMedia ? window.matchMedia('(hover: none)') : { matches: false };
 const wideMq = window.matchMedia ? window.matchMedia('(min-width: 901px)') : { matches: true };
 const isList = () => S.layout === 'list' && wideMq.matches;
 if (wideMq.addEventListener) wideMq.addEventListener('change', () => { if (S.loaded) { renderTools(); renderList(); } });
@@ -759,7 +760,7 @@ function purge(ids) {
 /* ===== Eventos ===== */
 document.addEventListener('click', e => {
   if (S.menu && !e.target.closest('.menu,[data-act="move-menu"]')) { S.menu = false; renderBar(); }
-  if (S.sel.length) {
+  if (S.sel.length || touchMq.matches) {
     const card = e.target.closest('#list .link');
     if (card && !e.target.closest('a,button,select,input,textarea,label,.edit')) { toggleSel(card.dataset.id, e.shiftKey); return; }
   }
