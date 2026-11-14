@@ -19,34 +19,34 @@
   </aside>
 
   <main class="main">
-    <form class="capture" id="capture" novalidate>
-      <div><h2>Salvar um link</h2><p class="msg" style="color:var(--muted-fg);min-height:0">Aceita X, Threads, Instagram, TikTok e YouTube (vídeos e Shorts).</p></div>
-      <div class="field">
-        <span class="detected" id="detected" hidden></span>
-        <label class="sr" for="url">Link para salvar</label>
-        <input id="url" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole um link aqui">
-        <button class="btn primary" type="submit" id="save" hidden>Salvar</button>
-        <button class="btn outline" type="button" id="paste">Colar</button>
-      </div>
-      <div class="banner inline" id="clip" role="status" hidden></div>
-      <div class="cap-row">
-        <label for="dest">Guardar em</label>
-        <select class="sel" id="dest"></select>
-      </div>
-      <p class="msg" id="msg" role="status" aria-live="polite"></p>
-    </form>
-
     <div id="banner"></div>
 
     <section aria-labelledby="view-title">
       <div class="head" id="head"></div>
-      <div class="tools" id="tools" style="margin-top:14px"></div>
+      <div class="banner inline clip" id="clip" role="status" hidden></div>
+      <div class="tools" id="tools" style="margin-top:24px"></div>
       <div class="list" id="list" style="margin-top:14px"></div>
     </section>
   </main>
 </div>
 
+<div class="overlay" id="add-root" data-add="overlay" hidden>
+  <form class="modal add" id="capture" role="dialog" aria-modal="true" aria-labelledby="add-title" novalidate>
+    <div class="mhead"><h2 id="add-title">Salvar link</h2><button type="button" class="btn icon ghost" data-add="close" aria-label="Fechar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
+    <div class="field">
+      <span class="detected" id="detected" hidden></span>
+      <label class="sr" for="url">Link para salvar</label>
+      <input id="url" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole o link aqui">
+      <button class="btn outline sm" type="button" id="paste">Colar</button>
+    </div>
+    <p class="hint">X, Threads, Instagram, TikTok e YouTube. Pode colar vários de uma vez.</p>
+    <label class="f">Pasta<select class="sel" id="dest"></select></label>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    <div class="row"><span class="kbd-hint">Dica: cole um link em qualquer lugar da página para salvar direto.</span><button type="button" class="btn outline" data-add="close">Cancelar</button><button class="btn primary" type="submit" id="save" disabled>Salvar</button></div>
+  </form>
+</div>
 <div id="modal-root"></div>
+<button type="button" class="fab" data-act="open-add" aria-label="Salvar link"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
 <div class="bar" id="bar" role="toolbar" aria-label="Ações para os links selecionados" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 

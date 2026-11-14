@@ -112,7 +112,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const $ = id => document.getElementById(id);
 
 /* ===== Estado e armazenamento ===== */
-const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false };
+const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false, adding: false };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
 let backend = null;
 
@@ -273,14 +273,16 @@ function renderDest() {
 function renderBanner() {
   let h = '';
   if (S.loadError) h = '<div class="banner" role="alert">Não consegui carregar seus links agora. Feche e abra o brica-braca de novo em alguns instantes.</div>';
-  else if (S.mode === 'local') h = '<div class="banner">Você está no modo local. Os links ficam só neste navegador e não aparecem em outros aparelhos.</div>';
   $('banner').innerHTML = h;
 }
 function renderHead() {
   const n = visibleLinks().length, base = S.links.filter(inView).length;
   const f = (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') ? folderById(S.view) : null;
-  $('head').innerHTML = '<div><h1 id="view-title">' + esc(viewTitle()) + '</h1><p>' + (base === 1 ? '1 link' : base + ' links') + (n !== base ? ' · ' + n + ' no filtro' : '') + '</p></div>' +
-    (f ? '<button class="btn outline sm" data-act="edit-folder">Editar pasta</button>' : '');
+  $('head').innerHTML = '<div class="ht"><div class="tl"><h1 id="view-title">' + esc(viewTitle()) + '</h1>' +
+    (f ? '<button class="btn icon ghost" data-act="edit-folder" aria-label="Editar pasta ' + esc(f.nome) + '" title="Editar pasta"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' : '') +
+    '</div><p>' + (base === 1 ? '1 link' : base + ' links') + (n !== base ? ' · ' + n + ' no filtro' : '') + '</p></div>' +
+    (S.view !== 'archived' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '');
+  document.body.classList.toggle('v-arch', S.view === 'archived');
 }
 function setLayout(v) {
   S.layout = v === 'list' ? 'list' : 'cards';
@@ -312,16 +314,17 @@ function thumbOf(l) {
   return '';
 }
 document.addEventListener('error', e => { const i = e.target; if (i && i.tagName === 'IMG' && i.parentNode && i.parentNode.classList.contains('preview')) i.remove(); }, true);
+function previewHtml(l, cls) {
+  const p = PLAT[l.plataforma] || PLAT.web;
+  return '<div class="preview' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' + p.short + (thumbOf(l) ? '<img src="' + esc(thumbOf(l)) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</div>';
+}
 function linkHtml(l) {
   const p = PLAT[l.plataforma] || PLAT.web;
   const f = folderById(l.pastaId);
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
-  const d0 = S.draft && S.draft.id === l.id ? S.draft : null; const curPasta = d0 && d0.pasta !== undefined ? d0.pasta : (l.pastaId || '');
-  const folderOpts = ['<option value="">Sem pasta</option>'].concat(sortedFolders().map(x => '<option value="' + esc(x.id) + '"' + (x.id === curPasta ? ' selected' : '') + '>' + esc(x.nome) + '</option>')).concat(['<option value="__new__">+ Nova pasta…</option>']).join('');
-  const d = S.draft && S.draft.id === l.id ? S.draft : null;
   let h = '<article class="link' + (S.flash === l.id ? ' flash' : '') + '" data-id="' + esc(l.id) + '" aria-selected="' + (S.sel.indexOf(l.id) >= 0) + '">' +
     '<button type="button" class="pick" data-act="pick" role="checkbox" aria-checked="' + (S.sel.indexOf(l.id) >= 0) + '" aria-label="Selecionar ' + esc(titulo) + '"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg></span></button>' +
-    '<div class="preview" aria-hidden="true">' + p.short + (thumbOf(l) ? '<img src="' + esc(thumbOf(l)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>' +
+    previewHtml(l) +
     '<div class="ltext"><h3 class="ttl">' + esc(titulo) + '</h3>' +
     '<p class="meta"><span>' + p.label + ' · ' + esc(l.tipo || 'Link') + '</span><span>' + ago(l.criadoEm || Date.now()) + '</span>' +
     '</p>' +
@@ -332,15 +335,9 @@ function linkHtml(l) {
     (f ? '<span class="tag" data-c="' + colorOf(f) + '" title="' + esc(f.nome) + '">' + esc(f.nome) + '</span>' : '') +
     '<button class="btn outline sm icon" data-act="copy" aria-label="Copiar link" title="Copiar link"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2"/></svg></button>' +
     '<a class="btn outline sm icon" href="https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp" title="Enviar no WhatsApp"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8a6.2 6.2 0 0 0-5.3 9.4L1.9 14l2.9-.8A6.2 6.2 0 1 0 8 1.8z"/><path d="M5.9 5.4c.3 2.3 2.3 4.3 4.7 4.7l.7-1.2-1.5-.8-.6.5c-.8-.3-1.5-1-1.8-1.8l.5-.6-.8-1.5z"/></svg></a>' +
-    '<button class="btn outline sm icon" data-act="edit" aria-pressed="' + (S.editing === l.id) + '" aria-label="' + (S.editing === l.id ? 'Fechar edição' : 'Editar') + '" title="' + (S.editing === l.id ? 'Fechar edição' : 'Editar') + '"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' +
-    '<a class="btn primary sm" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
+    '<button class="btn outline sm icon" data-act="edit" aria-label="Editar" title="Editar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg></button>' +
+    '<a class="btn outline sm" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
     '</div>';
-  if (S.editing === l.id) {
-    h += '<form class="edit" data-act="editform"><label>Título<input name="titulo" type="text" maxlength="140" placeholder="' + esc(autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></label>' +
-      '<label>Pasta<select class="sel" name="pasta">' + folderOpts + '</select></label>' +
-      '<label>Nota<textarea name="nota" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></label>' +
-      '<div class="row">' + (isArch(l) ? '<button type="button" class="btn danger sm" data-act="purge">Excluir de vez</button><button type="button" class="btn outline sm" data-act="restore" style="margin-right:auto">Restaurar</button>' : '<button type="button" class="btn outline sm" data-act="archive" style="margin-right:auto">Arquivar</button>') + '<button type="button" class="btn outline sm" data-act="edit">Cancelar</button><button type="submit" class="btn primary sm">Salvar alterações</button></div></form>';
-  }
   return h + '</article>';
 }
 function renderList() {
@@ -350,18 +347,15 @@ function renderList() {
   if (S.loadError) { el.innerHTML = ''; return; }
   const ls = visibleLinks();
   const base = S.links.filter(inView).length;
-  if (S.editing) {
-    const f = el.querySelector('.edit');
-    if (f) S.draft = { id: S.editing, titulo: f.elements.titulo.value, nota: f.elements.nota.value, pasta: f.elements.pasta.value === '__new__' ? undefined : f.elements.pasta.value };
-  }
   if (!ls.length) {
     let t, p;
-    if (!S.links.length) { t = 'Nada salvo ainda'; p = 'Cole um link acima. O brica-braca reconhece X, Threads, Instagram, TikTok e YouTube, inclusive Shorts.'; }
+    if (!S.links.length) { t = 'Nada salvo ainda'; p = 'Guarde aqui o que você encontra no X, Threads, Instagram, TikTok e YouTube.'; }
     else if (base && (S.q || S.plat !== 'all')) { t = 'Nenhum link bate com o filtro'; p = 'Limpe a busca ou escolha outra rede.'; }
     else if (S.view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das pastas e ficam guardados aqui. Você pode restaurar quando quiser.'; }
     else if (S.view === 'none') { t = 'Tudo o que você salvou está em alguma pasta'; p = 'Links sem pasta aparecem aqui.'; }
-    else { t = 'Esta pasta está vazia'; p = 'Cole um link acima e ele entra em ' + viewTitle() + '.'; }
-    el.innerHTML = '<div class="empty"><b>' + esc(t) + '</b><p>' + esc(p) + '</p></div>';
+    else { t = 'Esta pasta está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle() + '.'; }
+    const cta = (S.view !== 'archived' && !(base && (S.q || S.plat !== 'all'))) ? '<button class="btn primary" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button><p class="hint">ou cole um link em qualquer lugar desta página</p>' : '';
+    el.innerHTML = '<div class="empty"><b>' + esc(t) + '</b><p>' + esc(p) + '</p>' + cta + '</div>';
     return;
   }
   const hadEdit = S.editing && document.activeElement && document.activeElement.closest && document.activeElement.closest('.edit');
@@ -393,12 +387,12 @@ function updateDetected() {
   const v = $('url').value.trim(), d = $('detected');
   let ok = false;
   if (v) {
-    const p = parseLink(v);
-    if (!p.error) { ok = true; d.textContent = PLAT[p.plataforma].label + ' · ' + p.tipo; }
+    const many = v.match(/https?:\/\/[^\s]+/gi);
+    if (many && many.length > 1) { const n = many.filter(u => !parseLink(u).error).length; if (n) { ok = true; d.textContent = n + ' links'; } }
+    else { const p = parseLink(v); if (!p.error) { ok = true; d.textContent = PLAT[p.plataforma].label + ' · ' + p.tipo; } }
   }
   d.hidden = !ok;
-  $('save').hidden = !ok; $('paste').hidden = ok;
-  if (v) hideClip(); else checkClipboard();
+  $('save').disabled = !ok; $('paste').hidden = ok;
 }
 /* ===== Link copiado ===== */
 const SOCIAL = ['x', 'threads', 'instagram', 'tiktok', 'youtube'];
@@ -413,11 +407,12 @@ function clipCandidate(txt) {
 function hideClip() { S.clip = null; $('clip').hidden = true; $('clip').innerHTML = ''; }
 function showClip(c) {
   S.clip = c; const el = $('clip');
-  el.innerHTML = '<span>Encontrei um link copiado. Quer colar aqui?</span><span class="acts"><button type="button" class="btn primary sm" data-clip="paste">Colar</button><button type="button" class="btn outline sm" data-clip="no">Agora não</button></span>';
+  const d = currentDest(), fo = folderById(d);
+  el.innerHTML = '<span>Encontrei um link copiado.</span><span class="acts"><button type="button" class="btn outline sm" data-clip="no">Agora não</button><button type="button" class="btn primary sm" data-clip="paste">' + (S.view === 'all' ? 'Salvar' : 'Salvar em ' + esc(fo ? fo.nome : 'Sem pasta')) + '</button></span>';
   el.hidden = false;
 }
 async function checkClipboard() {
-  if (clipBusy || !S.loaded || S.modal || $('url').value.trim()) return;
+  if (clipBusy || !S.loaded || S.modal || S.adding || S.view === 'archived') return;
   if (!navigator.clipboard || !navigator.clipboard.readText) return;
   clipBusy = true;
   try {
@@ -437,47 +432,89 @@ async function pasteFromClipboard() {
 $('paste').addEventListener('click', pasteFromClipboard);
 $('clip').addEventListener('click', e => {
   const b = e.target.closest('[data-clip]'); if (!b) return;
-  if (b.dataset.clip === 'paste' && S.clip) { $('url').value = S.clip.url; hideClip(); say(''); updateDetected(); $('save').focus(); }
+  if (b.dataset.clip === 'paste' && S.clip) { const u = S.clip.url; hideClip(); if (S.view === 'all') openAdd(u); else quickSave(u, currentDest()); }
   else { clipDismissed = S.clip && S.clip.key; hideClip(); }
 });
 window.addEventListener('focus', checkClipboard);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkClipboard(); });
-function addLinks(raw) {
+function currentDest() {
+  if (S.view === 'all') return S.dest || '';
+  if (S.view === 'none' || S.view === 'archived') return '';
+  return folderById(S.view) ? S.view : '';
+}
+function saveLinks(raw, dest) {
   const found = raw.match(/https?:\/\/[^\s]+/gi);
   const items = found && found.length ? found : [raw.trim()];
-  const dest = S.dest || '';
-  let saved = 0, dup = null, bad = null, last = null;
+  const r = { saved: [], dup: null, bad: null, total: items.length, dest: dest || null };
   items.forEach(it => {
     const p = parseLink(it);
-    if (p.error) { bad = bad || p.error; return; }
+    if (p.error) { r.bad = r.bad || p.error; return; }
     const exist = S.links.find(l => l.chave === p.key);
-    if (exist) { dup = dup || exist; return; }
-    const rec = { id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, titulo: '', nota: '', pastaId: dest || null, criadoEm: Date.now() + saved, enriquecido: false };
-    S.links.push(rec); save('links', rec).then(() => enrich(rec)); saved++; last = rec;
+    if (exist) { r.dup = r.dup || exist; return; }
+    if (r.saved.some(x => x.chave === p.key)) return;
+    const rec = { id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, titulo: '', nota: '', pastaId: dest || null, criadoEm: Date.now() + r.saved.length, enriquecido: false };
+    S.links.push(rec); save('links', rec).then(() => enrich(rec)); r.saved.push(rec);
   });
-  const where = dest ? (folderById(dest) || {}).nome : 'Sem pasta';
-  if (saved) {
-    S.flash = last.id; setTimeout(() => { S.flash = null; }, 1800);
-    if (S.view !== 'all' && S.view !== (dest || 'none')) S.view = dest || 'none';
-    S.q = ''; S.plat = 'all';
-    $('url').value = ''; updateDetected();
-    const extra = (dup ? ' ' + (items.length - saved - (bad ? 1 : 0)) + ' já estava salvo.' : '');
-    say((saved === 1 ? 'Salvo em ' + where + '.' : saved + ' links salvos em ' + where + '.') + extra, 'ok');
-    render();
-    const row = document.querySelector('.link[data-id="' + last.id + '"]'); if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    return;
-  }
-  if (dup && isArch(dup)) {
-    say('Esse link está arquivado.', 'err', 'Restaurar', () => { const cur = S.links.find(x => x.id === dup.id); if (cur) save('links', Object.assign({}, cur, { arquivadoEm: null })); say('Restaurado.', 'ok'); $('url').value = ''; updateDetected(); });
-    return;
-  }
-  if (dup) {
-    const fo = folderById(dup.pastaId);
-    say('Esse link já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', 'err', 'Ver', () => { S.view = fo ? fo.id : 'none'; S.q = ''; S.plat = 'all'; S.flash = dup.id; setTimeout(() => { S.flash = null; }, 1800); render(); const r = document.querySelector('.link[data-id="' + dup.id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); });
-    return;
-  }
-  say(describeError(bad), 'err');
+  return r;
 }
+function reportSaved(r) {
+  const n = r.saved.length, last = r.saved[n - 1], fo = folderById(r.dest);
+  S.flash = last.id; setTimeout(() => { S.flash = null; }, 1800);
+  if (S.view !== 'all' && S.view !== (r.dest || 'none')) S.view = r.dest || 'none';
+  S.q = ''; S.plat = 'all'; hideClip();
+  render();
+  const row = document.querySelector('.link[data-id="' + last.id + '"]'); if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  const skipped = r.total - n - (r.bad ? 1 : 0);
+  toast((n === 1 ? 'Salvo em ' : n + ' links salvos em ') + (fo ? fo.nome : 'Sem pasta') + '.' + (skipped > 0 ? ' ' + (skipped === 1 ? '1 já estava salvo.' : skipped + ' já estavam salvos.') : ''), 'Desfazer', () => r.saved.forEach(l => remove('links', l.id)));
+}
+function goTo(l) {
+  const fo = folderById(l.pastaId);
+  S.view = isArch(l) ? 'archived' : (fo ? fo.id : 'none'); S.q = ''; S.plat = 'all'; S.flash = l.id; setTimeout(() => { S.flash = null; }, 1800);
+  render(); const r = document.querySelector('.link[data-id="' + l.id + '"]'); if (r) r.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function restoreLink(l) { const cur = S.links.find(x => x.id === l.id); if (cur) save('links', Object.assign({}, cur, { arquivadoEm: null })); }
+function addLinks(raw) {
+  const r = saveLinks(raw, S.dest || '');
+  if (r.saved.length) { closeAdd(true); reportSaved(r); return; }
+  if (r.dup && isArch(r.dup)) { say('Esse link está arquivado.', 'err', 'Restaurar', () => { restoreLink(r.dup); closeAdd(true); toast('Link restaurado.'); goTo(Object.assign({}, r.dup, { arquivadoEm: null })); }); return; }
+  if (r.dup) { const fo = folderById(r.dup.pastaId); say('Esse link já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', 'err', 'Ver', () => { closeAdd(true); goTo(r.dup); }); return; }
+  say(describeError(r.bad), 'err');
+}
+function quickSave(raw, dest) {
+  const r = saveLinks(raw, dest);
+  if (r.saved.length) { reportSaved(r); return; }
+  if (r.dup && isArch(r.dup)) { toast('Esse link está arquivado.', 'Restaurar', () => { restoreLink(r.dup); goTo(Object.assign({}, r.dup, { arquivadoEm: null })); }); return; }
+  if (r.dup) { const fo = folderById(r.dup.pastaId); toast('Já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Ver', () => goTo(r.dup)); return; }
+  toast(describeError(r.bad));
+}
+
+/* ===== Diálogo de salvar ===== */
+let addFocus = null;
+function openAdd(prefill) {
+  addFocus = document.activeElement; S.adding = true; hideClip();
+  S.dest = currentDest(); renderDest();
+  $('url').value = prefill || ''; say(''); updateDetected();
+  $('add-root').hidden = false; document.body.classList.add('locked');
+  $('url').focus();
+  if (!prefill && navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(txt => { const c = clipCandidate(txt); if (c && S.adding && !$('url').value.trim()) { $('url').value = c.url; updateDetected(); $('url').select(); } }).catch(() => {});
+}
+function closeAdd(silent) {
+  if (!S.adding) return;
+  S.adding = false; $('add-root').hidden = true; document.body.classList.remove('locked');
+  if (!silent && addFocus && addFocus.focus) addFocus.focus();
+}
+$('add-root').addEventListener('click', e => {
+  if (e.target.dataset.add === 'overlay' || e.target.closest('[data-add="close"]')) closeAdd();
+});
+document.addEventListener('paste', e => {
+  if (S.modal || S.adding || !S.loaded || S.view === 'archived') return;
+  if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
+  const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+  if (!/https?:\/\/\S|^\s*www\./i.test(txt)) return;
+  e.preventDefault();
+  if (S.view === 'all' && !S.dest) { openAdd(txt.trim()); return; }
+  quickSave(txt, currentDest());
+});
 
 /* ===== Modal de pasta ===== */
 let lastFocus = null;
@@ -487,7 +524,21 @@ function renderModal() {
   const m = S.modal, root = $('modal-root');
   if (!m) { root.innerHTML = ''; return; }
   let body;
-  if (m.kind === 'purge') {
+  if (m.kind === 'link') {
+    const l = S.links.find(x => x.id === m.id); if (!l) { S.modal = null; root.innerHTML = ''; return; }
+    const d = S.draft && S.draft.id === l.id ? S.draft : null, p = PLAT[l.plataforma] || PLAT.web;
+    const cur = d && d.pasta !== undefined ? d.pasta : (l.pastaId || '');
+    const opts = ['<option value="">Sem pasta</option>'].concat(sortedFolders().map(x => '<option value="' + esc(x.id) + '"' + (x.id === cur ? ' selected' : '') + '>' + esc(x.nome) + '</option>')).concat(['<option value="__new__">+ Nova pasta…</option>']).join('');
+    const left = isArch(l)
+      ? '<button type="button" class="btn danger" data-m="purge-one">Excluir de vez</button><button type="button" class="btn outline" data-m="restore-one">Restaurar</button>'
+      : '<button type="button" class="btn ghost" data-m="archive-one">Arquivar</button>';
+    body = '<div class="lm-head">' + previewHtml(l, 'sm') + '<div class="lm-t"><h2 id="mt">Editar link</h2><a class="lm-url" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + p.label + ' · ' + esc(shortUrl(l.url)) + '</a></div></div>' +
+      '<form id="link-form" class="mform" novalidate>' +
+      '<label class="f">Título<input type="text" name="titulo" maxlength="140" autocomplete="off" placeholder="' + esc(l.tituloAuto || autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></label>' +
+      (isArch(l) ? '' : '<label class="f">Pasta<select class="sel" name="pasta">' + opts + '</select></label>') +
+      '<label class="f">Nota<textarea name="nota" rows="3" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></label>' +
+      '<div class="row mfoot">' + left + '<span class="sp"></span><button type="button" class="btn outline" data-m="cancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div></form>';
+  } else if (m.kind === 'purge') {
     const n = m.ids.length;
     body = '<h2 id="mt">' + (n === 1 ? 'Excluir este link de vez?' : 'Excluir ' + n + ' links de vez?') + '</h2><p>Eles somem do brica-braca e não dá para desfazer. Se quiser só tirar da frente, deixe arquivado.</p>' +
       '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-purge">Excluir de vez</button></div>';
@@ -519,10 +570,10 @@ function submitFolder(e) {
   closeModal();
   save('folders', rec);
   const th = m.then;
-  if (!editId && th && th.type === 'dest') { S.dest = rec.id; render(); say('Pasta ' + rec.nome + ' criada. O link vai para ela.'); }
-  else if (!editId && th && th.type === 'edit-pasta') { if (S.draft && S.draft.id === th.linkId) S.draft.pasta = rec.id; render(); }
+  if (!editId && th && th.type === 'dest') { S.dest = rec.id; render(); renderDest(); say('Pasta ' + rec.nome + ' criada.', 'ok'); $('url').focus(); }
+  else if (!editId && th && th.type === 'edit-pasta') { if (S.draft && S.draft.id === th.linkId) S.draft.pasta = rec.id; render(); openModal({ kind: 'link', id: th.linkId }); }
   else if (!editId && th && th.type === 'move-many') { bulkMove(rec.id); }
-  else if (!editId) { S.view = rec.id; S.dest = rec.id; render(); }
+  else if (!editId) { S.view = rec.id; S.dest = rec.id; clearSel(); render(); }
 }
 async function deleteFolder(id) {
   const f = folderById(id); if (!f) return;
@@ -653,21 +704,28 @@ document.addEventListener('click', e => {
   if (t.dataset.m) {
     const k = t.dataset.m;
     if (k === 'overlay') { if (e.target === t) closeModal(); return; }
-    if (k === 'cancel') closeModal();
+    if (k === 'cancel') { const th = S.modal && S.modal.then; if (th && th.type === 'edit-pasta') { openModal({ kind: 'link', id: th.linkId }); return; } S.draft = null; closeModal(); }
+    else if (k === 'archive-one' || k === 'restore-one' || k === 'purge-one') {
+      const l = S.links.find(x => x.id === S.modal.id); if (!l) return;
+      S.draft = null;
+      if (k === 'purge-one') { S.modal = { kind: 'purge', ids: [l.id] }; renderModal(); return; }
+      closeModal(); setArchived([l], k === 'archive-one');
+    }
     else if (k === 'ask-del') { const id = S.modal.id; S.modal = { kind: 'confirm', id }; renderModal(); }
     else if (k === 'confirm-del') deleteFolder(S.modal.id);
     else if (k === 'confirm-purge') purge(S.modal.ids);
     return;
   }
-  if (t.dataset.view) { S.view = t.dataset.view; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') S.dest = S.view; render(); return; }
+  if (t.dataset.view) { S.view = t.dataset.view; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') S.dest = S.view; render(); checkClipboard(); return; }
   if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
   const act = t.dataset.act;
   if (act === 'new-folder') { openModal({ kind: 'new' }); return; }
+  if (act === 'open-add') { openAdd(); return; }
   if (act === 'starter') { const rec = newFolder(t.dataset.name); S.view = rec.id; S.dest = rec.id; save('folders', rec); return; }
   if (act === 'edit-folder') { openModal({ kind: 'edit', id: S.view }); return; }
   const row = t.closest('.link'); const id = row && row.dataset.id; const l = id && S.links.find(x => x.id === id);
   if (!l) return;
-  if (act === 'edit') { S.editing = S.editing === id ? null : id; S.draft = null; render(); if (S.editing) { const i = document.querySelector('.edit [name=titulo]'); if (i) i.focus(); } }
+  if (act === 'edit') { S.draft = null; openModal({ kind: 'link', id }); }
   else if (act === 'copy') { (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(l.url) : Promise.reject()).then(() => toast('Link copiado.')).catch(() => toast('Não consegui copiar. Abra o link e copie pelo endereço.')); }
   else if (act === 'archive') setArchived([l], true);
   else if (act === 'restore') setArchived([l], false);
@@ -679,12 +737,12 @@ document.addEventListener('change', e => {
     if (t.value === '__new__') { t.value = S.dest || ''; openModal({ kind: 'new', then: { type: 'dest' } }); return; }
     S.dest = t.value; return;
   }
-  if (t.matches('.edit select[name="pasta"]')) {
+  if (t.matches('#link-form select[name="pasta"]')) {
     if (t.value === '__new__') {
-      const f = t.form, l = S.links.find(x => x.id === S.editing);
-      t.value = (S.draft && S.draft.pasta !== undefined ? S.draft.pasta : (l && l.pastaId)) || '';
-      S.draft = { id: S.editing, titulo: f.elements.titulo.value, nota: f.elements.nota.value, pasta: t.value };
-      openModal({ kind: 'new', then: { type: 'edit-pasta', linkId: S.editing } });
+      const f = t.form, lid = S.modal.id, l = S.links.find(x => x.id === lid);
+      t.value = (S.draft && S.draft.id === lid && S.draft.pasta !== undefined ? S.draft.pasta : (l && l.pastaId)) || '';
+      S.draft = { id: lid, titulo: f.elements.titulo.value, nota: f.elements.nota.value, pasta: t.value };
+      openModal({ kind: 'new', then: { type: 'edit-pasta', linkId: lid } });
     }
     return;
   }
@@ -695,14 +753,14 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('submit', e => {
   const f = e.target;
-  if (f.id === 'capture') { e.preventDefault(); const v = $('url').value; if (!v.trim()) { say('Cole um link para salvar.', 'err'); $('url').focus(); return; } addLinks(v); $('url').focus(); }
+  if (f.id === 'capture') { e.preventDefault(); const v = $('url').value; if (!v.trim()) { say('Cole um link para salvar.', 'err'); $('url').focus(); return; } addLinks(v); }
   else if (f.id === 'folder-form') submitFolder(e);
-  else if (f.dataset && f.dataset.act === 'editform') {
+  else if (f.id === 'link-form') {
     e.preventDefault();
-    const l = S.links.find(x => x.id === S.editing); if (!l) return;
-    const novaPasta = f.elements.pasta.value || null, antes = l.pastaId || null;
+    const l = S.links.find(x => x.id === S.modal.id); if (!l) return;
+    const novaPasta = f.elements.pasta ? (f.elements.pasta.value || null) : (l.pastaId || null), antes = l.pastaId || null;
     const rec = Object.assign({}, l, { titulo: f.elements.titulo.value.trim(), nota: f.elements.nota.value.trim(), pastaId: novaPasta });
-    S.editing = null; S.draft = null; save('links', rec);
+    S.draft = null; closeModal(); save('links', rec);
     if (novaPasta !== antes) { const fo = folderById(novaPasta); toast('Movido para ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => { const cur = S.links.find(x => x.id === l.id); if (cur) save('links', Object.assign({}, cur, { pastaId: antes })); }); }
     else toast('Alterações salvas.');
   }
@@ -714,7 +772,8 @@ $('url').addEventListener('paste', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (S.modal) { closeModal(); return; }
+    if (S.modal) { const th = S.modal.then; if (th && th.type === 'edit-pasta') { openModal({ kind: 'link', id: th.linkId }); return; } S.draft = null; closeModal(); return; }
+    if (S.adding) { closeAdd(); return; }
     if (S.menu) { S.menu = false; renderBar(); const x = $('bar').querySelector('[data-act="move-menu"]'); if (x) x.focus(); return; }
     if (S.editing) { S.editing = null; S.draft = null; render(); }
     else if (S.sel.length) { clearSel(); syncSel(); }
@@ -725,8 +784,8 @@ document.addEventListener('keydown', e => {
     its[(i + (e.key === 'ArrowDown' ? 1 : -1) + its.length) % its.length].focus();
   }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && S.sel.length && !e.target.closest('input,textarea,select')) { e.preventDefault(); S.sel = visibleLinks().map(l => l.id); syncSel(); }
-  if (e.key === 'Tab' && S.modal) {
-    const els = Array.from($('modal-root').querySelectorAll('button, input, select, textarea, a[href]')).filter(x => !x.disabled && x.offsetParent !== null);
+  if (e.key === 'Tab' && (S.modal || S.adding)) {
+    const els = Array.from((S.modal ? $('modal-root') : $('add-root')).querySelectorAll('button, input, select, textarea, a[href]')).filter(x => !x.disabled && x.offsetParent !== null);
     if (!els.length) return;
     const first = els[0], last = els[els.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
