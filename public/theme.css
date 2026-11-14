@@ -496,3 +496,15 @@ body { font-weight: 500; }
   .compact .link:hover { background: transparent; color: inherit; --muted-fg: inherit; box-shadow: none; }
   .btn:hover { transform: none; box-shadow: 3px 3px 0 var(--sh); }
 }
+
+/* Preview no diálogo de salvar */
+.pv { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: center; border: 2px solid var(--ink); background: var(--bg); padding: 10px; }
+.pv[hidden] { display: none; }
+.pv .preview { width: 72px; }
+.pv .pt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pv .t { font: 800 15px/1.25 var(--f-display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.pv .m { font: 400 12px/1.4 var(--f-mono); color: var(--muted-fg); }
+.pv .st { font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; }
+
+/* Troca de visualização só em notebook e desktop. Abaixo de 901px, sempre grade. */
+@media (max-width: 900px) { .seg { display: none; } }

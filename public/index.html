@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>disorder</title>
 <link rel="icon" href="favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F2EEE3">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=Archivo:wght@700..900&family=Space+Mono:wght@400;700&family=Oi&display=swap">
@@ -40,7 +43,8 @@
       <input id="url" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole o link aqui">
       <button class="btn outline sm" type="button" id="paste">Colar</button>
     </div>
-    <p class="hint">X, Threads, Instagram, TikTok e YouTube. Pode colar vários de uma vez.</p>
+    <p class="hint" id="add-hint">X, Threads, Instagram, TikTok e YouTube. Pode colar vários de uma vez.</p>
+    <div class="pv" id="pv" role="status" aria-live="polite" hidden></div>
     <label class="f">Pasta<select class="sel" id="dest"></select></label>
     <p class="msg" id="msg" role="status" aria-live="polite"></p>
     <div class="row"><span class="kbd-hint">Dica: cole um link em qualquer lugar da página para salvar direto.</span><button type="button" class="btn outline" data-add="close">Cancelar</button><button class="btn primary" type="submit" id="save" disabled>Salvar</button></div>

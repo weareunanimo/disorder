@@ -28,3 +28,10 @@ npm test
 
 - Instagram e Threads às vezes escondem o título e a imagem de servidores. Quando falha, o cartão mostra as iniciais e o título automático.
 - Os links salvos antes do login ficam no navegador e não migram sozinhos.
+
+## Receber links pelo compartilhar do sistema
+
+O app aceita `/?url=<link>` (também `text` e `title`) e abre o diálogo de salvar com o link preenchido.
+
+- **Android (Chrome):** instale o app pelo menu "Adicionar à tela inicial". Depois disso, "disorder" aparece na folha de compartilhar.
+- **iOS:** o Safari não tem esse recurso para sites. Crie um Atalho com "Mostrar na Folha de Compartilhamento" que abre `https://SEU-ENDERECO/?url=` seguido da entrada do atalho codificada como URL.

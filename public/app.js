@@ -114,6 +114,9 @@ const $ = id => document.getElementById(id);
 /* ===== Estado e armazenamento ===== */
 const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false, adding: false };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
+const wideMq = window.matchMedia ? window.matchMedia('(min-width: 901px)') : { matches: true };
+const isList = () => S.layout === 'list' && wideMq.matches;
+if (wideMq.addEventListener) wideMq.addEventListener('change', () => { if (S.loaded) { renderTools(); renderList(); } });
 let backend = null;
 
 function snapToList(snap) {
@@ -223,6 +226,28 @@ function enrichPending() {
   const worker = async () => { while (i < pend.length) await enrich(pend[i++]); };
   worker(); worker(); worker();
 }
+
+/* ===== Receber link do compartilhar do sistema ===== */
+function takeShare() {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('url') && !q.has('text') && !q.has('title')) return;
+    const m = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ').match(/https?:\/\/[^\s]+/i);
+    if (m) localStorage.setItem('disorder.share', JSON.stringify({ url: m[0], at: Date.now() }));
+    history.replaceState(null, '', location.pathname);
+  } catch (e) {}
+}
+function applyShare() {
+  try {
+    const raw = localStorage.getItem('disorder.share'); if (!raw) return false;
+    localStorage.removeItem('disorder.share');
+    const s = JSON.parse(raw);
+    if (!s || !s.url || Date.now() - s.at > 30 * 60 * 1000) return false;
+    S.view = 'all'; render(); openAdd(s.url); return true;
+  } catch (e) { return false; }
+}
+takeShare();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 function upsert(arr, rec) { const i = arr.findIndex(x => x.id === rec.id); if (i < 0) arr.push(rec); else arr[i] = rec; }
 async function save(col, rec) {
@@ -369,7 +394,7 @@ function linkHtml(l) {
 }
 function renderList() {
   const el = $('list');
-  el.className = 'list ' + (S.layout === 'list' ? 'compact' : 'grid') + (S.sel.length ? ' has-sel' : '');
+  el.className = 'list ' + (isList() ? 'compact' : 'grid') + (S.sel.length ? ' has-sel' : '');
   if (!S.loaded && !S.loadError) { el.innerHTML = '<div class="empty"><b>Carregando seus links</b></div>'; return; }
   if (S.loadError) { el.innerHTML = ''; return; }
   const ls = visibleLinks();
@@ -405,6 +430,27 @@ function say(text, kind, actionLabel, actionFn) {
   if (actionLabel) { const b = document.createElement('button'); b.type = 'button'; b.textContent = actionLabel; b.onclick = actionFn; m.append(' ', b); }
 }
 
+/* ===== Preview no diálogo de salvar ===== */
+let PV = null, pvTimer = null;
+function fetchPreview(url) { if (!CFG.previewApi) return Promise.resolve(null); return authHeaders().then(h => fetch(CFG.previewApi + '?url=' + encodeURIComponent(url), { headers: h })).then(r => r.ok ? r.json() : null).then(d => d && (d.title || d.image) ? d : null); }
+function renderPv() {
+  const el = $('pv');
+  if (!PV) { el.hidden = true; el.innerHTML = ''; $('add-hint').hidden = false; return; }
+  const p = PV.p, pl = PLAT[p.plataforma] || PLAT.web, d = PV.data || {};
+  const img = d.image && /^https:\/\//i.test(d.image) ? '<img src="' + esc(d.image) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+  el.innerHTML = '<div class="preview" aria-hidden="true">' + pl.short + img + '</div><div class="pt"><b class="t">' + esc(d.title || autoTitle(p)) + '</b><span class="m">' + pl.label + ' · ' + p.tipo + '</span>' + (PV.loading ? '<span class="st">Buscando preview</span>' : '') + '</div>';
+  el.hidden = false; $('add-hint').hidden = true;
+}
+function updatePv(p) {
+  if (!p) { PV = null; clearTimeout(pvTimer); renderPv(); return; }
+  if (PV && PV.key === p.key) return;
+  const me = PV = { key: p.key, p, data: null, loading: true };
+  renderPv(); clearTimeout(pvTimer);
+  pvTimer = setTimeout(() => {
+    fetchPreview(p.url).then(d => { if (PV !== me) return; me.data = d; me.loading = false; renderPv(); }).catch(() => { if (PV === me) { me.loading = false; renderPv(); } });
+  }, 350);
+}
+
 /* ===== Captura ===== */
 function describeError(code) {
   if (code === 'espaco') return 'Cole um link por vez, sem espaços no meio. Para vários, cole um por linha.';
@@ -412,13 +458,13 @@ function describeError(code) {
 }
 function updateDetected() {
   const v = $('url').value.trim(), d = $('detected');
-  let ok = false;
+  let ok = false, one = null;
   if (v) {
     const many = v.match(/https?:\/\/[^\s]+/gi);
     if (many && many.length > 1) { const n = many.filter(u => !parseLink(u).error).length; if (n) { ok = true; d.textContent = n + ' links'; } }
-    else { const p = parseLink(v); if (!p.error) { ok = true; d.textContent = PLAT[p.plataforma].label + ' · ' + p.tipo; } }
+    else { const p = parseLink(v); if (!p.error) { ok = true; one = p; d.textContent = PLAT[p.plataforma].label + ' · ' + p.tipo; } }
   }
-  d.hidden = !ok;
+  d.hidden = !ok; updatePv(one);
   $('save').disabled = !ok; $('paste').hidden = ok;
 }
 /* ===== Link copiado ===== */
@@ -480,6 +526,7 @@ function saveLinks(raw, dest) {
     if (exist) { r.dup = r.dup || exist; return; }
     if (r.saved.some(x => x.chave === p.key)) return;
     const rec = { id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, titulo: '', nota: '', pastaId: dest || null, criadoEm: Date.now() + r.saved.length, enriquecido: false };
+    if (PV && PV.key === p.key && PV.data) { if (PV.data.title) rec.tituloAuto = PV.data.title; if (PV.data.image) rec.thumb = PV.data.image; rec.enriquecido = true; }
     S.links.push(rec); save('links', rec).then(() => enrich(rec)); r.saved.push(rec);
   });
   return r;
@@ -527,7 +574,7 @@ function openAdd(prefill) {
 }
 function closeAdd(silent) {
   if (!S.adding) return;
-  S.adding = false; $('add-root').hidden = true; document.body.classList.remove('locked');
+  S.adding = false; updatePv(null); $('add-root').hidden = true; document.body.classList.remove('locked');
   if (!silent && addFocus && addFocus.focus) addFocus.focus();
 }
 $('add-root').addEventListener('click', e => {
@@ -839,7 +886,7 @@ async function boot() {
     S.folders = d.folders; S.links = d.links; S.loaded = true; S.loadError = false;
     if (S.dest && !folderById(S.dest)) S.dest = '';
     render();
-    if (!firstLoad) { firstLoad = true; checkClipboard(); enrichPending(); }
+    if (!firstLoad) { firstLoad = true; if (!applyShare()) checkClipboard(); enrichPending(); }
   };
   try { await backend.start(onData, () => { S.loadError = true; render(); }); } catch (e) { S.loadError = true; render(); }
 }
