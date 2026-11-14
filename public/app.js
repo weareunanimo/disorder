@@ -308,8 +308,8 @@ function visibleLinks() {
 /* ===== Ajustes: perfil, pastas e dados ===== */
 const PROFILE = { nome: '', email: '' };
 try { PROFILE.nome = localStorage.getItem('disorder.nome') || ''; } catch (e) {}
-let THEME = 'system';
-try { THEME = localStorage.getItem('disorder.theme') || 'system'; } catch (e) {}
+let THEME = 'light';
+try { THEME = localStorage.getItem('disorder.theme') || 'light'; } catch (e) {}
 function applyTheme(t) { const r = document.documentElement; if (t === 'light' || t === 'dark') r.dataset.theme = t; else delete r.dataset.theme; }
 applyTheme(THEME);
 function persistName(n) { try { localStorage.setItem('disorder.nome', n); } catch (e) {} return sb ? sb.auth.updateUser({ data: { nome: n } }).then(r => { if (r.error) throw r.error; }) : Promise.resolve(); }
@@ -320,7 +320,7 @@ const SW_NAMES = ['Rosa', 'Laranja', 'Amarelo', 'Verde', 'Ciano', 'Azul', 'Lilá
 const ICO_SET = '<svg class="gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.45 3.24L6.65 1.23L9.35 1.23L9.55 3.24L11.35 4.28L13.19 3.45L14.53 5.78L12.89 6.96L12.89 9.04L14.53 10.22L13.19 12.55L11.35 11.72L9.55 12.76L9.35 14.77L6.65 14.77L6.45 12.76L4.65 11.72L2.81 12.55L1.47 10.22L3.11 9.04L3.11 6.96L1.47 5.78L2.81 3.45L4.65 4.28Z"/><circle cx="8" cy="8" r="1.9"/></svg>';
 function settingsHtml() {
   const fs = sortedFolders(), act = active();
-  const seg = [['system', 'Sistema'], ['light', 'Claro'], ['dark', 'Escuro']].map(o => '<button type="button" data-act="theme" data-theme-v="' + o[0] + '" data-fk="theme:' + o[0] + '" aria-pressed="' + (THEME === o[0]) + '">' + o[1] + '</button>').join('');
+  const seg = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']].map(o => '<button type="button" data-act="theme" data-theme-v="' + o[0] + '" data-fk="theme:' + o[0] + '" aria-pressed="' + (THEME === o[0]) + '">' + o[1] + '</button>').join('');
   let h = '<section class="sblock" aria-labelledby="s-perfil"><h2 id="s-perfil">Perfil</h2>' +
     '<label class="f">Nome<input type="text" id="pf-nome" data-fk="pf-nome" maxlength="60" autocomplete="name" placeholder="Como você quer ser chamado" value="' + esc(PROFILE.nome) + '"></label>' +
     (PROFILE.email ? '<div class="f">E-mail<p class="sval">' + esc(PROFILE.email) + '</p></div>' : '') +
