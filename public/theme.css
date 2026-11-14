@@ -570,4 +570,6 @@ body { font-weight: 500; }
 
 /* Em Ajustes, o cabeçalho tem a largura dos blocos, para a seta alinhar com a borda direita deles */
 .v-set .head { max-width: 760px; }
-.v-set .back-btn { justify-content: flex-end; }
+/* Botão de ícone do cabeçalho: quadrado de 40px, ícone centralizado. A margem negativa alinha o desenho do ícone com a borda do conteúdo. */
+.btn.icon.set-btn { width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; justify-content: center; align-items: center; margin-right: -10px; }
+.btn.icon.set-btn svg { display: block; }
