@@ -117,6 +117,18 @@ try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } 
 const touchMq = window.matchMedia ? window.matchMedia('(hover: none)') : { matches: false };
 const wideMq = window.matchMedia ? window.matchMedia('(min-width: 901px)') : { matches: true };
 const isList = () => S.layout === 'list' && wideMq.matches;
+/* Limite do título do cartão: 157 caracteres em notebook e desktop, menos em telas menores */
+const midMq = window.matchMedia ? window.matchMedia('(min-width: 641px)') : { matches: true };
+const smMq = window.matchMedia ? window.matchMedia('(min-width: 401px)') : { matches: true };
+const titleMax = () => wideMq.matches ? 157 : midMq.matches ? 120 : smMq.matches ? 90 : 70;
+function clipTitle(t) {
+  const max = titleMax(); t = String(t || '');
+  if (t.length <= max) return t;
+  let cut = t.slice(0, max - 1); const sp = cut.lastIndexOf(' ');
+  if (sp > max - 25) cut = cut.slice(0, sp);
+  return cut.replace(/[\s.,;:!?-]+$/, '') + '…';
+}
+[midMq, smMq].forEach(m => { if (m.addEventListener) m.addEventListener('change', () => { if (S.loaded) renderList(); }); });
 if (wideMq.addEventListener) wideMq.addEventListener('change', () => { if (S.loaded) { renderTools(); renderList(); } });
 let backend = null;
 
@@ -305,7 +317,7 @@ function accountExtras() { return sb ? '<div class="srow"><div class="st"><b>Sai
 function dataExtras() { return CFG.previewApi ? '<div class="srow"><div class="st"><b>Atualizar previews</b><span>Busca de novo o título e a imagem de todos os links não arquivados.</span></div><button type="button" class="btn" data-act="refresh-previews" data-fk="refresh"' + (refreshing ? ' disabled' : '') + '>' + (refreshing ? 'Atualizando' : 'Atualizar previews') + '</button></div>' : ''; }
 function storageNote() { return S.mode === 'cloud' ? 'Seus links ficam salvos na sua conta e aparecem em qualquer aparelho.' : 'Modo local: seus links ficam só neste navegador.'; }
 const SW_NAMES = ['Rosa', 'Laranja', 'Amarelo', 'Verde', 'Ciano', 'Azul', 'Lilás', 'Lima'];
-const ICO_SET = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h6.5M12.5 4.5H14M2 11.5h1.5M7.5 11.5H14"/><circle cx="10.5" cy="4.5" r="2"/><circle cx="5.5" cy="11.5" r="2"/></svg>';
+const ICO_SET = '<svg class="gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.45 3.24L6.65 1.23L9.35 1.23L9.55 3.24L11.35 4.28L13.19 3.45L14.53 5.78L12.89 6.96L12.89 9.04L14.53 10.22L13.19 12.55L11.35 11.72L9.55 12.76L9.35 14.77L6.65 14.77L6.45 12.76L4.65 11.72L2.81 12.55L1.47 10.22L3.11 9.04L3.11 6.96L1.47 5.78L2.81 3.45L4.65 4.28Z"/><circle cx="8" cy="8" r="1.9"/></svg>';
 function settingsHtml() {
   const fs = sortedFolders(), act = active();
   const seg = [['system', 'Sistema'], ['light', 'Claro'], ['dark', 'Escuro']].map(o => '<button type="button" data-act="theme" data-theme-v="' + o[0] + '" data-fk="theme:' + o[0] + '" aria-pressed="' + (THEME === o[0]) + '">' + o[1] + '</button>').join('');
@@ -519,7 +531,7 @@ function linkHtml(l) {
   let h = '<article class="link' + (S.flash === l.id ? ' flash' : '') + '" data-id="' + esc(l.id) + '" aria-selected="' + (S.sel.indexOf(l.id) >= 0) + '">' +
     '<button type="button" class="pick" data-act="pick" role="checkbox" aria-checked="' + (S.sel.indexOf(l.id) >= 0) + '" aria-label="Selecionar ' + esc(titulo) + '"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg></span></button>' +
     previewHtml(l) +
-    '<div class="ltext"><h3 class="ttl">' + esc(titulo) + '</h3>' +
+    '<div class="ltext"><h3 class="ttl"' + (clipTitle(titulo) !== titulo ? ' title="' + esc(titulo) + '"' : '') + '>' + esc(clipTitle(titulo)) + '</h3>' +
     '<p class="meta"><span>' + p.label + ' · ' + esc(l.tipo || 'Link') + '</span><span>' + ago(l.criadoEm || Date.now()) + '</span>' +
     '</p>' +
     '<p class="url" title="' + esc(l.url) + '">' + esc(shortUrl(l.url)) + '</p>' +
