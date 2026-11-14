@@ -112,7 +112,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const $ = id => document.getElementById(id);
 
 /* ===== Estado e armazenamento ===== */
-const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', selecting: false, sel: [] };
+const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
 let backend = null;
 
@@ -217,7 +217,11 @@ const colorOf = f => (f && Number.isInteger(f.cor)) ? f.cor % 8 : hashN((f && f.
 const newFolder = nome => ({ id: uid(), nome, cor: S.folders.length % 8, criadaEm: Date.now() });
 const folderById = id => S.folders.find(f => f.id === id) || null;
 const sortedFolders = () => S.folders.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+const isArch = l => !!l.arquivadoEm;
+const active = () => S.links.filter(l => !isArch(l));
 function inView(l) {
+  if (S.view === 'archived') return isArch(l);
+  if (isArch(l)) return false;
   if (S.view === 'all') return true;
   if (S.view === 'none') return !l.pastaId || !folderById(l.pastaId);
   return l.pastaId === S.view;
@@ -225,6 +229,7 @@ function inView(l) {
 function viewTitle() {
   if (S.view === 'all') return 'Todos os links';
   if (S.view === 'none') return 'Sem pasta';
+  if (S.view === 'archived') return 'Arquivados';
   const f = folderById(S.view); return f ? f.nome : 'Todos os links';
 }
 function visibleLinks() {
@@ -238,20 +243,21 @@ function visibleLinks() {
 
 /* ===== Renderização ===== */
 function render() {
-  if (S.view !== 'all' && S.view !== 'none' && !folderById(S.view)) S.view = 'all';
-  renderNav(); renderDest(); renderBanner(); renderHead(); renderTools(); renderList(); renderBulk();
+  if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && !folderById(S.view)) S.view = 'all';
+  renderNav(); renderDest(); renderBanner(); renderHead(); renderTools(); renderList(); renderBar();
 }
 function renderNav() {
-  const total = S.links.length, none = S.links.filter(l => !l.pastaId || !folderById(l.pastaId)).length;
+  const act = active(), total = act.length, none = act.filter(l => !l.pastaId || !folderById(l.pastaId)).length, arch = S.links.length - total;
   const cur = v => S.view === v ? ' aria-current="true"' : '';
   let h = '<button class="nav-btn" data-view="all"' + cur('all') + '><span class="nm">Todos os links</span><span class="ct">' + total + '</span></button>';
   h += '<button class="nav-btn" data-view="none"' + cur('none') + '><span class="nm">Sem pasta</span><span class="ct">' + none + '</span></button>';
   h += '<div class="nav-h"><span>Pastas</span></div>';
   sortedFolders().forEach(f => {
-    const n = S.links.filter(l => l.pastaId === f.id).length;
+    const n = act.filter(l => l.pastaId === f.id).length;
     h += '<button class="nav-btn" data-view="' + esc(f.id) + '"' + cur(f.id) + '><span class="nm">' + esc(f.nome) + '</span><span class="ct">' + n + '</span></button>';
   });
   h += '<button class="add-folder" data-act="new-folder">+ Nova pasta</button>';
+  if (arch || S.view === 'archived') h += '<button class="nav-btn arch" data-view="archived"' + cur('archived') + '><span class="nm">Arquivados</span><span class="ct">' + arch + '</span></button>';
   if (S.loaded && !S.folders.length) {
     h += '<div class="starter"><p>Comece por uma destas:</p>' + ['Receitas', 'Decoração', 'Pet'].map(n => '<button class="chip" data-act="starter" data-name="' + n + '">' + n + '</button>').join('') + '</div>';
   }
@@ -272,7 +278,7 @@ function renderBanner() {
 }
 function renderHead() {
   const n = visibleLinks().length, base = S.links.filter(inView).length;
-  const f = (S.view !== 'all' && S.view !== 'none') ? folderById(S.view) : null;
+  const f = (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') ? folderById(S.view) : null;
   $('head').innerHTML = '<div><h1 id="view-title">' + esc(viewTitle()) + '</h1><p>' + (base === 1 ? '1 link' : base + ' links') + (n !== base ? ' · ' + n + ' no filtro' : '') + '</p></div>' +
     (f ? '<button class="btn outline sm" data-act="edit-folder">Editar pasta</button>' : '');
 }
@@ -289,7 +295,6 @@ function renderTools() {
   const present = Object.keys(PLAT).filter(k => counts[k]);
   if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
   let h = '<label class="sr" for="q">Buscar nos links</label><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '">' +
-    '<button type="button" class="btn outline" data-act="select-mode" aria-pressed="' + S.selecting + '">Selecionar</button>' +
     '<div class="seg" role="group" aria-label="Visualização">' +
     '<button type="button" data-layout="cards" aria-pressed="' + (S.layout !== 'list') + '" aria-label="Ver em cartões" title="Ver em cartões"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></button>' +
     '<button type="button" data-layout="list" aria-pressed="' + (S.layout === 'list') + '" aria-label="Ver em lista" title="Ver em lista"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg></button></div>';
@@ -315,7 +320,7 @@ function linkHtml(l) {
   const folderOpts = ['<option value="">Sem pasta</option>'].concat(sortedFolders().map(x => '<option value="' + esc(x.id) + '"' + (x.id === curPasta ? ' selected' : '') + '>' + esc(x.nome) + '</option>')).concat(['<option value="__new__">+ Nova pasta…</option>']).join('');
   const d = S.draft && S.draft.id === l.id ? S.draft : null;
   let h = '<article class="link' + (S.flash === l.id ? ' flash' : '') + '" data-id="' + esc(l.id) + '" aria-selected="' + (S.sel.indexOf(l.id) >= 0) + '">' +
-    '<button type="button" class="pick" data-act="pick" role="checkbox" aria-checked="' + (S.sel.indexOf(l.id) >= 0) + '" aria-label="Selecionar link"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg></button>' +
+    '<button type="button" class="pick" data-act="pick" role="checkbox" aria-checked="' + (S.sel.indexOf(l.id) >= 0) + '" aria-label="Selecionar ' + esc(titulo) + '"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg></span></button>' +
     '<div class="preview" aria-hidden="true">' + p.short + (thumbOf(l) ? '<img src="' + esc(thumbOf(l)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>' +
     '<div class="ltext"><h3 class="ttl">' + esc(titulo) + '</h3>' +
     '<p class="meta"><span>' + p.label + ' · ' + esc(l.tipo || 'Link') + '</span><span>' + ago(l.criadoEm || Date.now()) + '</span>' +
@@ -334,13 +339,13 @@ function linkHtml(l) {
     h += '<form class="edit" data-act="editform"><label>Título<input name="titulo" type="text" maxlength="140" placeholder="' + esc(autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></label>' +
       '<label>Pasta<select class="sel" name="pasta">' + folderOpts + '</select></label>' +
       '<label>Nota<textarea name="nota" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></label>' +
-      '<div class="row"><button type="button" class="btn danger sm" data-act="del" style="margin-right:auto">Excluir link</button><button type="button" class="btn outline sm" data-act="edit">Cancelar</button><button type="submit" class="btn primary sm">Salvar alterações</button></div></form>';
+      '<div class="row">' + (isArch(l) ? '<button type="button" class="btn danger sm" data-act="purge">Excluir de vez</button><button type="button" class="btn outline sm" data-act="restore" style="margin-right:auto">Restaurar</button>' : '<button type="button" class="btn outline sm" data-act="archive" style="margin-right:auto">Arquivar</button>') + '<button type="button" class="btn outline sm" data-act="edit">Cancelar</button><button type="submit" class="btn primary sm">Salvar alterações</button></div></form>';
   }
   return h + '</article>';
 }
 function renderList() {
   const el = $('list');
-  el.className = 'list ' + (S.layout === 'list' ? 'compact' : 'grid') + (S.selecting && S.links.length ? ' selecting' : '');
+  el.className = 'list ' + (S.layout === 'list' ? 'compact' : 'grid') + (S.sel.length ? ' has-sel' : '');
   if (!S.loaded && !S.loadError) { el.innerHTML = '<div class="empty"><b>Carregando seus links</b></div>'; return; }
   if (S.loadError) { el.innerHTML = ''; return; }
   const ls = visibleLinks();
@@ -353,6 +358,7 @@ function renderList() {
     let t, p;
     if (!S.links.length) { t = 'Nada salvo ainda'; p = 'Cole um link acima. O brica-braca reconhece X, Threads, Instagram, TikTok e YouTube, inclusive Shorts.'; }
     else if (base && (S.q || S.plat !== 'all')) { t = 'Nenhum link bate com o filtro'; p = 'Limpe a busca ou escolha outra rede.'; }
+    else if (S.view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das pastas e ficam guardados aqui. Você pode restaurar quando quiser.'; }
     else if (S.view === 'none') { t = 'Tudo o que você salvou está em alguma pasta'; p = 'Links sem pasta aparecem aqui.'; }
     else { t = 'Esta pasta está vazia'; p = 'Cole um link acima e ele entra em ' + viewTitle() + '.'; }
     el.innerHTML = '<div class="empty"><b>' + esc(t) + '</b><p>' + esc(p) + '</p></div>';
@@ -461,6 +467,10 @@ function addLinks(raw) {
     const row = document.querySelector('.link[data-id="' + last.id + '"]'); if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     return;
   }
+  if (dup && isArch(dup)) {
+    say('Esse link está arquivado.', 'err', 'Restaurar', () => { const cur = S.links.find(x => x.id === dup.id); if (cur) save('links', Object.assign({}, cur, { arquivadoEm: null })); say('Restaurado.', 'ok'); $('url').value = ''; updateDetected(); });
+    return;
+  }
   if (dup) {
     const fo = folderById(dup.pastaId);
     say('Esse link já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', 'err', 'Ver', () => { S.view = fo ? fo.id : 'none'; S.q = ''; S.plat = 'all'; S.flash = dup.id; setTimeout(() => { S.flash = null; }, 1800); render(); const r = document.querySelector('.link[data-id="' + dup.id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); });
@@ -477,7 +487,11 @@ function renderModal() {
   const m = S.modal, root = $('modal-root');
   if (!m) { root.innerHTML = ''; return; }
   let body;
-  if (m.kind === 'confirm') {
+  if (m.kind === 'purge') {
+    const n = m.ids.length;
+    body = '<h2 id="mt">' + (n === 1 ? 'Excluir este link de vez?' : 'Excluir ' + n + ' links de vez?') + '</h2><p>Eles somem do brica-braca e não dá para desfazer. Se quiser só tirar da frente, deixe arquivado.</p>' +
+      '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-purge">Excluir de vez</button></div>';
+  } else if (m.kind === 'confirm') {
     const f = folderById(m.id); const n = S.links.filter(l => l.pastaId === m.id).length;
     body = '<h2 id="mt">Excluir a pasta ' + esc(f ? f.nome : '') + '?</h2><p>' + (n ? (n === 1 ? 'O 1 link dela vai' : 'Os ' + n + ' links dela vão') + ' para Sem pasta. Nenhum link é apagado.' : 'A pasta está vazia.') + '</p>' +
       '<div class="row"><button class="btn outline" data-m="cancel">Cancelar</button><button class="btn destructive" data-m="confirm-del">Excluir pasta</button></div>';
@@ -521,65 +535,125 @@ async function deleteFolder(id) {
 }
 
 
-/* ===== Seleção em massa ===== */
+/* ===== Seleção ===== */
+const ICO = {
+  x: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>',
+  move: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5c0-.8.7-1.5 1.5-1.5h3l1.5 1.5h4.5c.8 0 1.5.7 1.5 1.5v5.5c0 .8-.7 1.5-1.5 1.5h-9c-.8 0-1.5-.7-1.5-1.5z"/><path d="M6.5 8.5h4M9 6.5l2 2-2 2"/></svg>',
+  arch: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><path d="M3 6v6.5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V6M6.5 9h3"/></svg>',
+  back: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6.5h7a3.5 3.5 0 0 1 0 7H7"/><path d="M5.5 4 3 6.5 5.5 9"/></svg>',
+  trash: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.6c0 .5.5.9 1 .9h4.6c.5 0 1-.4 1-.9l.7-8.6"/></svg>',
+  down: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>'
+};
 function pruneSel() { const vis = visibleLinks().map(l => l.id); S.sel = S.sel.filter(id => vis.indexOf(id) >= 0); }
-function renderBulk() {
-  const b = $('bulk'); const on = S.selecting && S.links.length;
-  $('list').classList.toggle('selecting', !!on);
-  if (!on) { b.hidden = true; b.innerHTML = ''; return; }
+function clearSel() { S.sel = []; S.anchor = null; S.menu = false; }
+function selItems() { return S.links.filter(l => S.sel.indexOf(l.id) >= 0); }
+function renderBar() {
+  const b = $('bar');
   pruneSel();
-  const n = S.sel.length, all = visibleLinks().length;
-  const opts = '<option value="__none__" selected disabled>Mover para</option><option value="">Sem pasta</option>' + sortedFolders().map(x => '<option value="' + esc(x.id) + '">' + esc(x.nome) + '</option>').join('') + '<option value="__new__">+ Nova pasta…</option>';
-  const had = document.activeElement && document.activeElement.closest && document.activeElement.closest('#bulk');
-  b.hidden = false;
-  b.innerHTML = '<span class="n">' + (n ? n + (n === 1 ? ' selecionado' : ' selecionados') : 'Selecione os links') + '</span>' +
-    '<button type="button" class="btn outline sm" data-act="bulk-all">' + (n && n === all ? 'Limpar' : 'Selecionar todos') + '</button>' +
-    '<label><span class="sr">Mover selecionados para a pasta</span><select class="sel" data-act="bulk-move"' + (n ? '' : ' disabled') + '>' + opts + '</select></label>' +
-    '<button type="button" class="btn danger sm" data-act="bulk-del"' + (n ? '' : ' disabled') + '>Excluir</button>' +
-    '<button type="button" class="btn outline sm" data-act="bulk-cancel">Cancelar</button>';
-  if (had) { const x = b.querySelector('[data-act="bulk-all"]'); if (x) x.focus(); }
+  const n = S.sel.length;
+  document.body.classList.toggle('has-bar', !!n);
+  $('list').classList.toggle('has-sel', !!n);
+  if (!n) { b.hidden = true; b.innerHTML = ''; S.menu = false; return; }
+  const all = visibleLinks().length, arch = S.view === 'archived';
+  const focusAct = document.activeElement && document.activeElement.closest && document.activeElement.closest('#bar') ? (document.activeElement.dataset.act || null) : null;
+  let h = '<button type="button" class="x" data-act="sel-clear" aria-label="Limpar seleção" title="Limpar seleção (Esc)">' + ICO.x + '</button>' +
+    '<span class="n" aria-live="polite">' + n + '<span class="long">' + (n === 1 ? ' selecionado' : ' selecionados') + '</span></span>';
+  if (n < all) h += '<button type="button" data-act="sel-all"><span class="long">Selecionar todos (' + all + ')</span><span class="short">Todos</span></button>';
+  h += '<span class="sep" aria-hidden="true"></span>';
+  if (arch) {
+    h += '<button type="button" data-act="bulk-restore">' + ICO.back + 'Restaurar</button>' +
+         '<button type="button" class="warn" data-act="bulk-purge">' + ICO.trash + '<span class="long">Excluir de vez</span><span class="short">Excluir</span></button>';
+  } else {
+    h += '<button type="button" data-act="move-menu" aria-haspopup="menu" aria-expanded="' + S.menu + '">' + ICO.move + 'Mover' + ICO.down + '</button>' +
+         '<button type="button" class="strong" data-act="bulk-archive">' + ICO.arch + 'Arquivar</button>';
+    if (S.menu) {
+      const items = selItems(), same = id => items.every(l => (l.pastaId || null) === id);
+      const mi = (id, label) => '<button type="button" class="mi" role="menuitem" data-act="move-to" data-dest="' + esc(id || '') + '"' + (same(id) ? ' aria-disabled="true"' : '') + '>' + label + (same(id) ? '<span class="cur">já está aqui</span>' : '') + '</button>';
+      h += '<div class="menu" role="menu" aria-label="Mover para"><div class="mh">Mover para</div>' + mi(null, 'Sem pasta') +
+        sortedFolders().map(f => mi(f.id, '<span class="tag" data-c="' + colorOf(f) + '">' + esc(f.nome) + '</span>')).join('') +
+        '<button type="button" class="mi" role="menuitem" data-act="move-new">+ Nova pasta…</button></div>';
+    }
+  }
+  b.innerHTML = h; b.hidden = false;
+  if (S.menu) { const first = b.querySelector('.mi:not([aria-disabled="true"])'); if (first) first.focus(); }
+  else if (focusAct) { const x = b.querySelector('[data-act="' + focusAct + '"]') || b.querySelector('[data-act="sel-clear"]'); if (x) x.focus(); }
 }
-function setSelecting(v) { S.selecting = v; if (!v) S.sel = []; if (v) { S.editing = null; S.draft = null; } render(); }
-function toggleSel(id) { const i = S.sel.indexOf(id); if (i < 0) S.sel.push(id); else S.sel.splice(i, 1); renderList(); renderBulk(); }
+function syncSel() {
+  document.querySelectorAll('#list .link').forEach(el => {
+    const on = S.sel.indexOf(el.dataset.id) >= 0;
+    el.setAttribute('aria-selected', on);
+    const p = el.querySelector('.pick'); if (p) p.setAttribute('aria-checked', on);
+  });
+  renderBar();
+}
+function toggleSel(id, range) {
+  const vis = visibleLinks().map(l => l.id);
+  if (range && S.anchor && vis.indexOf(S.anchor) >= 0) {
+    const a = vis.indexOf(S.anchor), b = vis.indexOf(id), on = S.sel.indexOf(S.anchor) >= 0;
+    vis.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(x => { const i = S.sel.indexOf(x); if (on && i < 0) S.sel.push(x); if (!on && i >= 0) S.sel.splice(i, 1); });
+  } else {
+    const i = S.sel.indexOf(id); if (i < 0) S.sel.push(id); else S.sel.splice(i, 1);
+  }
+  S.anchor = id; S.menu = false;
+  if (S.editing) { S.editing = null; S.draft = null; renderList(); }
+  syncSel();
+}
+function undoPatch(prev) { prev.forEach(p => { const cur = S.links.find(x => x.id === p.id); if (cur) save('links', Object.assign({}, cur, p)); }); }
+const plural = (n, one, many) => n === 1 ? one : n + ' ' + many;
 function bulkMove(dest) {
-  const items = S.links.filter(l => S.sel.indexOf(l.id) >= 0 && (l.pastaId || null) !== dest);
+  const items = selItems().filter(l => (l.pastaId || null) !== dest);
   const prev = items.map(l => ({ id: l.id, pastaId: l.pastaId || null }));
   items.forEach(l => save('links', Object.assign({}, l, { pastaId: dest })));
   const fo = folderById(dest), n = items.length;
-  setSelecting(false);
+  clearSel(); render();
   if (!n) { toast('Esses links já estão nessa pasta.'); return; }
-  toast((n === 1 ? '1 link movido para ' : n + ' links movidos para ') + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => prev.forEach(p => { const cur = S.links.find(x => x.id === p.id); if (cur) save('links', Object.assign({}, cur, { pastaId: p.pastaId })); }));
+  toast(plural(n, '1 link movido', 'links movidos') + ' para ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => undoPatch(prev));
 }
-function bulkDelete() {
-  const items = S.links.filter(l => S.sel.indexOf(l.id) >= 0).map(l => Object.assign({}, l));
-  if (!items.length) return;
+function setArchived(items, on) {
+  const prev = items.map(l => ({ id: l.id, arquivadoEm: l.arquivadoEm || null }));
+  const now = Date.now();
+  items.forEach(l => save('links', Object.assign({}, l, { arquivadoEm: on ? now : null })));
+  clearSel(); if (S.editing && items.some(l => l.id === S.editing)) { S.editing = null; S.draft = null; } render();
+  const n = items.length;
+  toast(on ? plural(n, 'Link arquivado.', 'links arquivados.') : plural(n, 'Link restaurado.', 'links restaurados.'), 'Desfazer', () => undoPatch(prev));
+}
+function purge(ids) {
+  closeModal();
+  const items = S.links.filter(l => ids.indexOf(l.id) >= 0);
   items.forEach(l => remove('links', l.id));
-  setSelecting(false);
-  toast(items.length === 1 ? 'Link excluído.' : items.length + ' links excluídos.', 'Desfazer', () => items.forEach(l => save('links', l)));
+  clearSel(); S.editing = null; S.draft = null; render();
+  toast(plural(items.length, 'Link excluído de vez.', 'links excluídos de vez.'));
 }
 
 /* ===== Eventos ===== */
 document.addEventListener('click', e => {
-  if (S.selecting) {
-    const card = e.target.closest('.link');
-    if (card && !e.target.closest('a,select,input,textarea,label,.edit,[data-act]:not([data-act="pick"])')) { toggleSel(card.dataset.id); return; }
+  if (S.menu && !e.target.closest('.menu,[data-act="move-menu"]')) { S.menu = false; renderBar(); }
+  if (S.sel.length) {
+    const card = e.target.closest('#list .link');
+    if (card && !e.target.closest('a,button,select,input,textarea,label,.edit')) { toggleSel(card.dataset.id, e.shiftKey); return; }
   }
   const t = e.target.closest('[data-view],[data-plat],[data-act],[data-m]');
   if (!t) return;
-  if (t.dataset.act === 'select-mode') { setSelecting(!S.selecting); return; }
-  if (t.dataset.act === 'bulk-cancel') { setSelecting(false); return; }
-  if (t.dataset.act === 'bulk-all') { const vis = visibleLinks().map(l => l.id); S.sel = (S.sel.length === vis.length) ? [] : vis; renderList(); renderBulk(); return; }
-  if (t.dataset.act === 'bulk-del') { bulkDelete(); return; }
-  if (t.dataset.act === 'pick') { toggleSel(t.closest('.link').dataset.id); return; }
+  const a0 = t.dataset.act;
+  if (a0 === 'pick') { e.preventDefault(); toggleSel(t.closest('.link').dataset.id, e.shiftKey); return; }
+  if (a0 === 'sel-clear') { clearSel(); syncSel(); return; }
+  if (a0 === 'sel-all') { S.sel = visibleLinks().map(l => l.id); syncSel(); return; }
+  if (a0 === 'move-menu') { S.menu = !S.menu; renderBar(); if (!S.menu) { const x = $('bar').querySelector('[data-act="move-menu"]'); if (x) x.focus(); } return; }
+  if (a0 === 'move-to') { if (t.getAttribute('aria-disabled') === 'true') return; bulkMove(t.dataset.dest || null); return; }
+  if (a0 === 'move-new') { S.menu = false; renderBar(); openModal({ kind: 'new', then: { type: 'move-many' } }); return; }
+  if (a0 === 'bulk-archive') { setArchived(selItems(), true); return; }
+  if (a0 === 'bulk-restore') { setArchived(selItems(), false); return; }
+  if (a0 === 'bulk-purge') { openModal({ kind: 'purge', ids: S.sel.slice() }); return; }
   if (t.dataset.m) {
     const k = t.dataset.m;
     if (k === 'overlay') { if (e.target === t) closeModal(); return; }
     if (k === 'cancel') closeModal();
     else if (k === 'ask-del') { const id = S.modal.id; S.modal = { kind: 'confirm', id }; renderModal(); }
     else if (k === 'confirm-del') deleteFolder(S.modal.id);
+    else if (k === 'confirm-purge') purge(S.modal.ids);
     return;
   }
-  if (t.dataset.view) { S.view = t.dataset.view; S.plat = 'all'; S.editing = null; S.draft = null; if (S.view !== 'all' && S.view !== 'none') S.dest = S.view; render(); return; }
+  if (t.dataset.view) { S.view = t.dataset.view; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived') S.dest = S.view; render(); return; }
   if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
   const act = t.dataset.act;
   if (act === 'new-folder') { openModal({ kind: 'new' }); return; }
@@ -589,7 +663,9 @@ document.addEventListener('click', e => {
   if (!l) return;
   if (act === 'edit') { S.editing = S.editing === id ? null : id; S.draft = null; render(); if (S.editing) { const i = document.querySelector('.edit [name=titulo]'); if (i) i.focus(); } }
   else if (act === 'copy') { (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(l.url) : Promise.reject()).then(() => toast('Link copiado.')).catch(() => toast('Não consegui copiar. Abra o link e copie pelo endereço.')); }
-  else if (act === 'del') { const copy = Object.assign({}, l); remove('links', id); if (S.editing === id) S.editing = null; toast('Link excluído.', 'Desfazer', () => save('links', copy)); }
+  else if (act === 'archive') setArchived([l], true);
+  else if (act === 'restore') setArchived([l], false);
+  else if (act === 'purge') openModal({ kind: 'purge', ids: [id] });
 });
 document.addEventListener('change', e => {
   const t = e.target;
@@ -605,12 +681,6 @@ document.addEventListener('change', e => {
       openModal({ kind: 'new', then: { type: 'edit-pasta', linkId: S.editing } });
     }
     return;
-  }
-  if (t.matches('select[data-act="bulk-move"]')) {
-    const v = t.value; t.value = '__none__';
-    if (v === '__none__') return;
-    if (v === '__new__') { openModal({ kind: 'new', then: { type: 'move-many' } }); return; }
-    bulkMove(v || null); return;
   }
 });
 document.addEventListener('input', e => {
@@ -639,9 +709,16 @@ $('url').addEventListener('paste', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (S.modal) { closeModal(); return; }
+    if (S.menu) { S.menu = false; renderBar(); const x = $('bar').querySelector('[data-act="move-menu"]'); if (x) x.focus(); return; }
     if (S.editing) { S.editing = null; S.draft = null; render(); }
-    else if (S.selecting) setSelecting(false);
+    else if (S.sel.length) { clearSel(); syncSel(); }
   }
+  if (S.menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    const its = Array.from($('bar').querySelectorAll('.mi:not([aria-disabled="true"])')); if (!its.length) return;
+    e.preventDefault(); const i = its.indexOf(document.activeElement);
+    its[(i + (e.key === 'ArrowDown' ? 1 : -1) + its.length) % its.length].focus();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && S.sel.length && !e.target.closest('input,textarea,select')) { e.preventDefault(); S.sel = visibleLinks().map(l => l.id); syncSel(); }
   if (e.key === 'Tab' && S.modal) {
     const els = Array.from($('modal-root').querySelectorAll('button, input, select, textarea, a[href]')).filter(x => !x.disabled && x.offsetParent !== null);
     if (!els.length) return;
