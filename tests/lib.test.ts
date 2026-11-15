@@ -1,0 +1,92 @@
+import { describe, expect, it } from 'vitest';
+import { autoTitle, clipTitle, isParsed, parseLink } from '../src/lib/platforms';
+import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib/filters';
+import { planImport } from '../src/lib/dataio';
+import type { Folder, Link } from '../src/types';
+
+const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaId: null, criadoEm: 0, enriquecido: true, ...o });
+const parsed = (u: string) => { const p = parseLink(u); if (!isParsed(p)) throw new Error('inválido: ' + u); return p; };
+
+describe('parseLink', () => {
+  it('reconhece o mesmo vídeo do YouTube em endereços diferentes', () => {
+    const a = parsed('https://www.youtube.com/watch?v=abc123&utm_source=x&t=10'), b = parsed('youtu.be/abc123');
+    expect(a.key).toBe('yt:abc123');
+    expect(b.key).toBe(a.key);
+    expect(a.url).toBe('https://www.youtube.com/watch?v=abc123');
+  });
+  it('identifica plataforma, tipo e autor', () => {
+    expect(parsed('https://x.com/fulano/status/99')).toMatchObject({ plataforma: 'x', tipo: 'Post', autor: '@fulano', key: 'x:99' });
+    expect(parsed('https://www.instagram.com/reel/XYZ/?igsh=1')).toMatchObject({ plataforma: 'instagram', tipo: 'Reel', key: 'ig:XYZ' });
+    expect(parsed('https://www.tiktok.com/@ana/video/7')).toMatchObject({ plataforma: 'tiktok', tipo: 'Vídeo', autor: '@ana' });
+    expect(parsed('https://www.threads.net/@ana/post/Q1')).toMatchObject({ plataforma: 'threads', tipo: 'Post' });
+  });
+  it('limpa rastreadores de sites comuns', () => {
+    expect(parsed('https://site.com/a/?utm_medium=y&id=3#topo').url).toBe('https://site.com/a/?id=3');
+  });
+  it('recusa o que não é link', () => {
+    expect(parseLink('')).toEqual({ error: 'vazio' });
+    expect(parseLink('dois links aqui')).toEqual({ error: 'espaco' });
+    expect(parseLink('semponto')).toEqual({ error: 'invalido' });
+    expect(parseLink('ftp://a.com/x')).toEqual({ error: 'invalido' });
+  });
+});
+
+describe('títulos', () => {
+  it('gera um título quando não há outro', () => {
+    expect(autoTitle(parsed('https://x.com/fulano/status/99'))).toBe('Post de @fulano');
+    expect(autoTitle(parsed('https://site.com/a'))).toBe('site.com');
+  });
+  it('corta no limite sem quebrar palavra', () => {
+    const t = clipTitle('palavra '.repeat(40).trim(), 60);
+    expect(t.length).toBeLessThanOrEqual(60);
+    expect(t.endsWith('…')).toBe(true);
+    expect(clipTitle('curto', 60)).toBe('curto');
+  });
+});
+
+describe('filtros', () => {
+  const folders: Folder[] = [{ id: 'f1', nome: 'Receitas' }];
+  const now = Date.now();
+  const links = [
+    link({ id: 'a', plataforma: 'youtube', pastaId: 'f1', criadoEm: now, tituloAuto: 'Bolo de fubá' }),
+    link({ id: 'b', plataforma: 'x', criadoEm: now - 40 * 864e5, nota: 'ler depois' }),
+    link({ id: 'c', arquivadoEm: 1, criadoEm: now }),
+    link({ id: 'd', pastaId: 'sumiu', criadoEm: now - 1000 }),
+  ];
+  const ids = (view: string, f = {}) => visibleLinks(links, folders, view, { ...EMPTY_FILTERS, ...f }).map(l => l.id);
+  it('separa as telas', () => {
+    expect(ids('all')).toEqual(['a', 'd', 'b']);
+    expect(ids('archived')).toEqual(['c']);
+    expect(ids('f1')).toEqual(['a']);
+    expect(ids('none')).toEqual(['d', 'b']);
+  });
+  it('busca em título automático, nota e nome da pasta', () => {
+    expect(ids('all', { q: 'fubá' })).toEqual(['a']);
+    expect(ids('all', { q: 'DEPOIS' })).toEqual(['b']);
+    expect(ids('all', { q: 'receitas' })).toEqual(['a']);
+  });
+  it('filtra por origem, pasta e data', () => {
+    expect(ids('all', { plats: ['x'] })).toEqual(['b']);
+    expect(ids('all', { fp: ['none'] })).toEqual(['b']);
+    expect(ids('all', datePreset(7, now))).toEqual(['a', 'd']);
+  });
+  it('conta filtros ativos', () => {
+    expect(filterCount({ ...EMPTY_FILTERS, q: ' ', fp: ['f1'] }, 'f1')).toBe(0);
+    expect(filterCount({ ...EMPTY_FILTERS, q: 'a', fp: ['f1'], from: '2026-01-01' }, 'all')).toBe(3);
+  });
+});
+
+describe('importação', () => {
+  it('soma sem duplicar e reaproveita pasta de mesmo nome', () => {
+    const folders: Folder[] = [{ id: 'f1', nome: 'Receitas' }];
+    const links = [link({ chave: parsed('https://site.com/a').key })];
+    const plan = planImport({ folders: [{ id: 'z', nome: 'receitas' }, { id: 'y', nome: 'Nova' }], links: [
+      { url: 'https://site.com/a', pastaId: 'z' }, { url: 'https://site.com/b', pastaId: 'z', titulo: 'B' }, { url: 'nada' },
+    ] }, folders, links)!;
+    expect(plan.folders.map(f => f.nome)).toEqual(['Nova']);
+    expect(plan.links).toHaveLength(1);
+    expect(plan.links[0]).toMatchObject({ titulo: 'B', pastaId: 'f1' });
+    expect(plan).toMatchObject({ dup: 1, bad: 1 });
+  });
+  it('recusa arquivo sem dados', () => { expect(planImport({ nada: 1 }, [], [])).toBeNull(); });
+});

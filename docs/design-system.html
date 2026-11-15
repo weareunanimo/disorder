@@ -699,8 +699,14 @@ body { font-weight: 500; }
 .ds th { font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; color: var(--fg); letter-spacing: .08em; }
 .ds .t1 { font: 900 40px/1 var(--f-display); letter-spacing: -0.03em; text-transform: uppercase; }
 .toast.static, .modal.static { position: static; transform: none; }
+
+/* Campo discreto (.inw.quiet) */
+.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 340px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
+.inw.quiet:focus-within { --s: 0px; --w: 2.5px; color: var(--fg); }
+.inw.quiet svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.inw.quiet > input { min-height: 36px; padding: 6px 12px 6px 0; font: 500 14px/1.4 var(--f-body); color: var(--fg); }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v6.1</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v6.2</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -783,6 +789,7 @@ body { font-weight: 500; }
 <div class="field"><span class="detected">Instagram · Reel</span><input type="text" value="instagram.com/reel/C8abcDEFgh"></div>
 <div class="field"><span class="detected">3 links</span><input type="text" value="https://x.com/a/status/1 https://youtu.be/dQw4w9WgXcQ"></div></div></div>
 
+<div class="spec"><header><h3>Campo discreto</h3><p>Variação menor do campo, classe <code>inw quiet</code>: 36px de altura, traço de 1,5px, sem sombra e largura máxima de 340px. No foco o traço engrossa para 2,5px, sem sombra. Serve para entradas curtas e secundárias, como a busca dentro dos filtros, que costuma receber uma palavra só. Leva um ícone de lupa no lugar do rótulo, e o nome acessível vai em aria-label. No celular ocupa a largura toda, com 40px de altura e texto de 16px.</p></header><div class="demo"><label class="inw quiet"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"/><path d="m10.2 10.2 3.3 3.3"/></svg><input class="search" type="search" placeholder="Buscar" aria-label="Buscar nos links"></label></div></div>
 <div class="spec"><header><h3>Campos com a forma do logo</h3><p>Todo campo (busca, link, texto, select, textarea e e-mail) usa a mesma forma dos cartões: lados abaulados e quatro cantos com raios diferentes, sempre com alguma curva. Como input, select e textarea não aceitam recorte nem pseudo-elementos, o contorno vai num invólucro: <code>.inw</code> para campos soltos, <code>.searchw</code> na busca e o próprio <code>.field</code> no campo de link. O controle fica por dentro, sem borda e com fundo transparente. No foco, o invólucro ganha a sombra dura de 4px. Os raios variam por posição: nos formulários, campos pares e múltiplos de três trocam os cantos vivos de lugar, como nos cartões. Raio base 14px, abaulado 3px nas pontas e 2px nas laterais, cantos vivos de 4px a 14px.</p></header><div class="stage col modal" style="border:0;padding:24px;width:100%;max-height:none">
 <label class="f">Título<span class="inw"><input type="text" placeholder="Título do link"></span></label>
 <label class="f">Pasta<span class="inw"><select class="sel"><option>Receitas</option></select></span></label>
@@ -802,7 +809,7 @@ body { font-weight: 500; }
 
 <div class="spec"><header><h3>Painel de filtros</h3><p>Bloco com a forma dos cartões (<code>.fpanel</code>) que abre abaixo da barra. Tem quatro grupos: Busca (título, autor, nota e endereço), Pastas (só em Todos os links, com contagem, várias ao mesmo tempo), Origem (só quando há mais de uma rede, várias ao mesmo tempo) e Data de salvamento (atalhos de 7, 30 e 90 dias mais os campos De e Até). Os grupos se combinam com E, e dentro de um grupo vale OU. Limpar zera tudo. Mudar de pasta no menu ou salvar um link também zera os filtros. No celular, o painel ocupa a largura toda e as datas empilham.</p></header><div class="stage col" style="align-items:stretch;width:100%">
 <div class="fpanel"><div class="fp-head"><b>Filtros</b><button class="btn sm">Limpar</button></div>
-<label class="f">Busca<span class="inw"><input class="search" type="search" placeholder="Título, autor, nota ou endereço"></span></label>
+<label class="inw quiet"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"/><path d="m10.2 10.2 3.3 3.3"/></svg><input class="search" type="search" placeholder="Buscar" aria-label="Buscar nos links"></label>
 <div class="fgrp"><span class="fl">Pastas</span><div class="chips"><button class="chip" aria-pressed="true">Receitas<span class="n">3</span></button><button class="chip" aria-pressed="false">Viagens<span class="n">5</span></button></div></div>
 <div class="fgrp"><span class="fl">Origem</span><div class="chips"><button class="chip" aria-pressed="false">X<span class="n">2</span></button><button class="chip" aria-pressed="true">Instagram<span class="n">4</span></button></div></div>
 <div class="fgrp"><span class="fl">Data de salvamento</span><div class="chips"><button class="chip" aria-pressed="true">Últimos 7 dias</button><button class="chip" aria-pressed="false">Últimos 30 dias</button></div><div class="fdates"><label class="f">De<span class="inw"><input type="date"></span></label><label class="f">Até<span class="inw"><input type="date"></span></label></div></div></div></div></div>

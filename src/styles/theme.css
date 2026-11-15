@@ -670,3 +670,14 @@ body { font-weight: 500; }
 .fpanel input[type="date"] { min-width: 0; }
 .fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 18px 16px; --r: 22px; --d: 4px; --s: 4px; } .fdates { grid-template-columns: 1fr; } .tools .add-row { flex: 1 1 0; } }
+
+/* Campo discreto (.inw.quiet): versão menor do campo, sem sombra e com traço fino. Usado na busca dos filtros, que quase sempre recebe uma palavra só. */
+.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 340px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
+.inw.quiet:focus-within { --s: 0px; --w: 2.5px; color: var(--fg); }
+.inw.quiet svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.inw.quiet > input { min-height: 36px; padding: 6px 12px 6px 0; font: 500 14px/1.4 var(--f-body); color: var(--fg); }
+.inw.quiet > input::-webkit-search-cancel-button { cursor: pointer; }
+@media (max-width: 640px) { .inw.quiet { max-width: none; } .inw.quiet > input { min-height: 40px; font-size: 16px; } }
+
+/* Marcador do fim da lista: quando entra na tela, mais links são desenhados. */
+.list > .more { grid-column: 1 / -1; height: 1px; }
