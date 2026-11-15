@@ -664,16 +664,20 @@ body { font-weight: 500; }
 .tools-sp { flex: 1 1 220px; }
 .btn.filt { min-height: 44px; }
 .btn.filt .cnt { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 2px; background: var(--primary); color: var(--primary-fg, #121212); border: 2px solid var(--ink); font: 700 12px/1 var(--f-mono); border-radius: 11px; }
-.fpanel { --rk: 7px; --r: 24px; --d: 5px; --dx: 3px; --s: 5px; --r2: 5px; --r4: 12px; flex: 1 1 100%; display: grid; gap: 18px; padding: 22px; margin-top: 4px; border: 2px solid var(--ink); background: var(--surface); }
-.fp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fp-head b { font: 800 22px/1 var(--f-display, var(--f-body)); text-transform: uppercase; letter-spacing: -.01em; }
+.fpanel { --rk: 7px; --r: 24px; --d: 5px; --dx: 3px; --s: 5px; --r2: 5px; --r4: 12px; flex: 1 1 100%; display: grid; gap: 16px; padding: 18px 22px 22px; margin-top: 4px; border: 2px solid var(--ink); background: var(--surface); }
+.fp-head { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 2px dashed var(--ink); }
+.fp-head b { flex: none; font: 800 22px/1 var(--f-display, var(--f-body)); text-transform: uppercase; letter-spacing: -.01em; }
+.fp-head .inw.quiet { flex: 1 1 auto; max-width: 460px; width: auto; margin-left: auto; }
+.fp-head .btn { flex: none; }
 .fpanel .f, .fpanel .fl { display: flex; flex-direction: column; gap: 8px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
-.fpanel .fgrp { display: grid; gap: 10px; }
+.fp-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 262px), 1fr)); gap: 20px 24px; align-items: start; }
+.fpanel .fgrp { display: grid; gap: 10px; align-content: start; min-width: 0; }
 .fpanel .chips { flex: none; margin: 0; }
 .fpanel input { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; padding: 8px 16px; }
-.fpanel input[type="date"] { min-width: 0; }
-.fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 18px 16px; --r: 22px; --d: 4px; --s: 4px; } .fdates { grid-template-columns: 1fr; } .tools .add-row { flex: 1 1 0; } }
+.fpanel input[type="date"] { min-width: 0; font-size: 13px; padding: 6px 10px; min-height: 38px; }
+.fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 16px 16px 18px; --r: 22px; --d: 4px; --s: 4px; } .fp-head { flex-wrap: wrap; row-gap: 12px; } .fp-head .btn { margin-left: auto; } .fp-head .inw.quiet { order: 3; flex: 1 1 100%; max-width: none; } .fp-body { gap: 18px; } .tools .add-row { flex: 1 1 0; } }
+@media (max-width: 399px) { .fdates { grid-template-columns: 1fr; } }
 
 /* somente desta página de documentação */
 .ds { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; display: flex; flex-direction: column; gap: 56px; }
@@ -701,7 +705,7 @@ body { font-weight: 500; }
 .toast.static, .modal.static { position: static; transform: none; }
 
 /* Campo discreto (.inw.quiet) */
-.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 340px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
+.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 460px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
 .inw.quiet:focus-within { --s: 0px; --w: 2.5px; color: var(--fg); }
 .inw.quiet svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .inw.quiet > input { min-height: 36px; padding: 6px 12px 6px 0; font: 500 14px/1.4 var(--f-body); color: var(--fg); }
@@ -807,12 +811,11 @@ body { font-weight: 500; }
 <div class="spec"><header><h3>Barra de ferramentas</h3><p>Primeira linha acima da lista. O Salvar link (<code>.add-row</code>, primary) ocupa todo o espaço que antes era da busca, porque salvar é a ação principal. À direita ficam Filtros e, a partir de 901px, o seletor de visualização. Em Arquivados o Salvar link some e Filtros e seletor ficam à direita. O botão de Salvar do cabeçalho foi removido. No celular o botão flutuante continua existindo para quem rolou a lista.</p></header><div class="stage col" style="align-items:stretch;width:100%">
 <div class="tools"><button class="btn primary add-row"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button><button class="btn filt" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>Filtros</button></div></div></div>
 
-<div class="spec"><header><h3>Painel de filtros</h3><p>Bloco com a forma dos cartões (<code>.fpanel</code>) que abre abaixo da barra. Tem quatro grupos: Busca (título, autor, nota e endereço), Pastas (só em Todos os links, com contagem, várias ao mesmo tempo), Origem (só quando há mais de uma rede, várias ao mesmo tempo) e Data de salvamento (atalhos de 7, 30 e 90 dias mais os campos De e Até). Os grupos se combinam com E, e dentro de um grupo vale OU. Limpar zera tudo. Mudar de pasta no menu ou salvar um link também zera os filtros. No celular, o painel ocupa a largura toda e as datas empilham.</p></header><div class="stage col" style="align-items:stretch;width:100%">
-<div class="fpanel"><div class="fp-head"><b>Filtros</b><button class="btn sm">Limpar</button></div>
-<label class="inw quiet"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"/><path d="m10.2 10.2 3.3 3.3"/></svg><input class="search" type="search" placeholder="Buscar" aria-label="Buscar nos links"></label>
-<div class="fgrp"><span class="fl">Pastas</span><div class="chips"><button class="chip" aria-pressed="true">Receitas<span class="n">3</span></button><button class="chip" aria-pressed="false">Viagens<span class="n">5</span></button></div></div>
+<div class="spec"><header><h3>Painel de filtros</h3><p>Bloco com a forma dos cartões (<code>.fpanel</code>) que abre abaixo da barra. Tem uma faixa de cabeçalho e um corpo em colunas. O cabeçalho (<code>.fp-head</code>) leva o título, a Busca (título, autor, nota e endereço, campo discreto que ocupa o espaço que sobra) e o Limpar, com um divisor tracejado de 2px embaixo. O corpo (<code>.fp-body</code>) distribui os grupos lado a lado, cada um com no mínimo 262px, então em tela larga ficam três colunas e, quando falta um grupo, os outros se esticam: Pastas (só em Todos os links, com contagem, várias ao mesmo tempo), Origem (só quando há mais de uma rede, várias ao mesmo tempo) e Data de salvamento (atalhos de 7, 30 e 90 dias mais os campos De e Até). Os grupos se combinam com E, e dentro de um grupo vale OU. Limpar zera tudo. Mudar de pasta no menu ou salvar um link também zera os filtros. No celular, a busca desce para uma linha própria, os grupos empilham e as datas ficam lado a lado (abaixo de 400px, empilham).</p></header><div class="stage col" style="align-items:stretch;width:100%">
+<div class="fpanel"><div class="fp-head"><b>Filtros</b><label class="inw quiet"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"/><path d="m10.2 10.2 3.3 3.3"/></svg><input class="search" type="search" placeholder="Buscar" aria-label="Buscar nos links"></label><button class="btn sm">Limpar</button></div>
+<div class="fp-body"><div class="fgrp"><span class="fl">Pastas</span><div class="chips"><button class="chip" aria-pressed="true">Receitas<span class="n">3</span></button><button class="chip" aria-pressed="false">Viagens<span class="n">5</span></button></div></div>
 <div class="fgrp"><span class="fl">Origem</span><div class="chips"><button class="chip" aria-pressed="false">X<span class="n">2</span></button><button class="chip" aria-pressed="true">Instagram<span class="n">4</span></button></div></div>
-<div class="fgrp"><span class="fl">Data de salvamento</span><div class="chips"><button class="chip" aria-pressed="true">Últimos 7 dias</button><button class="chip" aria-pressed="false">Últimos 30 dias</button></div><div class="fdates"><label class="f">De<span class="inw"><input type="date"></span></label><label class="f">Até<span class="inw"><input type="date"></span></label></div></div></div></div></div>
+<div class="fgrp"><span class="fl">Data de salvamento</span><div class="chips"><button class="chip" aria-pressed="true">Últimos 7 dias</button><button class="chip" aria-pressed="false">Últimos 30 dias</button></div><div class="fdates"><label class="f">De<span class="inw"><input type="date"></span></label><label class="f">Até<span class="inw"><input type="date"></span></label></div></div></div></div></div></div></div></div>
 
 <div class="spec"><header><h3>Chip de filtro</h3><p>Ativo em fg invertido, inativo em surface com borda ink. Hover em accent. Contagem em tabular.</p></header><div class="stage chips">
 <button class="chip" aria-pressed="true">Tudo <span class="n">5</span></button><button class="chip" aria-pressed="false">X <span class="n">1</span></button><button class="chip" aria-pressed="false">Instagram <span class="n">1</span></button></div></div>

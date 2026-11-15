@@ -660,19 +660,23 @@ body { font-weight: 500; }
 .tools-sp { flex: 1 1 220px; }
 .btn.filt { min-height: 44px; }
 .btn.filt .cnt { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 2px; background: var(--primary); color: var(--primary-fg, #121212); border: 2px solid var(--ink); font: 700 12px/1 var(--f-mono); border-radius: 11px; }
-.fpanel { --rk: 7px; --r: 24px; --d: 5px; --dx: 3px; --s: 5px; --r2: 5px; --r4: 12px; flex: 1 1 100%; display: grid; gap: 18px; padding: 22px; margin-top: 4px; border: 2px solid var(--ink); background: var(--surface); }
-.fp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fp-head b { font: 800 22px/1 var(--f-display, var(--f-body)); text-transform: uppercase; letter-spacing: -.01em; }
+.fpanel { --rk: 7px; --r: 24px; --d: 5px; --dx: 3px; --s: 5px; --r2: 5px; --r4: 12px; flex: 1 1 100%; display: grid; gap: 16px; padding: 18px 22px 22px; margin-top: 4px; border: 2px solid var(--ink); background: var(--surface); }
+.fp-head { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 2px dashed var(--ink); }
+.fp-head b { flex: none; font: 800 22px/1 var(--f-display, var(--f-body)); text-transform: uppercase; letter-spacing: -.01em; }
+.fp-head .inw.quiet { flex: 1 1 auto; max-width: 460px; width: auto; margin-left: auto; }
+.fp-head .btn { flex: none; }
 .fpanel .f, .fpanel .fl { display: flex; flex-direction: column; gap: 8px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
-.fpanel .fgrp { display: grid; gap: 10px; }
+.fp-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 262px), 1fr)); gap: 20px 24px; align-items: start; }
+.fpanel .fgrp { display: grid; gap: 10px; align-content: start; min-width: 0; }
 .fpanel .chips { flex: none; margin: 0; }
 .fpanel input { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; padding: 8px 16px; }
-.fpanel input[type="date"] { min-width: 0; }
-.fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 18px 16px; --r: 22px; --d: 4px; --s: 4px; } .fdates { grid-template-columns: 1fr; } .tools .add-row { flex: 1 1 0; } }
+.fpanel input[type="date"] { min-width: 0; font-size: 13px; padding: 6px 10px; min-height: 38px; }
+.fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 16px 16px 18px; --r: 22px; --d: 4px; --s: 4px; } .fp-head { flex-wrap: wrap; row-gap: 12px; } .fp-head .btn { margin-left: auto; } .fp-head .inw.quiet { order: 3; flex: 1 1 100%; max-width: none; } .fp-body { gap: 18px; } .tools .add-row { flex: 1 1 0; } }
+@media (max-width: 399px) { .fdates { grid-template-columns: 1fr; } }
 
 /* Campo discreto (.inw.quiet): versão menor do campo, sem sombra e com traço fino. Usado na busca dos filtros, que quase sempre recebe uma palavra só. */
-.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 340px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
+.inw.quiet { --w: 1.5px; --s: 0px; --r: 12px; --d: 2px; --dx: 2px; align-items: center; gap: 8px; width: 100%; max-width: 460px; padding-left: 12px; color: var(--muted-fg); cursor: text; }
 .inw.quiet:focus-within { --s: 0px; --w: 2.5px; color: var(--fg); }
 .inw.quiet svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .inw.quiet > input { min-height: 36px; padding: 6px 12px 6px 0; font: 500 14px/1.4 var(--f-body); color: var(--fg); }

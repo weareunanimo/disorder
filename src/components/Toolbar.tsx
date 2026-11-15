@@ -47,37 +47,39 @@ function FiltersPanel({ n }: { n: number }) {
     <div className="fpanel" id="fpanel" role="group" aria-label="Filtros">
       <div className="fp-head">
         <b>Filtros</b>
+        <label className="inw quiet">
+          <IcoSearch />
+          <input ref={search} className="search" id="q" type="search" placeholder="Buscar" aria-label="Buscar nos links" autoComplete="off" value={q} onChange={e => set({ q: e.target.value })} />
+        </label>
         <button type="button" className="btn sm" disabled={!n} onClick={resetFilters}>Limpar</button>
       </div>
-      <label className="inw quiet">
-        <IcoSearch />
-        <input ref={search} className="search" id="q" type="search" placeholder="Buscar" aria-label="Buscar nos links" autoComplete="off" value={q} onChange={e => set({ q: e.target.value })} />
-      </label>
-      {view === 'all' && folders.length > 0 && (
-        <div className="fgrp" role="group" aria-label="Filtrar por pasta">
-          <span className="fl">Pastas</span>
-          <div className="chips">
-            {stats.none > 0 && <Chip label="Sem pasta" count={stats.none} on={fp.includes('none')} onClick={() => toggleFolderFilter('none')} />}
-            {folders.map(f => <Chip key={f.id} label={f.nome} count={stats.folder.get(f.id) || 0} on={fp.includes(f.id)} onClick={() => toggleFolderFilter(f.id)} />)}
+      <div className="fp-body">
+        {view === 'all' && folders.length > 0 && (
+          <div className="fgrp" role="group" aria-label="Filtrar por pasta">
+            <span className="fl">Pastas</span>
+            <div className="chips">
+              {stats.none > 0 && <Chip label="Sem pasta" count={stats.none} on={fp.includes('none')} onClick={() => toggleFolderFilter('none')} />}
+              {folders.map(f => <Chip key={f.id} label={f.nome} count={stats.folder.get(f.id) || 0} on={fp.includes(f.id)} onClick={() => toggleFolderFilter(f.id)} />)}
+            </div>
           </div>
-        </div>
-      )}
-      {present.length > 1 && (
-        <div className="fgrp" role="group" aria-label="Filtrar por origem">
-          <span className="fl">Origem</span>
-          <div className="chips">
-            {present.map(k => <Chip key={k} label={PLAT[k].label} count={stats.plat.get(k)} on={plats.includes(k)} onClick={() => togglePlat(k)} />)}
+        )}
+        {present.length > 1 && (
+          <div className="fgrp" role="group" aria-label="Filtrar por origem">
+            <span className="fl">Origem</span>
+            <div className="chips">
+              {present.map(k => <Chip key={k} label={PLAT[k].label} count={stats.plat.get(k)} on={plats.includes(k)} onClick={() => togglePlat(k)} />)}
+            </div>
           </div>
-        </div>
-      )}
-      <div className="fgrp" role="group" aria-label="Filtrar por data">
-        <span className="fl">Data de salvamento</span>
-        <div className="chips">
-          {[7, 30, 90].map(d => <Chip key={d} label={'Últimos ' + d + ' dias'} on={isPreset(d)} onClick={() => preset(d)} />)}
-        </div>
-        <div className="fdates">
-          <label className="f" htmlFor="fd-from">De<span className="inw"><input type="date" id="fd-from" value={from} onChange={e => set({ from: e.target.value })} /></span></label>
-          <label className="f" htmlFor="fd-to">Até<span className="inw"><input type="date" id="fd-to" value={to} onChange={e => set({ to: e.target.value })} /></span></label>
+        )}
+        <div className="fgrp" role="group" aria-label="Filtrar por data">
+          <span className="fl">Data de salvamento</span>
+          <div className="chips">
+            {[7, 30, 90].map(d => <Chip key={d} label={'Últimos ' + d + ' dias'} on={isPreset(d)} onClick={() => preset(d)} />)}
+          </div>
+          <div className="fdates">
+            <label className="f" htmlFor="fd-from">De<span className="inw"><input type="date" id="fd-from" value={from} onChange={e => set({ from: e.target.value })} /></span></label>
+            <label className="f" htmlFor="fd-to">Até<span className="inw"><input type="date" id="fd-to" value={to} onChange={e => set({ to: e.target.value })} /></span></label>
+          </div>
         </div>
       </div>
     </div>
