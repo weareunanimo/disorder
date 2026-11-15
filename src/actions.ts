@@ -6,7 +6,8 @@ import { planAutoFolders } from './lib/auto';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
-import { enrichLink, extrasOf, summarize } from './data/previews';
+import { enrichLink, extrasOf, summarize, whySummaryFailed } from './data/previews'
+import * as pv from './data/previews';
 import { saveProfileName, signOut as sbSignOut, getClient } from './data/supabase';
 import { CFG } from './config';
 
@@ -535,6 +536,7 @@ export async function summarizeExisting() {
       while (i < todo.length) {
         const id = todo[i++], l = get().links.find(x => x.id === id);
         if (!l) continue;
+        if (pv.lastSummarizeStatus === 401 || pv.lastSummarizeStatus === 503) return; // falha que se repetiria em todos: para
         if (l.enriquecido) await addSummary(id); else await enrich(id);
       }
     };
@@ -542,7 +544,8 @@ export async function summarizeExisting() {
   } finally { bulkAi = false; }
   const done = todo.filter(id => get().links.find(l => l.id === id)?.resumoIA).length;
   set({ summarizingAll: false });
-  await organize(done + ' de ' + todo.length + ' links ganharam resumo. ');
+  const why = done < todo.length && pv.lastSummarizeStatus !== 200 ? ' Motivo: ' + whySummaryFailed(pv.lastSummarizeStatus) : '';
+  await organize(done + ' de ' + todo.length + ' links ganharam resumo.' + why + ' ');
 }
 
 /* ===== Preview automático ===== */

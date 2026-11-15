@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
         ],
       }),
     });
-    if (!r.ok) return out(502, { error: 'a IA não respondeu' });
+    if (!r.ok) { console.error('AI Gateway', r.status, String(await r.text()).slice(0, 300)); return out(502, { error: 'a IA não respondeu', gateway: r.status }); }
     const j = await r.json();
     const a = parseAnswer(j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content);
     if (!a) return out(502, { error: 'resposta inválida' });

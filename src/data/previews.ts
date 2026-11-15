@@ -44,6 +44,9 @@ export async function enrichLink(l: Link): Promise<EnrichResult> {
 
 export type Resumo = { resumo: string; tema: string };
 
+/** Como foi a última chamada de resumo: 200, o código HTTP da falha, ou 0 quando nem chegou ao servidor. Serve para explicar por que não funcionou. */
+export let lastSummarizeStatus = 200;
+
 /** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. */
 export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma'>): Promise<Resumo | null> {
   if (!CFG.summarizeApi) return null;
@@ -55,9 +58,20 @@ export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descric
       headers: { 'content-type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
     });
+    lastSummarizeStatus = r.status;
     if (!r.ok) return null;
     const d = (await r.json()) as Partial<Resumo>;
     const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
     return resumo || tema ? { resumo, tema } : null;
-  } catch { return null; }
+  } catch { lastSummarizeStatus = 0; return null; }
+}
+
+/** Frase para a pessoa entender por que o resumo não rodou. */
+export function whySummaryFailed(status: number): string {
+  if (status === 401) return 'sua sessão expirou. Saia e entre de novo.';
+  if (status === 503) return 'o servidor ainda não tem a chave de IA. Confira AI_GATEWAY_API_KEY na Vercel e faça um redeploy.';
+  if (status === 429) return 'o limite diário de IA acabou. Tente amanhã.';
+  if (status === 502) return 'o serviço de IA recusou o pedido. Confira a chave e o modelo na Vercel.';
+  if (status === 0) return 'não consegui falar com o servidor.';
+  return 'o servidor respondeu com erro ' + status + '.';
 }
