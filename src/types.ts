@@ -20,6 +20,9 @@ export interface Link {
   leitura?: number;
   publicadoEm?: number;
   icone?: string;
+  /** Gerados pela IA (opcionais): uma frase sobre o link e um tema curto. Só existem se o resumo por IA estiver ligado. */
+  resumoIA?: string;
+  tema?: string;
   arquivadoEm?: number | null;
   host?: string;
 }

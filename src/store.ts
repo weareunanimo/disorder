@@ -54,6 +54,8 @@ export interface State extends FilterState {
 
   profile: { nome: string; email: string };
   theme: Theme;
+  /** Resumo por IA ligado neste aparelho. Desligado por padrão: liga em Configurações. */
+  ai: boolean;
 }
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -89,6 +91,7 @@ export const useStore = create<State>(() => ({
   loading: [],
 
   profile: { nome: read('disorder.nome') || '', email: '' },
+  ai: read('disorder.ai') === '1',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',
 
   ...EMPTY_FILTERS,

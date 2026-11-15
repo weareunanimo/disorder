@@ -41,3 +41,23 @@ export async function enrichLink(l: Link): Promise<EnrichResult> {
     return { extras, got: Object.keys(extras).length > 0 };
   } catch { return null; }
 }
+
+export type Resumo = { resumo: string; tema: string };
+
+/** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. */
+export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma'>): Promise<Resumo | null> {
+  if (!CFG.summarizeApi) return null;
+  const titulo = l.titulo || l.tituloAuto || '';
+  if (!titulo && !l.descricao) return null;
+  try {
+    const r = await fetch(CFG.summarizeApi, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(await authHeaders()) },
+      body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
+    });
+    if (!r.ok) return null;
+    const d = (await r.json()) as Partial<Resumo>;
+    const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
+    return resumo || tema ? { resumo, tema } : null;
+  } catch { return null; }
+}

@@ -5,7 +5,7 @@ import { isParsed, parseLink, SOCIAL } from './lib/platforms';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
-import { enrichLink, extrasOf } from './data/previews';
+import { enrichLink, extrasOf, summarize } from './data/previews';
 import { saveProfileName, signOut as sbSignOut, getClient } from './data/supabase';
 import { CFG } from './config';
 
@@ -188,7 +188,7 @@ function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
     r.saved.push(rec);
   });
   if (r.saved.length) {
-    void saveMany('links', r.saved).then(() => { r.saved.forEach(l => { if (!l.enriquecido) void enrich(l.id); }); });
+    void saveMany('links', r.saved).then(() => { r.saved.forEach(l => { if (!l.enriquecido) void enrich(l.id); else void addSummary(l.id); }); });
   }
   return r;
 }
@@ -366,6 +366,11 @@ export function setTheme(t: Theme) {
   applyTheme(t);
 }
 
+export function setAi(on: boolean) {
+  set({ ai: on });
+  try { localStorage.setItem('disorder.ai', on ? '1' : '0'); } catch { /* sem armazenamento */ }
+}
+
 export async function setProfileName(nome: string) {
   nome = nome.trim();
   set({ profile: { ...get().profile, nome } });
@@ -405,6 +410,20 @@ export async function importData(file: File | undefined) {
   toast(plural(nl.length, '1 link importado', 'links importados') + ' e ' + plural(nf.length, '1 pasta criada', 'pastas criadas') + '.' + (dup ? ' ' + plural(dup, '1 já existia', 'já existiam') + '.' : '') + (bad ? ' ' + plural(bad, '1 endereço inválido ficou de fora', 'endereços inválidos ficaram de fora') + '.' : '') + (lost ? ' ' + plural(lost, '1 item não foi salvo', 'itens não foram salvos') + ', tente importar de novo.' : ''));
 }
 
+/* ===== Resumo por IA ===== */
+const summarizing = new Set<string>();
+/** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
+async function addSummary(id: string) {
+  const l = get().links.find(x => x.id === id);
+  if (!get().ai || !l || l.resumoIA || summarizing.has(id)) return;
+  summarizing.add(id);
+  try {
+    const s = await summarize(l);
+    const now = get().links.find(x => x.id === id);
+    if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}) });
+  } finally { summarizing.delete(id); }
+}
+
 /* ===== Preview automático ===== */
 const enriching = new Set<string>();
 /** Busca título e imagem de um link já salvo. force refaz mesmo que já tenha sido feito. */
@@ -419,6 +438,7 @@ export async function enrich(id: string, force = false): Promise<boolean> {
     const cur = get().links.find(x => x.id === id);
     if (!r || !cur) return false;
     await save('links', { ...cur, ...r.extras, enriquecido: true });
+    await addSummary(id);
     return r.got;
   } finally {
     enriching.delete(id);

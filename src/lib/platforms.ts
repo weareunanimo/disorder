@@ -168,7 +168,9 @@ export function originOf(l: Pick<Link, 'plataforma' | 'tipo' | 'host' | 'url' | 
 }
 
 /** Resumo só entra no cartão se acrescenta algo ao título. */
-export function summaryOf(l: Pick<Link, 'descricao' | 'titulo' | 'tituloAuto' | 'plataforma' | 'tipo' | 'leitura' | 'duracao'>): string {
+export function summaryOf(l: Pick<Link, 'resumoIA' | 'descricao' | 'titulo' | 'tituloAuto' | 'plataforma' | 'tipo' | 'leitura' | 'duracao'>): string {
+  const ia = (l.resumoIA || '').trim();
+  if (ia && kindOf(l) !== 'post' && kindOf(l) !== 'profile') return ia;
   const d = (l.descricao || '').trim();
   if (!d || kindOf(l) === 'post' || kindOf(l) === 'profile') return '';
   const t = (l.titulo || l.tituloAuto || '').toLowerCase();
