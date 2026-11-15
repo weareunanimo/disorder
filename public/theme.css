@@ -575,7 +575,7 @@ body { font-weight: 500; }
 .btn.icon.set-btn svg { display: block; }
 
 /* Forma do logo: cantos redondos ou vivos e os quatro lados levemente abaulados. Gerado por shape/gen_shape.py, não editar os polígonos à mão. */
-.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv {
+.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw {
   --r1: initial; --r2: initial; --r3: initial; --r4: initial; --shc: var(--ink);
   --q1: var(--r1, var(--r)); --q2: var(--r2, var(--r)); --q3: var(--r3, var(--r)); --q4: var(--r4, var(--r)); --w: 2px; --bd: 2px;
   --dx: var(--d); --dy: var(--d);
@@ -586,8 +586,8 @@ body { font-weight: 500; }
   position: relative; border-color: transparent !important; border-radius: 0 !important; box-shadow: none !important; clip-path: var(--sq-u);
 }
 .fab { position: fixed; }
-:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv)::after { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -2; background: var(--shc, var(--ink)); pointer-events: none; }
-:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv)::before { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -1; background: inherit; clip-path: var(--sq-i); pointer-events: none; }
+:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw)::after { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -2; background: var(--shc, var(--ink)); pointer-events: none; }
+:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw)::before { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -1; background: inherit; clip-path: var(--sq-i); pointer-events: none; }
 /* Tamanhos e variações. A = tudo redondo, B = barriga e haste (um lado redondo, outro vivo), C = diagonal. Miolo (tags, preview, caixa de seleção, campos) continua reto. */
 .list.grid .link { --rk: 7px; --r: 26px; --d: 6px; --s: 5px; padding: 20px 20px 18px; }
 .list.grid .link, .sblock, .banner, .pv { --dx: 3px; }
@@ -632,3 +632,9 @@ body { font-weight: 500; }
 @media (max-width: 900px) { .nav-btn { border-radius: 14px; } .nav-btn:nth-child(even) { border-radius: 14px 3px 6px 14px; } .add-folder { border-radius: 14px 3px 14px 6px; } }
 @media (max-width: 640px) { .modal { border-radius: 28px 28px 4px 4px; } }
 @media (max-width: 900px) { .head { flex-wrap: nowrap; align-items: flex-start; } .head .ht { min-width: 0; } .head h1 { overflow-wrap: anywhere; } }
+
+/* Campo de busca: o contorno vai no invólucro, o input fica sem borda */
+.searchw { --bd: 0px; --rk: 5px; --r: 14px; --d: 3px; --dx: 2px; --s: 0px; --r2: 4px; --r4: 9px; flex: 1 1 220px; min-width: 0; display: flex; background: var(--field); }
+.searchw .search { flex: 1; min-width: 0; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; padding: 8px 18px; min-height: 44px; }
+.searchw:focus-within { --s: 4px; }
+@media (max-width: 640px) { .tools .searchw { flex: 1 1 100%; } }

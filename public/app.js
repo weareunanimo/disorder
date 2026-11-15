@@ -505,7 +505,7 @@ function renderTools() {
   const present = Object.keys(PLAT).filter(k => counts[k]);
   if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
   const open = present.length > 1 && (S.filtersOpen || S.plat !== 'all');
-  let h = '<label class="sr" for="q">Buscar nos links</label><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '">' +
+  let h = '<label class="sr" for="q">Buscar nos links</label><span class="searchw"><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '"></span>' +
     (present.length > 1 ? '<button type="button" class="btn filt" data-act="filters" aria-expanded="' + open + '" aria-controls="chips"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>Filtros' + (S.plat !== 'all' ? '<span class="dot" aria-label="filtro ativo"></span>' : '') + '</button>' : '') +
     '<div class="seg" role="group" aria-label="Visualização">' +
     '<button type="button" data-layout="cards" aria-pressed="' + (S.layout !== 'list') + '" aria-label="Ver em cartões" title="Ver em cartões"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></button>' +
