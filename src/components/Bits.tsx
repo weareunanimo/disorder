@@ -1,9 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { acceptClip, currentDest, dismissClip, dismissToast, folderById, openAdd } from '../actions';
+import { usePullReveal } from '../hooks/usePullReveal';
 import { IcoPlus } from './icons';
 
-export const Brand = () => <div className="brand" role="banner" aria-label="disorder"><b aria-hidden="true">disorder</b></div>;
+export function Brand() {
+  const ref = useRef<HTMLDivElement>(null);
+  usePullReveal(ref);
+  return <div className="brand" ref={ref} role="banner" aria-label="disorder"><b aria-hidden="true">disorder</b></div>;
+}
 
 export function Toast() {
   const t = useStore(s => s.toast);

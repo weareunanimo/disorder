@@ -318,9 +318,14 @@ body { font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: none; } }
 
 /* Marca: faixa de topo, largura total, só os 66% de baixo do logo aparecem */
+/* Marca: faixa de topo, largura total, só os 66% de baixo do logo aparecem.
+   Puxar a página para baixo no topo (--pull) abre a faixa e mostra o resto do logo, 0,36 × --fs no máximo. Ao soltar, volta sozinha. */
+html { overscroll-behavior-y: none; }
 .brand { container-type: inline-size; position: relative; overflow: hidden; width: 100%; color: var(--fg);
-  --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.6072); }
-.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.2128); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
+  --pull: 0px; --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.6072 + var(--pull)); }
+.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.2128 + var(--pull)); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
+.brand.snap, .brand.snap b { transition: height .42s cubic-bezier(.2, .9, .25, 1.15), top .42s cubic-bezier(.2, .9, .25, 1.15); }
+@media (prefers-reduced-motion: reduce) { .brand.snap, .brand.snap b { transition: none; } }
 
 /* Navegação */
 .nav { gap: 6px; }
@@ -863,7 +868,7 @@ body { font-weight: 500; }
 
 <div class="spec"><header><h3>Arquivar</h3><p>Arquivar substitui excluir. O link sai das pastas e das contagens e vai para Arquivados, que aparece no menu lateral quando há algo arquivado. No painel de edição, o botão é Arquivar. Em Arquivados, Restaurar e Excluir de vez, este com confirmação, porque é o único caminho sem volta. Colar um link arquivado avisa e oferece Restaurar. Excluir uma pasta não apaga links, os links dela vão para Arquivados, sem pasta, e o toast oferece Desfazer, que recria a pasta e devolve os links.</p></header></div>
 
-<div class="spec"><header><h3>Marca</h3><p>Texto colado no topo e nas duas laterais, em largura total, antes de todo o resto da página. Sem fundo nem borda, na cor fg. O texto "disorder" em Oi usa <code>--fs = 100cqw / 7,185</code> para encostar nas duas bordas, e a faixa tem 66% da altura do logo (0,6072 × --fs), então só os 66% de baixo das letras aparecem. Fica em tela de entrada e no app, no celular e no desktop.</p></header><div class="stage col" style="align-items:stretch;padding:0"><div class="brand"><b>disorder</b></div></div></div>
+<div class="spec"><header><h3>Marca</h3><p>Texto colado no topo e nas duas laterais, em largura total, antes de todo o resto da página. Sem fundo nem borda, na cor fg. O texto "disorder" em Oi usa <code>--fs = 100cqw / 7,185</code> para encostar nas duas bordas, e a faixa tem 66% da altura do logo (0,6072 × --fs), então só os 66% de baixo das letras aparecem. Fica em tela de entrada e no app, no celular e no desktop. Puxar a página para baixo estando no topo (toque ou roda do mouse) abre a faixa e mostra o resto do logo, até 0,36 × --fs a mais, com resistência crescente. Ao soltar ou parar de rolar, a faixa volta sozinha ao tamanho inicial, com uma animação curta de 420ms (sem animação se o sistema pede menos movimento). A variável <code>--pull</code> guarda a abertura. O puxão não atua com diálogo, menu ou barra de seleção em foco, e desliga a atualização nativa do navegador no celular (<code>overscroll-behavior-y: none</code>).</p></header><div class="stage col" style="align-items:stretch;padding:0"><div class="brand"><b>disorder</b></div></div></div>
 
 <div class="spec"><header><h3>Tela de ajustes</h3><p>Tela inteira, como Arquivados, com o título "Ajustes" e três blocos em coluna de até 760px: Perfil, Pastas e Dados. Entrada pelo item "Ajustes" no fim do menu lateral e, abaixo de 901px, por um botão de ícone no cabeçalho, com uma engrenagem de seis dentes em traço de 1,5px e 20px. Dentro de Ajustes, esse mesmo botão vira uma seta para a esquerda e volta para a tela de onde a pessoa veio. A seta aparece em todas as larguras, inclusive no desktop. O cabeçalho de Ajustes tem a mesma largura dos blocos, então a seta fica alinhada com a borda direita deles. O botão é um quadrado de 40px com o ícone centralizado nos dois eixos, e uma margem negativa de 10px faz o desenho do ícone, e não a caixa, encostar na borda do conteúdo. Nesta tela não há busca, filtros, botão Salvar nem botão flutuante. Classe <code>.settings</code>.</p></header></div>
 

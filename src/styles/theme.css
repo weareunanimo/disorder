@@ -313,10 +313,14 @@ body { font-weight: 500; }
 .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: transform .08s ease, box-shadow .08s ease, background-color .08s ease; }
 @media (prefers-reduced-motion: reduce) { .btn, .chip, .seg button, .nav-btn, .link, .pick .box { transition: none; } }
 
-/* Marca: faixa de topo, largura total, só os 66% de baixo do logo aparecem */
+/* Marca: faixa de topo, largura total, só os 66% de baixo do logo aparecem.
+   Puxar a página para baixo no topo (--pull) abre a faixa e mostra o resto do logo, 0,36 × --fs no máximo. Ao soltar, volta sozinha. */
+html { overscroll-behavior-y: none; }
 .brand { container-type: inline-size; position: relative; overflow: hidden; width: 100%; color: var(--fg);
-  --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.6072); }
-.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.2128); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
+  --pull: 0px; --fs: calc(100cqw / 7.185); height: calc(var(--fs) * 0.6072 + var(--pull)); }
+.brand b { position: absolute; left: 0; right: 0; top: calc(var(--fs) * -0.2128 + var(--pull)); display: block; font: 400 var(--fs)/1 var(--f-logo); letter-spacing: 0; text-align: center; text-transform: lowercase; white-space: nowrap; }
+.brand.snap, .brand.snap b { transition: height .42s cubic-bezier(.2, .9, .25, 1.15), top .42s cubic-bezier(.2, .9, .25, 1.15); }
+@media (prefers-reduced-motion: reduce) { .brand.snap, .brand.snap b { transition: none; } }
 
 /* Navegação */
 .nav { gap: 6px; }
