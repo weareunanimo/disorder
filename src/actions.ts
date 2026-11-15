@@ -526,9 +526,9 @@ async function addSummary(id: string) {
 /** Roda o resumo e a organização nos links que já existem. No máximo 150 por vez, para respeitar o limite diário. */
 export async function summarizeExisting() {
   if (!get().ai || !CFG.summarizeApi || get().summarizingAll) return;
-  const todo = get().links.filter(l => !isArch(l) && !l.resumoIA).slice(0, 150).map(l => l.id);
+  const todo = get().links.filter(l => !isArch(l) && !l.resumoIA).slice(0, 60).map(l => l.id);
   if (!todo.length) { toast('Todos os links já têm resumo.'); return; }
-  set({ summarizingAll: true });
+  set({ summarizingAll: true, aiProgress: { done: 0, total: todo.length } });
   bulkAi = true;
   try {
     let i = 0;
@@ -538,6 +538,7 @@ export async function summarizeExisting() {
         if (!l) continue;
         if (pv.lastSummarizeStatus === 401 || pv.lastSummarizeStatus === 503) return; // falha que se repetiria em todos: para
         if (l.enriquecido) await addSummary(id); else await enrich(id);
+        set({ aiProgress: { done: get().aiProgress.done + 1, total: todo.length } });
       }
     };
     await Promise.all([worker(), worker(), worker()]);

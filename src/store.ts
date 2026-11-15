@@ -53,6 +53,8 @@ export interface State extends FilterState {
   toast: ToastState | null;
   refreshing: boolean;
   summarizingAll: boolean;
+  /** Andamento do resumo em lote: quantos já foram e quantos são. */
+  aiProgress: { done: number; total: number };
   /** Links novos cujo preview ainda está sendo lido. */
   loading: string[];
 
@@ -94,6 +96,7 @@ export const useStore = create<State>(() => ({
   toast: null,
   refreshing: false,
   summarizingAll: false,
+  aiProgress: { done: 0, total: 0 },
   loading: [],
 
   profile: { nome: read('disorder.nome') || '', email: '' },

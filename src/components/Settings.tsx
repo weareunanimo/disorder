@@ -52,7 +52,7 @@ function FolderRow({ f, i, last, count, drag }: { f: Folder; i: number; last: bo
 
 export function Settings() {
   const profile = useStore(s => s.profile), theme = useStore(s => s.theme), ai = useStore(s => s.ai), mode = useStore(s => s.mode);
-  const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing), summarizingAll = useStore(s => s.summarizingAll);
+  const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing), summarizingAll = useStore(s => s.summarizingAll), aiProgress = useStore(s => s.aiProgress);
   const folders = useSortedFolders(), counts = useCounts();
   const arq = useStore(s => s.foldersArq), allLinks = useStore(s => s.links);
   const arqCount = (id: string) => allLinks.filter(l => l.pastaId === id && l.arquivadoEm).length;
@@ -89,8 +89,8 @@ export function Settings() {
         </div>
         {ai && CFG.summarizeApi && (
           <div className="srow">
-            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em pastas. Até 150 por vez.</span></div>
-            <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Resumindo' : 'Resumir agora'}</button>
+            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em pastas. Até 60 por vez, num ritmo de 5 por minuto por causa do plano grátis da IA. Deixe esta aba aberta.</span></div>
+            <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Resumindo ' + aiProgress.done + ' de ' + aiProgress.total : 'Resumir agora'}</button>
           </div>
         )}
         {mode === 'cloud' && (

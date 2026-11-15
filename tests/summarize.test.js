@@ -6,6 +6,7 @@ const fake = http.createServer((q, r) => {
   let body = ''; q.on('data', d => body += d); q.on('end', () => {
     const p = JSON.parse(body);
     assert.ok(/Bearer teste/.test(q.headers.authorization));
+    if (p.messages[1].content.includes('Limite')) { r.writeHead(429, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ error: { message: 'Rate limit exceeded: limit of 5 requests per minute. Retry after 12s.' } })); }
     assert.ok(p.messages[1].content.includes('Bolo'));
     r.writeHead(200, { 'content-type': 'application/json' });
     r.end(JSON.stringify({ choices: [{ message: { content: '```json\n{"resumo":"Receita de bolo fofinho de cenoura — com cobertura","tema":"Receitas!"}\n```' } }] }));
@@ -32,6 +33,8 @@ fake.listen(0, async () => {
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.body.resumo, 'Receita de bolo fofinho de cenoura, com cobertura'); // sem travessão
   assert.strictEqual(r.body.tema, 'receitas');
+  r = await call({ titulo: 'Limite' });
+  assert.strictEqual(r.status, 429); assert.strictEqual(r.body.porMinuto, true); assert.strictEqual(r.body.retry, 12); // o app espera e tenta de novo
   process.env.AI_DAILY_LIMIT = '2';
   r = await call({ titulo: 'Bolo' }); r = await call({ titulo: 'Bolo' });
   assert.strictEqual(r.status, 429);

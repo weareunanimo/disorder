@@ -69,7 +69,7 @@ module.exports = async function handler(req, res) {
     const b = await readBody(req);
     const titulo = clean(b.titulo, 300), descricao = clean(b.descricao, 400), site = clean(b.site, 80);
     if (!titulo && !descricao) return out(200, { resumo: '', tema: '' });
-    if (overLimit(user)) return out(429, { error: 'limite diário de IA atingido' });
+    if (overLimit(user)) return out(429, { error: 'limite diário de IA atingido', diario: true });
     const r = await fetch(GATEWAY(), {
       method: 'POST',
       signal: AbortSignal.timeout(12000),
@@ -84,6 +84,11 @@ module.exports = async function handler(req, res) {
     });
     if (!r.ok) {
       const raw = String(await r.text()).slice(0, 400);
+      if (r.status === 429) {
+        // Plano grátis do AI Gateway: poucos pedidos por minuto. O app espera e tenta de novo.
+        const m = /[Rr]etry after (\d+)s/.exec(raw);
+        return out(429, { error: 'limite de pedidos por minuto', porMinuto: true, retry: m ? Number(m[1]) : 30 });
+      }
       console.error('AI Gateway', r.status, raw);
       let detail = ''; try { const j = JSON.parse(raw); detail = String((j.error && (j.error.message || j.error)) || j.message || ''); } catch (e) { detail = raw; }
       return out(502, { error: 'a IA não respondeu', gateway: r.status, detail: detail.replace(/vck_[A-Za-z0-9]+/g, '[chave]').slice(0, 160) });

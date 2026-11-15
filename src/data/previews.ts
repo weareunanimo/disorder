@@ -49,30 +49,53 @@ export let lastSummarizeStatus = 200;
 /** Mensagem que o serviço de IA devolveu na última falha (sem a chave). */
 export let lastSummarizeDetail = '';
 
-/** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. */
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+let nextSlot = 0;
+/** Reserva uma vaga na fila de pedidos de resumo, para não passar do limite por minuto do serviço de IA. */
+async function waitSlot() {
+  const now = Date.now(), at = Math.max(now, nextSlot);
+  nextSlot = at + CFG.aiGapMs;
+  if (at > now) await sleep(at - now);
+}
+
+/** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. Espera e repete quando o serviço pede calma. */
 export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma'>): Promise<Resumo | null> {
   if (!CFG.summarizeApi) return null;
   const titulo = l.titulo || l.tituloAuto || '';
   if (!titulo && !l.descricao) return null;
-  try {
-    const r = await fetch(CFG.summarizeApi, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
-    });
-    lastSummarizeStatus = r.status;
-    if (!r.ok) { try { const e = (await r.json()) as { gateway?: number; detail?: string }; lastSummarizeDetail = (e.gateway ? e.gateway + ': ' : '') + (e.detail || ''); } catch { lastSummarizeDetail = ''; } return null; }
-    const d = (await r.json()) as Partial<Resumo>;
-    const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
-    return resumo || tema ? { resumo, tema } : null;
-  } catch { lastSummarizeStatus = 0; return null; }
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    try {
+      await waitSlot();
+      const r = await fetch(CFG.summarizeApi, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
+      });
+      lastSummarizeStatus = r.status;
+      if (!r.ok) {
+        let e: { gateway?: number; detail?: string; porMinuto?: boolean; retry?: number } = {};
+        try { e = await r.json(); } catch { /* sem corpo */ }
+        lastSummarizeDetail = (e.gateway ? e.gateway + ': ' : '') + (e.detail || '');
+        if (r.status === 429 && e.porMinuto && tentativa < 2) {
+          const wait = Math.min(65, Math.max(5, e.retry || 30)) * 1000 + 1000;
+          nextSlot = Math.max(nextSlot, Date.now() + wait);
+          continue;
+        }
+        return null;
+      }
+      const d = (await r.json()) as Partial<Resumo>;
+      const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
+      return resumo || tema ? { resumo, tema } : null;
+    } catch { lastSummarizeStatus = 0; return null; }
+  }
+  return null;
 }
 
 /** Frase para a pessoa entender por que o resumo não rodou. */
 export function whySummaryFailed(status: number): string {
   if (status === 401) return 'sua sessão expirou. Saia e entre de novo.';
   if (status === 503) return 'o servidor ainda não tem a chave de IA. Confira AI_GATEWAY_API_KEY na Vercel e faça um redeploy.';
-  if (status === 429) return 'o limite diário de IA acabou. Tente amanhã.';
+  if (status === 429) return 'o limite de pedidos da IA foi atingido (no plano grátis são 5 por minuto, e o app já espera entre eles). Tente de novo em alguns minutos.';
   if (status === 502) return 'o serviço de IA recusou o pedido. Confira a chave e o modelo na Vercel.';
   if (status === 0) return 'não consegui falar com o servidor.';
   return 'o servidor respondeu com erro ' + status + '.';
