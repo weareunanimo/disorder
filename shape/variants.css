@@ -1,0 +1,43 @@
+/* Tamanhos e variações. A = tudo redondo, B = barriga e haste (um lado redondo, outro vivo), C = diagonal. Miolo (tags, preview, caixa de seleção, campos) continua reto. */
+.list.grid .link { --r: 26px; --d: 6px; --s: 5px; padding: 20px 20px 18px; }
+.list.grid .link, .sblock, .banner, .pv { --dx: 3px; }
+.list.grid .link:nth-child(3n+1) { --r2: 0px; --r3: 0px; }
+.list.grid .link:nth-child(3n+2) { --r2: 0px; --r4: 0px; }
+.list.grid .link:hover { --s: 7px; }
+.list.grid .link[aria-selected="true"] { --s: 6px; --shc: var(--primary); }
+.list.grid .pick { top: 14px; right: 14px; }
+@keyframes flash { 0%, 99% { --shc: var(--primary); } 100% { --shc: var(--ink); } }
+.btn:not(.ghost) { --r: 16px; --d: 3px; --s: 3px; }
+.btn:not(.ghost), .chip, .seg { --dx: 0px; }
+.btn.icon:not(.ghost) { --r: 12px; --d: 1px; --dx: 1px; }
+.btn:not(.ghost):hover { --s: 4px; }
+.btn:not(.ghost):active { --s: 0px; }
+.btn.sm:not(.ghost) { --r: 13px; --s: 2px; }
+.btn.sm.icon:not(.ghost) { --r: 12px; }
+.btn.sm:not(.ghost):hover { --s: 3px; }
+.btn.primary { --r2: 0px; --r4: 0px; }
+.btn.danger, .btn.destructive { --r1: 0px; --r3: 0px; }
+.btn:not(.ghost):disabled { --s: 0px; }
+.chip { --r: 13px; --d: 3px; --s: 0px; }
+.chip:nth-child(even) { --r2: 0px; --r3: 0px; }
+.seg { --r: 14px; --d: 3px; --s: 3px; --r2: 0px; --r3: 0px; overflow: visible; }
+.sblock { --r: 28px; --d: 7px; --s: 5px; padding: 26px 24px; }
+.sblock:nth-of-type(3n+1) { --r2: 0px; --r4: 0px; }
+.sblock:nth-of-type(3n+2) { --r2: 0px; --r3: 0px; }
+.banner { --r: 18px; --d: 4px; --s: 4px; --r2: 0px; --r3: 0px; padding: 12px 18px; }
+.fab { --r: 20px; --d: 2px; --dx: 2px; --s: 4px; }
+.fab:active { --s: 0px; }
+.pv { --r: 16px; --d: 4px; --s: 0px; --r2: 0px; --r4: 0px; padding: 14px; }
+:is(.btn:not(.ghost), .chip, .fab):focus-visible { outline: none; --w: 5px; }
+@media (hover: none) { .list.grid .link:hover { --s: 5px; } .btn:not(.ghost):hover { --s: 3px; } .btn.sm:not(.ghost):hover { --s: 2px; } }
+@media (max-width: 640px) { .list.grid .link { --r: 24px; --d: 5px; padding: 18px 16px 16px; } .sblock { --r: 24px; --d: 5px; --s: 4px; padding: 22px 18px; } }
+@media (max-width: 400px) { .list.grid .link { --s: 4px; } }
+/* Peças que não aceitam o recorte (rolam, têm borda tracejada ou abrem menus): só o raio */
+.modal { border-radius: 30px; }
+.empty { border-radius: 30px 0 30px 0; }
+.toast { border-radius: 18px 0 0 18px; }
+.menu { border-radius: 16px 0 16px 0; overflow: hidden; }
+.bar { border-radius: 18px; }
+@media (max-width: 900px) { .nav-btn { border-radius: 14px; } .nav-btn:nth-child(even) { border-radius: 14px 0 0 14px; } .add-folder { border-radius: 14px 0 14px 0; } }
+@media (max-width: 640px) { .modal { border-radius: 28px 28px 0 0; } }
+@media (max-width: 900px) { .head { flex-wrap: nowrap; align-items: flex-start; } .head .ht { min-width: 0; } .head h1 { overflow-wrap: anywhere; } }
