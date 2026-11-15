@@ -1,14 +1,16 @@
-import { memo, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { get, useStore } from '../store';
-import { deleteLink, openAdd, openModal, setArchived, setSwipe, toast, toggleSel } from '../actions';
+import { deleteLink, openAdd, setArchived, setSwipe, toggleSel } from '../actions';
 import type { Folder, Link } from '../types';
 import { filterCount, isArch, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
-import { PLAT, ago, autoTitle, clipTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
+import { liveTags } from '../lib/tags';
+import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
-import { isTouch, useTitleMax, useWide } from '../hooks/useMedia';
+import { isTouch, useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
-import { IcoArchive, IcoCheck, IcoCopy, IcoEdit, IcoPlus, IcoRestore, IcoTrash, IcoWhats } from './icons';
+import { CardMenu } from './CardMenu';
+import { IcoArchive, IcoCheck, IcoPlus, IcoRestore, IcoTrash } from './icons';
 
 const PAGE = 60;
 
@@ -31,21 +33,16 @@ export function Preview({ link, cls, src, loading }: { link: PreviewLink; cls?: 
   );
 }
 
-function copy(url: string) {
-  (navigator.clipboard?.writeText ? navigator.clipboard.writeText(url) : Promise.reject())
-    .then(() => toast('Link copiado.'))
-    .catch(() => toast('Não consegui copiar. Abra o link e copie pelo endereço.'));
-}
+interface CardProps { link: Link; folders: Folder[]; selected: boolean; flash: boolean; loading: boolean; open: boolean; swipeOn: boolean }
 
-interface CardProps { link: Link; folder: Folder | null; selected: boolean; flash: boolean; max: number; loading: boolean; open: boolean; swipeOn: boolean }
-
-const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max, loading, open, swipeOn }: CardProps) {
+const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loading, open, swipeOn }: CardProps) {
   const { ref, bind, apply } = useSwipe(l.id, open, swipeOn);
   // Fechou por fora (outro cartão abriu, toque em outro lugar, Esc): volta para a posição inicial.
   useEffect(() => { if (!ref.current?.classList.contains('dragging')) apply(open ? -TRAY_W : 0, true); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const arq = isArch(l);
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
-  const shown = clipTitle(titulo, max), kind = kindOf(l), summary = summaryOf(l);
+  const tags = useMemo(() => liveTags(l, folders), [l, folders]);
+  const kind = kindOf(l), summary = summaryOf(l);
   return (
     <div className="swipe" ref={ref} data-id={l.id} data-open={open || undefined} {...bind}>
     <div className="tray" role="group" aria-label={'Ações rápidas de ' + titulo}>
@@ -59,18 +56,21 @@ const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max,
       </button>
       <Preview link={l} loading={loading} />
       <div className="ltext">
-        <h3 className="ttl" title={shown !== titulo ? titulo : undefined}>{shown}</h3>
+        <h3 className="ttl" title={titulo}>{titulo}</h3>
         <p className="meta"><span>{originOf(l)}</span><span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <p className="sum">{summary}</p>}
         <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
         {l.nota && <p className="note">{l.nota}</p>}
       </div>
       <div className="acts">
-        {folder && <span className="tag" data-c={colorOf(folder)} title={folder.nome}>{folder.nome}</span>}
-        <button className="btn outline sm icon" aria-label="Copiar link" title="Copiar link" onClick={() => copy(l.url)}><IcoCopy /></button>
-        <a className="btn outline sm icon" href={'https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url)} target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp" title="Enviar no WhatsApp"><IcoWhats /></a>
-        <button className="btn outline sm icon" aria-label="Editar" title="Editar" onClick={() => openModal({ kind: 'link', id: l.id })}><IcoEdit /></button>
+        {tags.length > 0 && (
+          <span className="tags">
+            {tags.slice(0, 2).map(t => <span key={t.id} className="tag" data-c={colorOf(t)} title={t.nome}>{t.nome}</span>)}
+            {tags.length > 2 && <span className="tag more" title={tags.slice(2).map(t => t.nome).join(', ')}>+{tags.length - 2}</span>}
+          </span>
+        )}
         <a className="btn outline sm" href={l.url} target="_blank" rel="noopener noreferrer">Abrir</a>
+        <CardMenu link={l} titulo={titulo} arq={arq} />
       </div>
     </article>
     </div>
@@ -83,9 +83,9 @@ function Empty({ base }: { base: number }) {
   let t: string, p: string;
   if (!total) { t = 'Nada salvo ainda'; p = 'Guarde aqui o que você encontra no X, Threads, Instagram, TikTok e YouTube.'; }
   else if (filtered) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
-  else if (view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das pastas e ficam guardados aqui. Você pode restaurar quando quiser.'; }
-  else if (view === 'none') { t = 'Tudo o que você salvou está em alguma pasta'; p = 'Links sem pasta aparecem aqui.'; }
-  else { t = 'Esta pasta está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle(view, folders) + '.'; }
+  else if (view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das tags e ficam guardados aqui. Você pode restaurar quando quiser.'; }
+  else if (view === 'none') { t = 'Tudo o que você salvou está em alguma tag'; p = 'Links sem tag aparecem aqui.'; }
+  else { t = 'Esta tag está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle(view, folders) + '.'; }
   return (
     <div className="empty">
       <b>{t}</b><p>{p}</p>
@@ -103,7 +103,7 @@ export function LinkList() {
   const loaded = useStore(s => s.loaded), loadError = useStore(s => s.loadError);
   const layout = useStore(s => s.layout), sel = useStore(s => s.sel), flash = useStore(s => s.flash);
   const folders = useStore(s => s.folders), view = useStore(s => s.view), loadingIds = useStore(s => s.loading), swipeId = useStore(s => s.swipeId);
-  const wide = useWide(), max = useTitleMax();
+  const wide = useWide();
   const visible = useVisible(), base = useBase();
 
   // Desenha a lista em blocos: os primeiros 60 e mais a cada vez que o fim se aproxima.
@@ -143,12 +143,11 @@ export function LinkList() {
     if (!card || t.closest('a,button,select,input,textarea,label')) return;
     if (get().sel.length || isTouch()) toggleSel(card.dataset.id!, e.shiftKey);
   };
-  const byId = new Map(folders.map(f => [f.id, f]));
   const picked = new Set(sel), busy = new Set(loadingIds);
   return (
     <div className={cls} id="list" style={style} onClick={onClick}>
       {visible.slice(0, limit).map(l => (
-        <LinkCard key={l.id} link={l} folder={(l.pastaId && byId.get(l.pastaId)) || null} selected={picked.has(l.id)} flash={flash === l.id} max={max} loading={busy.has(l.id)} open={swipeId === l.id} swipeOn={!sel.length} />
+        <LinkCard key={l.id} link={l} folders={folders} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} open={swipeId === l.id} swipeOn={!sel.length} />
       ))}
       {more && <div ref={sentinel} className="more" aria-hidden="true" />}
     </div>

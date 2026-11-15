@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 
 import { set, useStore, type Theme } from '../store';
 import { exportData, importData, moveFolder, openModal, refreshPreviews, renameFolder, restoreFolder, setFolderColor, setAi, setProfileName, setTheme, signOut, summarizeExisting } from '../actions';
 import { CFG } from '../config';
+import { hasTag } from '../lib/tags';
 import type { Folder } from '../types';
 import { SW_NAMES, colorOf } from '../lib/folders';
 import { plural } from '../lib/text';
@@ -29,17 +30,17 @@ function FolderRow({ f, i, last, count, drag }: { f: Folder; i: number; last: bo
       onDragStart={e => { if ((e.target as HTMLElement).closest('input')) { e.preventDefault(); return; } drag.start(f.id, e); }}
       onDragOver={e => drag.over_(f.id, e)} onDrop={e => drag.drop(f.id, e)} onDragEnd={drag.end}>
       <button type="button" ref={swatch} className="sw-btn" style={{ background: `var(--tag${c}-bg)` }} aria-expanded={palOpen}
-        aria-label={'Cor da pasta ' + f.nome + ', ' + SW_NAMES[c] + '. Trocar cor'} title="Trocar cor" onClick={() => set({ pal: palOpen ? null : f.id })} />
-      <span className="inw"><CommitInput className="fname" maxLength={40} autoComplete="off" aria-label="Nome da pasta" value={f.nome} onCommit={v => renameFolder(f.id, v)} /></span>
+        aria-label={'Cor da tag ' + f.nome + ', ' + SW_NAMES[c] + '. Trocar cor'} title="Trocar cor" onClick={() => set({ pal: palOpen ? null : f.id })} />
+      <span className="inw"><CommitInput className="fname" maxLength={40} autoComplete="off" aria-label="Nome da tag" value={f.nome} onCommit={v => renameFolder(f.id, v)} /></span>
       <span className="fct">{f.auto && <span className="fauto" title="Criada pela IA. Ao renomear, ela passa a ser sua.">IA</span>}{plural(count, '1 link', 'links')}</span>
       <span className="fa">
         <button type="button" className="btn sm icon" disabled={i === 0} aria-label={'Subir ' + f.nome} title="Subir" onClick={() => moveFolder(f.id, i - 1)}><IcoUp /></button>
         <button type="button" className="btn sm icon" disabled={last} aria-label={'Descer ' + f.nome} title="Descer" onClick={() => moveFolder(f.id, i + 1)}><IcoDown /></button>
-        <button type="button" className="btn sm icon" aria-label={'Arquivar pasta ' + f.nome} title="Arquivar pasta" onClick={() => openModal({ kind: 'archive-folder', id: f.id })}><IcoArchive /></button>
-        <button type="button" className="btn sm icon danger" aria-label={'Excluir pasta ' + f.nome} title="Excluir pasta" onClick={() => openModal({ kind: 'confirm', id: f.id })}><IcoTrashSm /></button>
+        <button type="button" className="btn sm icon" aria-label={'Arquivar tag ' + f.nome} title="Arquivar tag" onClick={() => openModal({ kind: 'archive-folder', id: f.id })}><IcoArchive /></button>
+        <button type="button" className="btn sm icon danger" aria-label={'Excluir tag ' + f.nome} title="Excluir tag" onClick={() => openModal({ kind: 'confirm', id: f.id })}><IcoTrashSm /></button>
       </span>
       {palOpen && (
-        <div className="pal" role="radiogroup" aria-label={'Cor da pasta ' + f.nome}>
+        <div className="pal" role="radiogroup" aria-label={'Cor da tag ' + f.nome}>
           {SW_NAMES.map((name, k) => (
             <button key={k} type="button" className="sw-btn" role="radio" aria-checked={k === c} style={{ background: `var(--tag${k}-bg)` }} aria-label={name} title={name}
               onClick={() => { setFolderColor(f.id, k); swatch.current?.focus(); }} />
@@ -55,7 +56,7 @@ export function Settings() {
   const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing), summarizingAll = useStore(s => s.summarizingAll), aiProgress = useStore(s => s.aiProgress);
   const folders = useSortedFolders(), counts = useCounts();
   const arq = useStore(s => s.foldersArq), allLinks = useStore(s => s.links);
-  const arqCount = (id: string) => allLinks.filter(l => l.pastaId === id && l.arquivadoEm).length;
+  const arqCount = (id: string) => allLinks.filter(l => hasTag(l, id) && l.arquivadoEm).length;
   const file = useRef<HTMLInputElement>(null);
   const [dragId, setDragId] = useState<string | null>(null), [overId, setOverId] = useState<string | null>(null);
 
@@ -89,7 +90,7 @@ export function Settings() {
         </div>
         {ai && CFG.summarizeApi && (
           <div className="srow">
-            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em pastas. Até 60 por vez, num ritmo de 5 por minuto por causa do plano grátis da IA. Deixe esta aba aberta.</span></div>
+            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em tags. Até 60 por vez, num ritmo de 5 por minuto por causa do plano grátis da IA. Deixe esta aba aberta.</span></div>
             <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Resumindo ' + aiProgress.done + ' de ' + aiProgress.total : 'Resumir agora'}</button>
           </div>
         )}
@@ -102,12 +103,12 @@ export function Settings() {
       </section>
 
       <section className="sblock" aria-labelledby="s-pastas">
-        <div className="shead"><h2 id="s-pastas">Pastas</h2><button type="button" className="btn sm" onClick={() => openModal({ kind: 'new', then: { type: 'stay' } })}>Nova pasta</button></div>
+        <div className="shead"><h2 id="s-pastas">Tags</h2><button type="button" className="btn sm" onClick={() => openModal({ kind: 'new', then: { type: 'stay' } })}>Nova tag</button></div>
         {!folders.length
-          ? <p className="snote">Nenhuma pasta ainda. Crie a primeira para organizar seus links.</p>
+          ? <p className="snote">Nenhuma tag ainda. Crie a primeira para organizar seus links.</p>
           : (
             <>
-              <p className="snote">Use as setas para mudar a ordem. Com mouse, também dá para arrastar. A ordem vale para o menu e para a lista de pastas ao salvar.</p>
+              <p className="snote">Use as setas para mudar a ordem. Com mouse, também dá para arrastar. A ordem vale para o menu e para a lista de tags ao salvar.</p>
               <ul className="flist" id="flist">
                 {folders.map((f, i) => <FolderRow key={f.id} f={f} i={i} last={i === folders.length - 1} count={counts.by.get(f.id) || 0} drag={drag} />)}
               </ul>
@@ -117,8 +118,8 @@ export function Settings() {
 
       {!!arq.length && (
         <section className="sblock" aria-labelledby="s-arq">
-          <h2 id="s-arq">Pastas arquivadas</h2>
-          <p className="snote">Ficam fora do menu. Ao restaurar, voltam os links que foram arquivados junto com a pasta.</p>
+          <h2 id="s-arq">Tags arquivadas</h2>
+          <p className="snote">Ficam fora do menu. Ao restaurar, voltam os links que foram arquivados junto com a tag.</p>
           <ul className="flist">
             {arq.map(f => (
               <li key={f.id} className="frow arq">
@@ -136,7 +137,7 @@ export function Settings() {
         <h2 id="s-dados">Dados</h2>
         <p className="snote">{mode === 'cloud' ? 'Seus links ficam salvos na sua conta e sincronizam entre os seus aparelhos.' : 'Modo local: seus links ficam só neste navegador.'}</p>
         <div className="srow">
-          <div className="st"><b>Exportar</b><span>Baixa um arquivo com {plural(nLinks, '1 link', 'links')} e {plural(nFolders, '1 pasta', 'pastas')}, incluindo os arquivados.</span></div>
+          <div className="st"><b>Exportar</b><span>Baixa um arquivo com {plural(nLinks, '1 link', 'links')} e {plural(nFolders, '1 tag', 'tags')}, incluindo os arquivados.</span></div>
           <button type="button" className="btn" disabled={!nLinks && !nFolders} onClick={exportData}>Exportar arquivo</button>
         </div>
         <div className="srow">

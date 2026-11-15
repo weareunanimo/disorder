@@ -6,6 +6,7 @@ const I = ({ children, cls, vb = '0 0 16 16' }: { children: ReactNode; cls?: str
 
 export const IcoPlus = () => <I><path d="M8 3v10M3 8h10" /></I>;
 export const IcoX = () => <I><path d="m4 4 8 8M12 4l-8 8" /></I>;
+export const IcoMore = () => <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.2" fill="currentColor" stroke="none" /><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" /><circle cx="12.5" cy="8" r="1.2" fill="currentColor" stroke="none" /></svg>;
 export const IcoEdit = () => <I><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z" /><path d="m9.5 4 2.5 2.5" /></I>;
 export const IcoCopy = () => <I><rect x="5.5" y="5.5" width="8" height="8" rx="1.8" /><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2" /></I>;
 export const IcoCheck = () => <I><path d="m3.5 8.5 3 3 6-7" /></I>;

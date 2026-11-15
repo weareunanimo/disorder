@@ -1,6 +1,7 @@
 import type { Folder, Link, View } from '../types';
 import { autoTitle } from './platforms';
 import { sortLinks, type Sort } from './sort';
+import { tagsOf } from './tags';
 
 export const FIXED_VIEWS = ['all', 'none', 'archived', 'settings'];
 export const isArch = (l: Link) => !!l.arquivadoEm;
@@ -23,8 +24,14 @@ export function inView(l: Link, view: View, folders: Folder[]): boolean {
   if (view === 'archived') return isArch(l);
   if (isArch(l)) return false;
   if (view === 'all') return true;
-  if (view === 'none') return !l.pastaId || !folderExists(folders, l.pastaId);
-  return l.pastaId === view;
+  if (view === 'none') return !tagsOf(l).some(id => folderExists(folders, id));
+  return tagsOf(l).includes(view);
+}
+
+/** Filtro por tags: vale se o link tem qualquer uma das escolhidas. "none" casa com link sem tag. */
+export function matchTags(l: Link, folders: Folder[], fp: string[]): boolean {
+  const live = tagsOf(l).filter(id => folderExists(folders, id));
+  return fp.some(id => (id === 'none' ? !live.length : live.includes(id)));
 }
 
 export function dayStart(iso: string): number {
@@ -52,18 +59,18 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
   return sortLinks(links
     .filter(l => inView(l, view, folders))
     .filter(l => !f.plats.length || f.plats.includes(l.plataforma))
-    .filter(l => !byFolder || f.fp.includes(l.pastaId || 'none'))
+    .filter(l => !byFolder || matchTags(l, folders, f.fp))
     .filter(l => (!t0 || (l.criadoEm || 0) >= t0) && (!t1 || (l.criadoEm || 0) < t1))
     .filter(l => {
       if (!q) return true;
-      const nome = l.pastaId ? names.get(l.pastaId) : undefined;
+      const nome = tagsOf(l).map(id => names.get(id)).filter(Boolean).join(' ');
       return [l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.autor, l.url, nome].filter(Boolean).join(' ').toLowerCase().includes(q);
     }), sort);
 }
 
 export function viewTitle(view: View, folders: Folder[]): string {
   if (view === 'all') return 'Todos os links';
-  if (view === 'none') return 'Sem pasta';
+  if (view === 'none') return 'Sem tag';
   if (view === 'archived') return 'Arquivados';
   if (view === 'settings') return 'Ajustes';
   return folders.find(f => f.id === view)?.nome ?? 'Todos os links';

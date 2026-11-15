@@ -1,6 +1,7 @@
 import { backend, get, set, setBackend } from './store';
 import { applyTheme, busy, checkClipboard, enrichPending, fixView, openAdd } from './actions';
 import { localBackend, type Snapshot } from './data/backend';
+import { normLink } from './lib/tags';
 import { connect, getClient, onSignedIn, supabaseBackend } from './data/supabase';
 
 const SHARE = 'disorder.share';
@@ -35,7 +36,7 @@ export async function boot() {
 
   let first = true;
   const onData = (d: Snapshot) => {
-    set({ folders: d.folders.filter(f => !f.arquivadaEm), foldersArq: d.folders.filter(f => f.arquivadaEm), links: d.links, loaded: true, loadError: false });
+    set({ folders: d.folders.filter(f => !f.arquivadaEm), foldersArq: d.folders.filter(f => f.arquivadaEm), links: d.links.map(normLink), loaded: true, loadError: false });
     fixView();
     if (first) { first = false; if (!applyShare()) void checkClipboard(); enrichPending(); }
   };

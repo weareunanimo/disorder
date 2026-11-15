@@ -747,3 +747,36 @@ html { overscroll-behavior-y: none; }
 .sortw { flex: 0 1 auto; }
 .sortw > select { min-height: 44px; max-width: 190px; font-weight: 600; }
 @media (max-width: 640px) { .sortw { flex: 1 1 0; } .sortw > select { max-width: none; } }
+
+/* Tags: seletor com várias tags, tags no cartão, marca no menu da barra, título em uma linha */
+.tp[data-c="0"][aria-pressed="true"] { background: var(--tag0-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="1"][aria-pressed="true"] { background: var(--tag1-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="2"][aria-pressed="true"] { background: var(--tag2-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="3"][aria-pressed="true"] { background: var(--tag3-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="4"][aria-pressed="true"] { background: var(--tag4-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="5"][aria-pressed="true"] { background: var(--tag5-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="6"][aria-pressed="true"] { background: var(--tag6-bg); color: #121212; border: 2px solid var(--ink); }
+.tp[data-c="7"][aria-pressed="true"] { background: var(--tag7-bg); color: #121212; border: 2px solid var(--ink); }
+.tp-new { border-style: dashed; }
+.tagpick .chips { margin-top: 6px; }
+.tags { display: inline-flex; gap: 4px; min-width: 0; max-width: 100%; align-items: center; }
+.tags .tag { min-width: 0; }
+.tag.more { background: var(--muted); color: var(--fg); }
+.menu .mi .ck { width: 16px; flex: none; text-align: center; font-weight: 800; }
+.menu .mi[aria-checked="true"] .ck::before { content: "✓"; }
+.menu .mi[aria-checked="mixed"] .ck::before { content: "•"; }
+.ltext, .ltext > * { min-width: 0; }
+.ttl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+
+/* Menu de três pontos do cartão (solto na página) */
+.cmenu { position: fixed; z-index: 60; min-width: 220px; max-width: calc(100vw - 16px); display: flex; flex-direction: column; padding: 4px; background: var(--surface); color: var(--fg); border: 2px solid var(--ink); border-radius: 0; box-shadow: 5px 5px 0 var(--sh); }
+.cmenu > * { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; background: transparent; color: inherit; font: 500 14px/1.2 var(--f-body, inherit); text-align: left; text-decoration: none; cursor: pointer; }
+.cmenu > *:hover, .cmenu > *:focus-visible { background: var(--hover); outline: none; }
+.cmenu > *:focus-visible { box-shadow: inset 0 0 0 2px var(--ink); }
+.cmenu svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.cmenu svg.fill { fill: currentColor; stroke: none; }
+.cmenu .danger { color: var(--danger); }
+.cmenu > .danger { border-top: 2px solid var(--ink); margin-top: 4px; }
+.tagpick { display: flex; flex-direction: column; gap: 6px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
+.tagpick .chip { text-transform: none; letter-spacing: 0; font-family: var(--f-body, inherit); }
+.tagpick .chip.tp .ck { margin-right: 6px; font-weight: 800; }

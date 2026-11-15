@@ -1,8 +1,9 @@
 import type { Folder, Link } from '../types';
 import { isArch } from './filters';
 import { sameName } from './folders';
+import { tagsOf } from './tags';
 
-/** Quantos links do mesmo tema bastam para a IA criar uma pasta nova. */
+/** Quantos links do mesmo tema bastam para a IA criar uma tag nova. */
 export const AUTO_MIN = 3;
 
 /** Compara temas sem acento, sem maiúscula e sem o "s" do plural: "Receitas" e "receita" são o mesmo tema. */
@@ -13,7 +14,7 @@ export const temaKey = (t: string): string =>
 const cap = (t: string) => t.trim().charAt(0).toUpperCase() + t.trim().slice(1);
 
 export interface AutoGroup {
-  /** Pasta que já existe com o mesmo nome do tema. Vazio quando a pasta ainda precisa ser criada. */
+  /** Tag que já existe com o mesmo nome do tema. Vazio quando a tag ainda precisa ser criada. */
   folderId: string | null;
   nome: string;
   linkIds: string[];
@@ -21,16 +22,16 @@ export interface AutoGroup {
 
 /**
  * Decide o que a IA pode fazer. Regras:
- * - só mexe em link solto (sem pasta), ativo, com tema e que a pessoa nunca moveu à mão;
- * - tema igual ao nome de uma pasta que já existe: os links entram nela, mesmo que seja só um;
- * - sem pasta com esse nome: cria uma quando houver AUTO_MIN links do tema;
+ * - só mexe em link solto (sem tag), ativo, com tema e que a pessoa nunca moveu à mão;
+ * - tema igual ao nome de uma tag que já existe: os links entram nela, mesmo que seja só um;
+ * - sem tag com esse nome: cria uma quando houver AUTO_MIN links do tema;
  * - nunca renomeia, junta nem apaga nada, e não recria um tema que a pessoa dispensou.
  */
 export function planAutoFolders(links: Link[], folders: Folder[], ignored: string[] = []): AutoGroup[] {
   const skip = new Set(ignored.map(temaKey));
   const byTema = new Map<string, Link[]>();
   for (const l of links) {
-    if (l.pastaId || isArch(l) || l.pastaManual || !l.tema) continue;
+    if (tagsOf(l).length || isArch(l) || l.pastaManual || !l.tema) continue;
     const k = temaKey(l.tema);
     if (!k) continue;
     byTema.set(k, [...(byTema.get(k) || []), l]);

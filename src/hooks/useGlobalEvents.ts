@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { get, set } from '../store';
-import { cancelModal, checkClipboard, clearSel, closeAdd, currentDest, openAdd, quickSave, selectAll, setSwipe } from '../actions';
+import { cancelModal, checkClipboard, clearSel, closeAdd, currentDest, openAdd, quickSave, selectAll, setCardMenu, setSwipe } from '../actions';
 
 const FIELD = 'input,textarea,select,[contenteditable]';
 
@@ -14,7 +14,7 @@ export function useGlobalEvents() {
       const txt = e.clipboardData?.getData('text') || '';
       if (!/https?:\/\/\S|^\s*www\./i.test(txt)) return;
       e.preventDefault();
-      if (s.view === 'all' && !s.dest) openAdd(txt.trim()); else quickSave(txt, currentDest());
+      if (s.view === 'all' && !s.dest.length) openAdd(txt.trim()); else quickSave(txt, currentDest());
     };
     const onKey = (e: KeyboardEvent) => {
       const s = get();
@@ -22,6 +22,7 @@ export function useGlobalEvents() {
         if (s.modal) cancelModal();
         else if (s.adding) closeAdd();
         else if (s.menu) { set({ menu: false }); document.querySelector<HTMLElement>('#bar [data-move]')?.focus(); }
+        else if (s.cardMenu) setCardMenu(null);
         else if (s.swipeId) setSwipe(null);
         else if (s.sel.length) clearSel();
         return;

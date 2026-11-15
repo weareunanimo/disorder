@@ -4,6 +4,7 @@ import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from '
 import { isParsed, parseLink, SOCIAL } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
 import type { Sort } from './lib/sort';
+import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
@@ -27,15 +28,15 @@ const upsertAll = <T extends { id: string }>(arr: T[], recs: T[]): T[] => {
   return out;
 };
 
-/** Verdadeiro enquanto a IA mexe nos links. Uma troca de pasta feita por ela não conta como escolha da pessoa. */
+/** Verdadeiro enquanto a IA mexe nos links. Uma troca de tag feita por ela não conta como escolha da pessoa. */
 let autoWriting = false;
 
 export async function saveMany(col: Col, recs: (Folder | Link)[], failMsg = 'Não consegui salvar agora. Tente de novo.') {
   if (!recs.length) return;
   if (col === 'links' && !autoWriting) {
-    // Quando a pessoa troca a pasta de um link, a escolha é dela e a IA não mexe mais nesse link.
+    // Quando a pessoa troca as tags de um link, a escolha é dela e a IA não mexe mais nesse link.
     const cur = new Map(get().links.map(l => [l.id, l]));
-    recs = (recs as Link[]).map(r => { const old = cur.get(r.id); return old && (old.pastaId || null) !== (r.pastaId || null) ? { ...r, pastaManual: true } : r; });
+    recs = (recs as Link[]).map(r => { const old = cur.get(r.id); return old && !sameTags(old, r) ? { ...r, pastaManual: true } : r; });
   }
   set(col === 'links'
     ? { links: upsertAll(get().links, recs as Link[]) }
@@ -56,12 +57,14 @@ export async function removeMany(col: Col, ids: string[]) {
 export const folderById = (id: string | null | undefined) => get().folders.find(f => f.id === id) ?? null;
 export const currentVisible = () => { const s = get(); return visibleLinks(s.links, s.folders, s.view, s, s.sort); };
 
-export function currentDest(): string {
+export function currentDest(): string[] {
   const { view, dest, folders } = get();
-  if (view === 'all') return dest || '';
-  if (view === 'none' || view === 'archived' || view === 'settings') return '';
-  return folderExists(folders, view) ? view : '';
+  if (view === 'all') return dest.filter(id => folderExists(folders, id));
+  if (view === 'none' || view === 'archived' || view === 'settings') return [];
+  return folderExists(folders, view) ? [view] : [];
 }
+
+const tagNames = (ids: string[]) => ids.map(id => folderById(id)?.nome).filter(Boolean).join(', ');
 
 /* ===== Navegação e filtros ===== */
 export function resetFilters() { set({ ...EMPTY_FILTERS }); }
@@ -72,7 +75,7 @@ export function go(view: View) {
   set({
     prevView: view === 'settings' && s.view !== 'settings' ? s.view : s.prevView,
     view, pal: null, ...EMPTY_FILTERS, sel: [], anchor: null, menu: false, clip: null,
-    ...(isFolder ? { dest: view } : {}),
+    ...(isFolder ? { dest: [view] } : {}),
   });
   void checkClipboard();
 }
@@ -123,14 +126,25 @@ function undoPatch(prev: Patch[]) {
   void saveMany('links', recs);
 }
 
-export function bulkMove(dest: string | null) {
-  const items = selItems().filter(l => (l.pastaId || null) !== dest);
-  const prev = items.map(l => ({ id: l.id, pastaId: l.pastaId || null }));
-  void saveMany('links', items.map(l => ({ ...l, pastaId: dest })));
-  const fo = folderById(dest), n = items.length;
-  clearSel();
-  if (!n) { toast('Esses links já estão nessa pasta.'); return; }
-  toast(plural(n, '1 link movido', 'links movidos') + ' para ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Desfazer', () => undoPatch(prev));
+/** Marca ou desmarca uma tag nos links selecionados. Se todos já têm a tag, ela sai de todos. Senão, entra em quem não tem. */
+export function bulkTag(id: string) {
+  const items = selItems();
+  if (!items.length) return;
+  const all = items.every(l => hasTag(l, id)), fo = folderById(id);
+  const changed = items.filter(l => hasTag(l, id) === all);
+  const prev = changed.map(l => ({ id: l.id, pastaIds: tagsOf(l) }));
+  void saveMany('links', changed.map(l => ({ ...l, pastaIds: all ? withoutTag(tagsOf(l), id) : withTag(tagsOf(l), id) })));
+  const n = changed.length;
+  toast(plural(n, '1 link', 'links') + (all ? ' sem a tag ' : ' com a tag ') + (fo ? fo.nome : '') + '.', 'Desfazer', () => undoPatch(prev));
+}
+
+/** Tira todas as tags dos links selecionados. */
+export function bulkClearTags() {
+  const items = selItems().filter(l => tagsOf(l).length);
+  if (!items.length) { toast('Esses links já estão sem tag.'); return; }
+  const prev = items.map(l => ({ id: l.id, pastaIds: tagsOf(l) }));
+  void saveMany('links', items.map(l => ({ ...l, pastaIds: [] })));
+  toast(plural(items.length, '1 link ficou', 'links ficaram') + ' sem tag.', 'Desfazer', () => undoPatch(prev));
 }
 
 export function setArchived(items: Link[], on: boolean) {
@@ -145,6 +159,7 @@ export function setArchived(items: Link[], on: boolean) {
 export const archiveSelected = (on: boolean) => setArchived(selItems(), on);
 
 /** Abre a gaveta de ações de um cartão, ou fecha todas com null. Só uma fica aberta por vez. */
+export const setCardMenu = (id: string | null) => { if (get().cardMenu !== id) set({ cardMenu: id }); };
 export const setSwipe = (id: string | null) => { if (get().swipeId !== id) set({ swipeId: id }); };
 
 /** Exclui um link na hora, sem passar para Arquivados. O aviso permite desfazer. */
@@ -169,7 +184,7 @@ export function purge(ids: string[]) {
 /* ===== Diálogos ===== */
 export function openModal(m: ModalState) { set({ modal: m }); }
 export function closeModal() { set({ modal: null }); }
-/** Esc ou Cancelar: se o diálogo de pasta veio da edição de um link, volta para a edição. */
+/** Esc ou Cancelar: se o diálogo de tag veio da edição de um link, volta para a edição. */
 export function cancelModal() {
   const m = get().modal;
   if (m && m.kind === 'new' && m.then?.type === 'edit-pasta') { set({ modal: { kind: 'link', id: m.then.linkId } }); return; }
@@ -188,13 +203,13 @@ export type AddResult =
   | { kind: 'dup'; link: Link }
   | { kind: 'bad'; code: string };
 
-interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string | null }
+interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string[] }
 export interface PvSnap { key: string; data: PreviewData | null }
 
-function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
+function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome {
   const found = raw.match(/https?:\/\/[^\s]+/gi);
   const items = found && found.length ? found : [raw.trim()];
-  const r: SaveOutcome = { saved: [], dup: null, bad: null, total: items.length, dest: dest || null };
+  const r: SaveOutcome = { saved: [], dup: null, bad: null, total: items.length, dest };
   const known = new Map(get().links.map(l => [l.chave, l]));
   const base = Date.now();
   // Texto colado junto com um único link vira a nota dele.
@@ -207,7 +222,7 @@ function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
     if (r.saved.some(x => x.chave === p.key)) return;
     const rec: Link = {
       id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor,
-      titulo: '', nota: rest, pastaId: dest || null, criadoEm: base + r.saved.length, enriquecido: false,
+      titulo: '', nota: rest, pastaIds: dest.slice(), criadoEm: base + r.saved.length, enriquecido: false,
     };
     if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
     r.saved.push(rec);
@@ -219,14 +234,14 @@ function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
 }
 
 function reportSaved(r: SaveOutcome) {
-  const n = r.saved.length, last = r.saved[n - 1], fo = folderById(r.dest);
+  const n = r.saved.length, last = r.saved[n - 1], names = tagNames(r.dest);
   const { view } = get();
-  set({ flash: last.id, ...(view !== 'all' && view !== (r.dest || 'none') ? { view: r.dest || 'none' } : {}), ...EMPTY_FILTERS, clip: null });
+  set({ flash: last.id, ...(view !== 'all' && !(r.dest.length ? r.dest.includes(view) : view === 'none') ? { view: r.dest[0] || 'none' } : {}), ...EMPTY_FILTERS, clip: null });
   setTimeout(() => { if (get().flash === last.id) set({ flash: null }); }, 1800);
   scrollToLink(last.id, 'nearest');
   const skipped = r.total - n - (r.bad ? 1 : 0);
   toast(
-    (n === 1 ? 'Salvo em ' : n + ' links salvos em ') + (fo ? fo.nome : 'Sem pasta') + '.' + (skipped > 0 ? ' ' + (skipped === 1 ? '1 já estava salvo.' : skipped + ' já estavam salvos.') : ''),
+    (n === 1 ? 'Salvo' : n + ' links salvos') + (names ? ' com ' + (r.dest.length === 1 ? 'a tag ' : 'as tags ') + names : ' sem tag') + '.' + (skipped > 0 ? ' ' + (skipped === 1 ? '1 já estava salvo.' : skipped + ' já estavam salvos.') : ''),
     'Desfazer', () => void removeMany('links', r.saved.map(l => l.id)),
   );
 }
@@ -240,8 +255,8 @@ export function scrollToLink(id: string, block: ScrollLogicalPosition) {
 }
 
 export function goTo(l: Link) {
-  const fo = folderById(l.pastaId);
-  set({ view: isArch(l) ? 'archived' : fo ? fo.id : 'none', ...EMPTY_FILTERS, flash: l.id, sel: [], anchor: null });
+  const tags = liveTags(l, get().folders), cur = get().view;
+  set({ view: isArch(l) ? 'archived' : tags.some(t => t.id === cur) ? cur : tags[0] ? tags[0].id : 'none', ...EMPTY_FILTERS, flash: l.id, sel: [], anchor: null });
   setTimeout(() => { if (get().flash === l.id) set({ flash: null }); }, 1800);
   scrollToLink(l.id, 'center');
 }
@@ -253,7 +268,7 @@ export function restoreLink(l: Link) {
 
 /** Salvar pelo diálogo. Devolve o resultado para o diálogo mostrar a mensagem certa. */
 export function submitAdd(raw: string, pv: PvSnap | null): AddResult {
-  const r = saveLinks(raw, get().dest || '', pv);
+  const r = saveLinks(raw, get().dest, pv);
   if (r.saved.length) { closeAdd(); reportSaved(r); return { kind: 'saved' }; }
   if (r.dup && isArch(r.dup)) return { kind: 'archived', link: r.dup };
   if (r.dup) return { kind: 'dup', link: r.dup };
@@ -266,7 +281,7 @@ export function describeError(code: string) {
 }
 
 /** Salvar sem abrir o diálogo (link colado na página ou vindo da faixa "link copiado"). */
-export function quickSave(raw: string, dest: string) {
+export function quickSave(raw: string, dest: string[]) {
   const r = saveLinks(raw, dest);
   if (r.saved.length) { reportSaved(r); return; }
   if (r.dup && isArch(r.dup)) {
@@ -274,7 +289,7 @@ export function quickSave(raw: string, dest: string) {
     toast('Esse link está arquivado.', 'Restaurar', () => { restoreLink(l); goTo({ ...l, arquivadoEm: null }); });
     return;
   }
-  if (r.dup) { const l = r.dup, fo = folderById(l.pastaId); toast('Já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', 'Ver', () => goTo(l)); return; }
+  if (r.dup) { const l = r.dup, nm = tagNames(tagsOf(l)); toast('Já está salvo' + (nm ? ' com ' + nm : ' sem tag') + '.', 'Ver', () => goTo(l)); return; }
   toast(describeError(r.bad || 'invalido'));
 }
 
@@ -307,95 +322,95 @@ export async function checkClipboard() {
   clipBusy = false;
 }
 
-/* ===== Pastas ===== */
+/* ===== Tags ===== */
 export const newFolderRec = (nome: string) => makeFolder(nome, get().folders);
 
 export type FolderResult = { ok: true } | { ok: false; error: string };
 
 export function submitFolder(nome: string, editId: string | null, then?: Then): FolderResult {
   nome = nome.trim();
-  if (!nome) return { ok: false, error: 'Dê um nome para a pasta.' };
-  if (get().folders.some(f => f.id !== editId && sameName(f.nome, nome))) return { ok: false, error: 'Você já tem uma pasta com esse nome.' };
+  if (!nome) return { ok: false, error: 'Dê um nome para a tag.' };
+  if (get().folders.some(f => f.id !== editId && sameName(f.nome, nome))) return { ok: false, error: 'Você já tem uma tag com esse nome.' };
   const cur = editId ? folderById(editId) : null;
   const rec = cur ? { ...cur, nome } : newFolderRec(nome);
   set({ modal: null });
   void save('folders', rec);
   if (editId) return { ok: true };
-  if (then?.type === 'dest') set({ dest: rec.id, addNote: 'Pasta ' + rec.nome + ' criada.' });
+  if (then?.type === 'dest') set({ dest: withTag(get().dest, rec.id), addNote: 'Tag ' + rec.nome + ' criada.' });
   else if (then?.type === 'edit-pasta') {
     const d = get().draft;
-    set({ draft: d && d.id === then.linkId ? { ...d, pasta: rec.id } : d, modal: { kind: 'link', id: then.linkId } });
+    set({ draft: d && d.id === then.linkId ? { ...d, tags: withTag(d.tags, rec.id) } : d, modal: { kind: 'link', id: then.linkId } });
   }
-  else if (then?.type === 'move-many') bulkMove(rec.id);
-  else if (then?.type === 'stay') toast('Pasta ' + rec.nome + ' criada.');
-  else set({ view: rec.id, dest: rec.id, sel: [], anchor: null, menu: false });
+  else if (then?.type === 'move-many') bulkTag(rec.id);
+  else if (then?.type === 'stay') toast('Tag ' + rec.nome + ' criada.');
+  else set({ view: rec.id, dest: [rec.id], sel: [], anchor: null, menu: false });
   return { ok: true };
 }
 
 export async function deleteFolder(id: string) {
   const f = folderById(id);
   if (!f) return;
-  const affected = get().links.filter(l => l.pastaId === id);
-  const prev = affected.map(l => ({ id: l.id, pastaId: l.pastaId, arquivadoEm: l.arquivadoEm || null }));
-  const folder = { ...f }, now = Date.now();
+  const affected = get().links.filter(l => hasTag(l, id));
+  const prev = affected.map(l => ({ id: l.id, pastaIds: tagsOf(l) }));
+  const folder = { ...f };
   const stay = get().view === 'settings';
-  set({ modal: null, sel: [], anchor: null, menu: false, ...(stay ? {} : { view: affected.some(l => !isArch(l)) ? 'archived' : 'all' }), ...(get().dest === id ? { dest: '' } : {}) });
-  await saveMany('links', affected.map(l => ({ ...l, pastaId: null, arquivadoEm: l.arquivadoEm || now })));
+  set({ modal: null, sel: [], anchor: null, menu: false, ...(stay || get().view !== id ? {} : { view: 'all' as View }), dest: withoutTag(get().dest, id) });
+  await saveMany('links', affected.map(l => ({ ...l, pastaIds: withoutTag(tagsOf(l), id) })));
   await removeMany('folders', [id]);
   const n = affected.length;
-  toast('Pasta ' + f.nome + ' excluída.' + (n ? ' ' + (n === 1 ? 'O link foi para Arquivados.' : 'Os ' + n + ' links foram para Arquivados.') : ''), 'Desfazer', async () => {
+  toast('Tag ' + f.nome + ' excluída.' + (n ? ' ' + (n === 1 ? 'O link continua salvo, sem ela.' : 'Os ' + n + ' links continuam salvos, sem ela.') : ''), 'Desfazer', async () => {
     await save('folders', folder);
     undoPatch(prev);
     if (!stay) set({ view: folder.id });
   });
 }
 
-/** Arquiva a pasta. Com links: eles vão junto e voltam juntos. Sem links: eles continuam visíveis, em Sem pasta. */
+/** Arquiva a tag. Com links: eles vão junto e voltam juntos. Sem links: eles continuam visíveis, só perdem a tag. */
 export async function archiveFolder(id: string, withLinks: boolean) {
   const f = folderById(id);
   if (!f) return;
-  const affected = get().links.filter(l => l.pastaId === id);
-  const prev = affected.map(l => ({ id: l.id, pastaId: l.pastaId, arquivadoEm: l.arquivadoEm || null, arquivadoComPasta: !!l.arquivadoComPasta }));
+  const affected = get().links.filter(l => hasTag(l, id));
+  const prev = affected.map(l => ({ id: l.id, pastaIds: tagsOf(l), arquivadoEm: l.arquivadoEm || null, arquivadoComPasta: !!l.arquivadoComPasta }));
   const now = Date.now(), rec: Folder = { ...f, arquivadaEm: now };
   const stay = get().view === 'settings';
   if (f.auto) ignoreTheme(f.nome);
   set({
     modal: null, sel: [], anchor: null, menu: false,
     folders: get().folders.filter(x => x.id !== id), foldersArq: [...get().foldersArq, rec],
-    ...(get().dest === id ? { dest: '' } : {}), ...(get().view === id ? { view: 'all' } : {}),
+    dest: withoutTag(get().dest, id), ...(get().view === id ? { view: 'all' } : {}),
   });
   try { await backend().set('folders', id, rec); } catch { toast('Não consegui arquivar agora. Tente de novo.'); }
   await saveMany('links', affected.map(l => withLinks
     ? { ...l, arquivadoEm: l.arquivadoEm || now, arquivadoComPasta: !l.arquivadoEm }
-    : { ...l, pastaId: null }));
+    : { ...l, pastaIds: withoutTag(tagsOf(l), id) }));
   const n = affected.filter(l => !l.arquivadoEm).length;
-  const what = !n ? '' : withLinks ? ' ' + (n === 1 ? 'O link foi junto.' : 'Os ' + n + ' links foram juntos.') : ' ' + (n === 1 ? 'O link continua em Sem pasta.' : 'Os ' + n + ' links continuam em Sem pasta.');
-  toast('Pasta ' + f.nome + ' arquivada.' + what, 'Desfazer', async () => {
+  const what = !n ? '' : withLinks ? ' ' + (n === 1 ? 'O link foi junto.' : 'Os ' + n + ' links foram juntos.') : ' ' + (n === 1 ? 'O link continua salvo, sem ela.' : 'Os ' + n + ' links continuam salvos, sem ela.');
+  toast('Tag ' + f.nome + ' arquivada.' + what, 'Desfazer', async () => {
     await restoreFolder(id, false);
     undoPatch(prev);
     if (!stay) set({ view: id });
   });
 }
 
-/** Traz a pasta de volta. Os links que foram arquivados junto com ela voltam também. */
+/** Traz a tag de volta. Os links que foram arquivados junto com ela voltam também. */
 export async function restoreFolder(id: string, withLinks = true) {
   const f = get().foldersArq.find(x => x.id === id);
   if (!f) return;
-  if (get().folders.some(x => sameName(x.nome, f.nome))) { toast('Você já tem uma pasta chamada ' + f.nome + '. Renomeie uma delas antes de restaurar.'); return; }
+  if (get().folders.some(x => sameName(x.nome, f.nome))) { toast('Você já tem uma tag chamada ' + f.nome + '. Renomeie uma delas antes de restaurar.'); return; }
   const rec: Folder = { ...f, arquivadaEm: null };
   set({ foldersArq: get().foldersArq.filter(x => x.id !== id), folders: [...get().folders, rec] });
   try { await backend().set('folders', id, rec); } catch { toast('Não consegui restaurar agora. Tente de novo.'); }
   if (!withLinks) return;
-  const back = get().links.filter(l => l.pastaId === id && l.arquivadoComPasta);
+  const back = get().links.filter(l => hasTag(l, id) && l.arquivadoComPasta);
   await saveMany('links', back.map(l => ({ ...l, arquivadoEm: null, arquivadoComPasta: false })));
-  toast('Pasta ' + f.nome + ' restaurada.' + (back.length ? ' ' + plural(back.length, '1 link voltou junto.', 'links voltaram juntos.') : ''));
+  toast('Tag ' + f.nome + ' restaurada.' + (back.length ? ' ' + plural(back.length, '1 link voltou junto.', 'links voltaram juntos.') : ''));
 }
 
 export function renameFolder(id: string, value: string): boolean {
   const f = folderById(id), nome = String(value || '').trim();
   if (!f || nome === f.nome) return false;
-  if (!nome) { toast('A pasta precisa de um nome.'); return false; }
-  if (get().folders.some(x => x.id !== id && sameName(x.nome, nome))) { toast('Você já tem uma pasta com esse nome.'); return false; }
+  if (!nome) { toast('A tag precisa de um nome.'); return false; }
+  if (get().folders.some(x => x.id !== id && sameName(x.nome, nome))) { toast('Você já tem uma tag com esse nome.'); return false; }
   void save('folders', { ...f, nome, ...(f.auto ? { auto: false } : {}) });
   return true;
 }
@@ -417,7 +432,7 @@ export function moveFolder(id: string, to: number) {
 
 export function createStarter(nome: string) {
   const rec = newFolderRec(nome);
-  set({ view: rec.id, dest: rec.id });
+  set({ view: rec.id, dest: [rec.id] });
   void save('folders', rec);
 }
 
@@ -470,7 +485,7 @@ export async function importData(file: File | undefined) {
   let d: unknown;
   try { d = JSON.parse(await file.text()); } catch { toast('Não consegui ler esse arquivo. Use um arquivo exportado pelo disorder.'); return; }
   const plan = planImport(d, get().folders, get().links);
-  if (!plan) { toast('Esse arquivo não tem links nem pastas do disorder.'); return; }
+  if (!plan) { toast('Esse arquivo não tem links nem tags do disorder.'); return; }
   const { folders: nf, links: nl, dup, bad } = plan;
   if (!nf.length && !nl.length) { toast('Nada novo para importar.' + (dup ? ' ' + plural(dup, '1 link já existia', 'links já existiam') + '.' : '')); return; }
   toast('Importando ' + plural(nl.length, '1 link', 'links') + '.');
@@ -479,19 +494,19 @@ export async function importData(file: File | undefined) {
   await saveMany('folders', nf);
   await saveMany('links', nl);
   const lost = Math.max(0, nf.length + nl.length - (get().folders.length - before.f) - (get().links.length - before.l));
-  toast(plural(nl.length, '1 link importado', 'links importados') + ' e ' + plural(nf.length, '1 pasta criada', 'pastas criadas') + '.' + (dup ? ' ' + plural(dup, '1 já existia', 'já existiam') + '.' : '') + (bad ? ' ' + plural(bad, '1 endereço inválido ficou de fora', 'endereços inválidos ficaram de fora') + '.' : '') + (lost ? ' ' + plural(lost, '1 item não foi salvo', 'itens não foram salvos') + ', tente importar de novo.' : ''));
+  toast(plural(nl.length, '1 link importado', 'links importados') + ' e ' + plural(nf.length, '1 tag criada', 'tags criadas') + '.' + (dup ? ' ' + plural(dup, '1 já existia', 'já existiam') + '.' : '') + (bad ? ' ' + plural(bad, '1 endereço inválido ficou de fora', 'endereços inválidos ficaram de fora') + '.' : '') + (lost ? ' ' + plural(lost, '1 item não foi salvo', 'itens não foram salvos') + ', tente importar de novo.' : ''));
 }
 
-/* ===== Pasta automática ===== */
+/* ===== Tag automática ===== */
 const IGNORE_KEY = 'disorder.auto.ignore';
 const ignoredThemes = (): string[] => { try { return JSON.parse(localStorage.getItem(IGNORE_KEY) || '[]'); } catch { return []; } };
-/** Lembra que a pessoa não quis esse tema como pasta, para a IA não criar de novo. */
+/** Lembra que a pessoa não quis esse tema como tag, para a IA não criar de novo. */
 function ignoreTheme(nome: string) {
   try { localStorage.setItem(IGNORE_KEY, JSON.stringify([...new Set([...ignoredThemes(), nome])].slice(-100))); } catch { /* sem armazenamento */ }
 }
 
 let orgBusy = false, orgAgain = false;
-/** Agrupa links soltos por tema. Só adiciona: cria pasta com 3 links do mesmo tema ou põe o link numa pasta que já tem o nome do tema. */
+/** Agrupa links soltos por tema. Só adiciona: cria tag com 3 links do mesmo tema ou põe o link numa tag que já tem o nome do tema. */
 export async function organize(prefix = '') {
   if (!get().ai) return;
   if (orgBusy) { orgAgain = true; return; }
@@ -508,19 +523,19 @@ export async function organize(prefix = '') {
         if (!id) { const f: Folder = { ...makeFolder(g.nome, [...get().folders, ...made]), auto: true }; made.push(f); id = f.id; }
         g.linkIds.forEach(l => patch.set(l, id as string));
       }
-      const links = get().links.filter(l => patch.has(l.id)).map(l => ({ ...l, pastaId: patch.get(l.id) as string }));
+      const links = get().links.filter(l => patch.has(l.id)).map(l => ({ ...l, pastaIds: [patch.get(l.id) as string] }));
       autoWriting = true;
       try { await saveMany('folders', made); await saveMany('links', links); } finally { autoWriting = false; }
       const n = links.length;
       const text = plan.length === 1
-        ? (made.length ? 'Criei a pasta ' + plan[0].nome + ' com ' + plural(n, '1 link', 'links') + '.' : plural(n, '1 link foi', 'links foram') + ' para ' + plan[0].nome + '.')
-        : 'Organizei ' + plural(n, '1 link', 'links') + ' em ' + plural(plan.length, '1 pasta', 'pastas') + '.';
+        ? (made.length ? 'Criei a tag ' + plan[0].nome + ' com ' + plural(n, '1 link', 'links') + '.' : plural(n, '1 link foi', 'links foram') + ' para ' + plan[0].nome + '.')
+        : 'Organizei ' + plural(n, '1 link', 'links') + ' em ' + plural(plan.length, '1 tag', 'tags') + '.';
       toast(prefix + text, 'Desfazer', async () => {
         made.forEach(f => ignoreTheme(f.nome));
         autoWriting = true;
         try {
           const now = new Map(get().links.map(l => [l.id, l]));
-          await saveMany('links', links.flatMap(l => { const c = now.get(l.id); return c ? [{ ...c, pastaId: null, pastaManual: true }] : []; }));
+          await saveMany('links', links.flatMap(l => { const c = now.get(l.id); return c ? [{ ...c, pastaIds: [], pastaManual: true }] : []; }));
         } finally { autoWriting = false; }
         if (made.length) await removeMany('folders', made.map(f => f.id));
       });
@@ -621,11 +636,11 @@ export function enrichPending() {
   void pool(links.filter(l => !l.enriquecido).slice(0, 40).map(l => l.id), false);
 }
 
-/** Se a tela atual é uma pasta que não existe mais, volta para Todos. */
+/** Se a tela atual é uma tag que não existe mais, volta para Todos. */
 export function fixView() {
   const { view, folders, dest } = get();
   if (!FIXED_VIEWS.includes(view) && !folderExists(folders, view)) set({ view: 'all' });
-  if (dest && !folderExists(folders, dest)) set({ dest: '' });
+  if (dest.some(id => !folderExists(folders, id))) set({ dest: dest.filter(id => folderExists(folders, id)) });
 }
 
 export const busy = () => { const s = get(); return !!s.modal || s.adding; };

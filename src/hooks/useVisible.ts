@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo } from 'react';
 import { useStore } from '../store';
 import { inView, isArch, visibleLinks } from '../lib/filters';
 import { sortFolders } from '../lib/folders';
+import { tagsOf } from '../lib/tags';
 
 /** Links da tela atual, já filtrados. A busca usa valor adiado para a digitação não travar com muitos links. */
 export function useVisible() {
@@ -23,7 +24,7 @@ export function useBase() {
   return useMemo(() => links.filter(l => inView(l, view, folders)), [links, folders, view]);
 }
 
-/** Contagem de links ativos por pasta, calculada uma vez por mudança de dados. */
+/** Contagem de links ativos por tag, calculada uma vez por mudança de dados. */
 export function useCounts() {
   const links = useStore(s => s.links), folders = useStore(s => s.folders);
   return useMemo(() => {
@@ -33,7 +34,9 @@ export function useCounts() {
     for (const l of links) {
       if (isArch(l)) continue;
       total++;
-      if (l.pastaId && ids.has(l.pastaId)) by.set(l.pastaId, (by.get(l.pastaId) || 0) + 1); else none++;
+      const live = tagsOf(l).filter(id => ids.has(id));
+      live.forEach(id => by.set(id, (by.get(id) || 0) + 1));
+      if (!live.length) none++;
     }
     return { total, none, arch: links.length - total, by };
   }, [links, folders]);

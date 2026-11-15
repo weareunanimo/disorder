@@ -5,9 +5,10 @@ import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib
 import { planImport } from '../src/lib/dataio';
 import { planAutoFolders } from '../src/lib/auto';
 import { sortLinks } from '../src/lib/sort';
+import { normLink, tagsOf } from '../src/lib/tags';
 import type { Folder, Link } from '../src/types';
 
-const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaId: null, criadoEm: 0, enriquecido: true, ...o });
+const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaIds: [], criadoEm: 0, enriquecido: true, ...o });
 const parsed = (u: string) => { const p = parseLink(u); if (!isParsed(p)) throw new Error('inválido: ' + u); return p; };
 
 describe('parseLink', () => {
@@ -51,10 +52,10 @@ describe('filtros', () => {
   const folders: Folder[] = [{ id: 'f1', nome: 'Receitas' }];
   const now = Date.now();
   const links = [
-    link({ id: 'a', plataforma: 'youtube', pastaId: 'f1', criadoEm: now, tituloAuto: 'Bolo de fubá' }),
+    link({ id: 'a', plataforma: 'youtube', pastaIds: ['f1'], criadoEm: now, tituloAuto: 'Bolo de fubá' }),
     link({ id: 'b', plataforma: 'x', criadoEm: now - 40 * 864e5, nota: 'ler depois' }),
     link({ id: 'c', arquivadoEm: 1, criadoEm: now }),
-    link({ id: 'd', pastaId: 'sumiu', criadoEm: now - 1000 }),
+    link({ id: 'd', pastaIds: ['sumiu'], criadoEm: now - 1000 }),
   ];
   const ids = (view: string, f = {}) => visibleLinks(links, folders, view, { ...EMPTY_FILTERS, ...f }).map(l => l.id);
   it('separa as telas', () => {
@@ -70,7 +71,7 @@ describe('filtros', () => {
   });
   it('filtra por origem, pasta e data', () => {
     expect(ids('all', { plats: ['x'] })).toEqual(['b']);
-    expect(ids('all', { fp: ['none'] })).toEqual(['b']);
+    expect(ids('all', { fp: ['none'] })).toEqual(['d', 'b']);
     expect(ids('all', datePreset(7, now))).toEqual(['a', 'd']);
   });
   it('conta filtros ativos', () => {
@@ -88,7 +89,7 @@ describe('importação', () => {
     ] }, folders, links)!;
     expect(plan.folders.map(f => f.nome)).toEqual(['Nova']);
     expect(plan.links).toHaveLength(1);
-    expect(plan.links[0]).toMatchObject({ titulo: 'B', pastaId: 'f1' });
+    expect(plan.links[0]).toMatchObject({ titulo: 'B', pastaIds: ['f1'] });
     expect(plan).toMatchObject({ dup: 1, bad: 1 });
   });
   it('recusa arquivo sem dados', () => { expect(planImport({ nada: 1 }, [], [])).toBeNull(); });
@@ -137,7 +138,7 @@ describe('pasta automática', () => {
     expect(p).toEqual([{ folderId: 'f1', nome: 'Decoracao', linkIds: ['a'] }]);
   });
   it('não mexe em link com pasta, arquivado, sem tema ou movido à mão', () => {
-    const ls = [t('a', 'pet', { pastaId: 'f9' }), t('b', 'pet', { arquivadoEm: 5 }), t('c', ''), t('d', 'pet', { pastaManual: true }), t('e', 'pet')];
+    const ls = [t('a', 'pet', { pastaIds: ['f9'] }), t('b', 'pet', { arquivadoEm: 5 }), t('c', ''), t('d', 'pet', { pastaManual: true }), t('e', 'pet')];
     expect(planAutoFolders(ls, [])).toEqual([]);
   });
   it('não recria tema dispensado e ignora pasta arquivada', () => {
@@ -154,4 +155,29 @@ describe('ordenar', () => {
   it('data', () => { expect(ids('new')).toBe('dbca'); expect(ids('old')).toBe('acbd'); });
   it('nome ignora acento e caixa, números em ordem natural', () => { expect(ids('name')).toBe('badc'); expect(ids('name-desc')).toBe('cdab'); });
   it('não altera a lista original', () => { sortLinks(ls, 'name'); expect(ls[0].id).toBe('a'); });
+});
+
+describe('tags', () => {
+  const f = (id: string) => ({ id, nome: id } as any);
+  it('lê o formato antigo e o novo', () => {
+    expect(tagsOf({ pastaId: 'a' })).toEqual(['a']);
+    expect(tagsOf({ pastaIds: ['a', 'b', 'a'] })).toEqual(['a', 'b']);
+    expect(tagsOf({ pastaId: null })).toEqual([]);
+  });
+  it('normaliza e remove o campo antigo', () => {
+    const n = normLink({ ...link({}), pastaId: 'a' } as any) as any;
+    expect(n.pastaIds).toEqual(['a']); expect('pastaId' in n).toBe(false);
+  });
+  it('link com várias tags aparece em cada uma e conta uma vez em Todos', () => {
+    const folders = [f('a'), f('b')];
+    const ls = [link({ id: '1', pastaIds: ['a', 'b'] }), link({ id: '2', pastaIds: [] })];
+    const ids = (v: string) => visibleLinks(ls, folders, v as any, EMPTY_FILTERS).map(l => l.id);
+    expect(ids('a')).toEqual(['1']); expect(ids('b')).toEqual(['1']); expect(ids('none')).toEqual(['2']); expect(ids('all').sort()).toEqual(['1', '2']);
+  });
+  it('filtro por tags vale para qualquer uma das escolhidas', () => {
+    const folders = [f('a'), f('b'), f('c')];
+    const ls = [link({ id: '1', pastaIds: ['a'] }), link({ id: '2', pastaIds: ['b', 'c'] }), link({ id: '3' })];
+    const r = visibleLinks(ls, folders, 'all', { ...EMPTY_FILTERS, fp: ['c', 'none'] }).map(l => l.id).sort();
+    expect(r).toEqual(['2', '3']);
+  });
 });

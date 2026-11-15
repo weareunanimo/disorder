@@ -30,13 +30,13 @@ export function ClipBanner() {
   const clip = useStore(s => s.clip), view = useStore(s => s.view);
   useStore(s => s.folders);
   if (!clip) return null;
-  const fo = folderById(currentDest());
+  const names = currentDest().map(id => folderById(id)?.nome).filter(Boolean).join(', ');
   return (
     <div className="banner inline clip" id="clip" role="status">
       <span>Encontrei um link copiado.</span>
       <span className="acts">
         <button type="button" className="btn outline sm" onClick={dismissClip}>Agora não</button>
-        <button type="button" className="btn primary sm" onClick={acceptClip}>{view === 'all' ? 'Salvar' : 'Salvar em ' + (fo ? fo.nome : 'Sem pasta')}</button>
+        <button type="button" className="btn primary sm" onClick={acceptClip}>{view === 'all' ? 'Salvar' : 'Salvar com ' + (names || 'nenhuma tag')}</button>
       </span>
     </div>
   );

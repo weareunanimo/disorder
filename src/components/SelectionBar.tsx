@@ -1,7 +1,8 @@
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { set, useStore } from '../store';
-import { archiveSelected, bulkMove, clearSel, openModal, pruneSel, selectAll } from '../actions';
+import { archiveSelected, bulkClearTags, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
 import { colorOf } from '../lib/folders';
+import { hasTag, tagsOf } from '../lib/tags';
 import { useSortedFolders, useVisible } from '../hooks/useVisible';
 import { IcoArchive, IcoChevron, IcoMove, IcoRestore, IcoTrash, IcoX } from './icons';
 
@@ -11,7 +12,7 @@ export function SelectionBar() {
   const visible = useVisible(), folders = useSortedFolders();
   const bar = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
 
-  // Link que saiu da tela (filtro, outra pasta, arquivado) sai da seleção.
+  // Link que saiu da tela (filtro, outra tag, arquivado) sai da seleção.
   useEffect(() => { pruneSel(); }, [visible]);
   useEffect(() => {
     if (!menu) return;
@@ -24,7 +25,11 @@ export function SelectionBar() {
   const n = sel.length;
   if (!n) return null;
   const picked = new Set(sel), items = links.filter(l => picked.has(l.id));
-  const same = (id: string | null) => items.every(l => (l.pastaId || null) === id);
+  const state = (id: string): 'true' | 'false' | 'mixed' => {
+    const n = items.filter(l => hasTag(l, id)).length;
+    return n === 0 ? 'false' : n === items.length ? 'true' : 'mixed';
+  };
+  const noTags = items.every(l => !tagsOf(l).length);
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (!menu || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
@@ -34,12 +39,6 @@ export function SelectionBar() {
     const i = its.indexOf(document.activeElement as HTMLElement);
     its[(i + (e.key === 'ArrowDown' ? 1 : -1) + its.length) % its.length].focus();
   };
-  const mi = (id: string | null, label: ReactNode) => (
-    <button key={id ?? 'none'} type="button" className="mi" role="menuitem" aria-disabled={same(id) || undefined} onClick={() => { if (!same(id)) bulkMove(id); }}>
-      {label}{same(id) && <span className="cur">já está aqui</span>}
-    </button>
-  );
-
   return (
     <div className="bar" id="bar" role="toolbar" aria-label="Ações para os links selecionados" ref={bar} onKeyDown={onKeyDown}>
       <button type="button" className="x" aria-label="Limpar seleção" title="Limpar seleção (Esc)" onClick={clearSel}><IcoX /></button>
@@ -55,14 +54,22 @@ export function SelectionBar() {
         </>
       ) : (
         <>
-          <button type="button" data-move ref={trigger} aria-haspopup="menu" aria-expanded={menu} onClick={() => set({ menu: !menu })}><IcoMove />Mover<IcoChevron /></button>
+          <button type="button" data-move ref={trigger} aria-haspopup="menu" aria-expanded={menu} onClick={() => set({ menu: !menu })}><IcoMove />Tags<IcoChevron /></button>
           <button type="button" className="strong" onClick={() => archiveSelected(true)}><IcoArchive />Arquivar</button>
           {menu && (
-            <div className="menu" role="menu" aria-label="Mover para">
-              <div className="mh">Mover para</div>
-              {mi(null, 'Sem pasta')}
-              {folders.map(f => mi(f.id, <span className="tag" data-c={colorOf(f)}>{f.nome}</span>))}
-              <button type="button" className="mi" role="menuitem" onClick={() => { set({ menu: false }); openModal({ kind: 'new', then: { type: 'move-many' } }); }}>+ Nova pasta…</button>
+            <div className="menu" role="menu" aria-label="Tags dos links selecionados">
+              <div className="mh">Tags</div>
+              {folders.map(f => {
+                const st = state(f.id);
+                return (
+                  <button key={f.id} type="button" className="mi" role="menuitemcheckbox" aria-checked={st} onClick={() => bulkTag(f.id)}>
+                    <span className="ck" aria-hidden="true" />
+                    <span className="tag" data-c={colorOf(f)}>{f.nome}</span>
+                  </button>
+                );
+              })}
+              <button type="button" className="mi" role="menuitem" aria-disabled={noTags || undefined} onClick={() => { if (!noTags) bulkClearTags(); }}>Tirar todas as tags{noTags && <span className="cur">nenhuma</span>}</button>
+              <button type="button" className="mi" role="menuitem" onClick={() => { set({ menu: false }); openModal({ kind: 'new', then: { type: 'move-many' } }); }}>+ Nova tag…</button>
             </div>
           )}
         </>

@@ -8,6 +8,8 @@ import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
 import { IcoX } from '../components/icons';
 import { Modal } from './Modal';
+import { TagPicker } from '../components/TagPicker';
+import { tagsOf } from '../lib/tags';
 
 const MANY = /https?:\/\/\S+[\s\S]*https?:\/\/\S+/i;
 interface Msg { text: string; kind: 'ok' | 'err'; label?: string; fn?: () => void }
@@ -68,8 +70,8 @@ export function AddDialog() {
       const l = r.link;
       setMsg({ text: 'Esse link está arquivado.', kind: 'err', label: 'Restaurar', fn: () => { restoreLink(l); closeAdd(); toast('Link restaurado.'); goTo({ ...l, arquivadoEm: null }); } });
     } else if (r.kind === 'dup') {
-      const l = r.link, fo = folderById(l.pastaId);
-      setMsg({ text: 'Esse link já está salvo em ' + (fo ? fo.nome : 'Sem pasta') + '.', kind: 'err', label: 'Ver', fn: () => { closeAdd(); goTo(l); } });
+      const l = r.link, nm = tagsOf(l).map(id => folderById(id)?.nome).filter(Boolean).join(', ');
+      setMsg({ text: 'Esse link já está salvo' + (nm ? ' com ' + nm : ' sem tag') + '.', kind: 'err', label: 'Ver', fn: () => { closeAdd(); goTo(l); } });
     } else setMsg({ text: describeError(r.code), kind: 'err' });
   };
   const submit = () => {
@@ -113,17 +115,7 @@ export function AddDialog() {
           </div>
         </div>
       )}
-      <label className="f">Pasta
-        <span className="inw">
-          <select className="sel" id="dest" value={dest} onChange={e => {
-            if (e.target.value === '__new__') openModal({ kind: 'new', then: { type: 'dest' } }); else set({ dest: e.target.value });
-          }}>
-            <option value="">Sem pasta</option>
-            {folders.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
-            <option value="__new__">+ Nova pasta…</option>
-          </select>
-        </span>
-      </label>
+      <TagPicker id="add-tags" label="Tags" folders={folders} value={dest} onChange={ids => set({ dest: ids })} onNew={() => openModal({ kind: 'new', then: { type: 'dest' } })} />
       <p className={'msg' + (msg ? ' ' + msg.kind : '')} role="status" aria-live="polite">
         {msg?.text}{msg?.label && <> <button type="button" onClick={msg.fn}>{msg.label}</button></>}
       </p>

@@ -3,6 +3,7 @@ import { set, useStore } from '../store';
 import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, togglePlat } from '../actions';
 import { SORTS, isSort } from '../lib/sort';
 import { datePreset, filterCount } from '../lib/filters';
+import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
 import { useBase, useSortedFolders } from '../hooks/useVisible';
 import { canHover } from '../hooks/useMedia';
@@ -23,18 +24,20 @@ function FiltersPanel({ n }: { n: number }) {
   const search = useRef<HTMLInputElement>(null);
 
   const stats = useMemo(() => {
-    const plat = new Map<string, number>(), folder = new Map<string, number>();
+    const plat = new Map<string, number>(), folder = new Map<string, number>(), known = new Set(folders.map(f => f.id));
     let none = 0;
     for (const l of base) {
       plat.set(l.plataforma, (plat.get(l.plataforma) || 0) + 1);
-      if (l.pastaId) folder.set(l.pastaId, (folder.get(l.pastaId) || 0) + 1); else none++;
+      const live = tagsOf(l).filter(id => known.has(id));
+      live.forEach(id => folder.set(id, (folder.get(id) || 0) + 1));
+      if (!live.length) none++;
     }
     return { plat, folder, none };
-  }, [base]);
+  }, [base, folders]);
   const present = PLAT_KEYS.filter(k => stats.plat.get(k));
 
   useEffect(() => { if (canHover()) search.current?.focus(); }, []);
-  // Filtro que deixou de existir (plataforma sem links, pasta excluída) sai da seleção.
+  // Filtro que deixou de existir (plataforma sem links, tag excluída) sai da seleção.
   useEffect(() => {
     const okP = plats.filter(k => stats.plat.get(k));
     const okF = fp.filter(id => id === 'none' || folders.some(f => f.id === id));
@@ -56,10 +59,10 @@ function FiltersPanel({ n }: { n: number }) {
       </div>
       <div className="fp-body">
         {view === 'all' && folders.length > 0 && (
-          <div className="fgrp" role="group" aria-label="Filtrar por pasta">
-            <span className="fl">Pastas</span>
+          <div className="fgrp" role="group" aria-label="Filtrar por tag">
+            <span className="fl">Tags</span>
             <div className="chips">
-              {stats.none > 0 && <Chip label="Sem pasta" count={stats.none} on={fp.includes('none')} onClick={() => toggleFolderFilter('none')} />}
+              {stats.none > 0 && <Chip label="Sem tag" count={stats.none} on={fp.includes('none')} onClick={() => toggleFolderFilter('none')} />}
               {folders.map(f => <Chip key={f.id} label={f.nome} count={stats.folder.get(f.id) || 0} on={fp.includes(f.id)} onClick={() => toggleFolderFilter(f.id)} />)}
             </div>
           </div>

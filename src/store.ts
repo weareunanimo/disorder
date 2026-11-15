@@ -18,7 +18,7 @@ export type ModalState =
   | { kind: 'archive-folder'; id: string }
   | { kind: 'purge'; ids: string[] };
 
-export interface Draft { id: string; titulo: string; nota: string; pasta: string }
+export interface Draft { id: string; titulo: string; nota: string; tags: string[] }
 export interface ToastState { id: number; text: string; label?: string; fn?: () => void }
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -28,7 +28,7 @@ export interface State extends FilterState {
   loaded: boolean;
   loadError: boolean;
   folders: Folder[];
-  /** Pastas arquivadas. Ficam fora do menu e das listas, e voltam em Ajustes. */
+  /** Tags arquivadas. Ficam fora do menu e das listas, e voltam em Ajustes. */
   foldersArq: Folder[];
   links: Link[];
 
@@ -36,7 +36,8 @@ export interface State extends FilterState {
   prevView: View | null;
   filtersOpen: boolean;
   layout: 'cards' | 'list';
-  dest: string;
+  /** Tags escolhidas no diálogo de salvar. */
+  dest: string[];
   pal: string | null;
 
   sel: string[];
@@ -46,7 +47,7 @@ export interface State extends FilterState {
 
   adding: boolean;
   addPrefill: string;
-  /** Aviso mostrado no diálogo de salvar (ex.: pasta criada a partir dele). */
+  /** Aviso mostrado no diálogo de salvar (ex.: tag criada a partir dele). */
   addNote: string;
   modal: ModalState | null;
   draft: Draft | null;
@@ -65,6 +66,8 @@ export interface State extends FilterState {
   ai: boolean;
   /** Cartão com a gaveta de ações aberta (arrastado para a esquerda). */
   swipeId: string | null;
+  /** Cartão com o menu de três pontos aberto. */
+  cardMenu: string | null;
   /** Ordem da lista: data, nome ou origem. */
   sort: Sort;
 }
@@ -84,7 +87,7 @@ export const useStore = create<State>(() => ({
   prevView: null,
   filtersOpen: false,
   layout: read('brica.layout') === 'list' ? 'list' : 'cards',
-  dest: '',
+  dest: [],
   pal: null,
 
   sel: [],
@@ -107,6 +110,7 @@ export const useStore = create<State>(() => ({
   profile: { nome: read('disorder.nome') || '', email: '' },
   ai: read('disorder.ai') === '1',
   swipeId: null,
+  cardMenu: null,
   sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',
 

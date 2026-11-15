@@ -2,6 +2,7 @@ import type { Folder, Link } from '../types';
 import { parseLink, isParsed } from './platforms';
 import { makeFolder, sameName, sortFolders } from './folders';
 import { uid } from './text';
+import { tagsOf } from './tags';
 
 export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -46,10 +47,10 @@ export function planImport(data: unknown, folders: Folder[], links: Link[]): Imp
     if (!isParsed(p)) { bad++; return; }
     if (seen.has(p.key)) { dup++; return; }
     seen.add(p.key);
-    const pid = typeof l.pastaId === 'string' ? l.pastaId : '';
+    const pids = Array.from(new Set(tagsOf(l as { pastaIds?: unknown; pastaId?: unknown }).map(x => map[x]).filter(Boolean)));
     const rec: Link = {
       id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor,
-      titulo: str(l.titulo, 140), nota: str(l.nota, 600), pastaId: (pid && map[pid]) || null,
+      titulo: str(l.titulo, 140), nota: str(l.nota, 600), pastaIds: pids,
       criadoEm: Number.isFinite(l.criadoEm) ? (l.criadoEm as number) : Date.now(), enriquecido: !!l.enriquecido,
     };
     const ta = str(l.tituloAuto, 300), th = str(l.thumb, 2000);

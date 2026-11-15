@@ -9,7 +9,8 @@ export interface Link {
   autor: string | null;
   titulo: string;
   nota: string;
-  pastaId: string | null;
+  /** Tags do link (as antigas tags). Um link pode ter várias. */
+  pastaIds: string[];
   criadoEm: number;
   enriquecido: boolean;
   tituloAuto?: string;
@@ -21,9 +22,9 @@ export interface Link {
   publicadoEm?: number;
   icone?: string;
   /** Gerados pela IA (opcionais): uma frase sobre o link e um tema curto. Só existem se o resumo por IA estiver ligado. */
-  /** A pessoa escolheu a pasta deste link (ou tirou dela). A IA nunca mais mexe nele. */
+  /** A pessoa mexeu nas tags deste link. A IA nunca mais mexe nele. */
   pastaManual?: boolean;
-  /** Foi arquivado junto com a pasta, então volta junto quando a pasta for restaurada. */
+  /** Foi arquivado junto com a tag, então volta junto quando a tag for restaurada. */
   arquivadoComPasta?: boolean;
   resumoIA?: string;
   tema?: string;
@@ -39,14 +40,14 @@ export interface Folder {
   criadaEm?: number;
   /** Criada pela IA. Deixa de ser quando a pessoa renomeia. */
   auto?: boolean;
-  /** Quando foi arquivada. Pasta arquivada some do menu, mas guarda o nome e a cor. */
+  /** Quando foi arquivada. Tag arquivada some do menu, mas guarda o nome e a cor. */
   arquivadaEm?: number | null;
 }
 
 export type Col = 'folders' | 'links';
 export type Rec<C extends Col> = C extends 'links' ? Link : Folder;
 
-/** Telas: 'all', 'none', 'archived', 'settings' ou o id de uma pasta. */
+/** Telas: 'all', 'none', 'archived', 'settings' ou o id de uma tag. */
 export type View = string;
 
 export interface PreviewData {

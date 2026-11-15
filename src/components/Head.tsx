@@ -13,7 +13,7 @@ export function Head() {
         <div className="tl">
           <h1 id="view-title">{viewTitle(view, folders)}</h1>
           {folder && (
-            <button className="btn icon ghost" aria-label={'Editar pasta ' + folder.nome} title="Editar pasta" onClick={() => openModal({ kind: 'edit', id: folder.id })}><IcoEdit /></button>
+            <button className="btn icon ghost" aria-label={'Editar tag ' + folder.nome} title="Editar tag" onClick={() => openModal({ kind: 'edit', id: folder.id })}><IcoEdit /></button>
           )}
         </div>
       </div>
