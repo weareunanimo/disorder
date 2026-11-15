@@ -2,7 +2,7 @@
 // Resume o link em uma frase e sugere um tema curto (usado depois para agrupar em pastas).
 // Só o título, a descrição e o site saem do app. A chave de IA fica no servidor (AI_GATEWAY_API_KEY).
 const GATEWAY = () => process.env.AI_GATEWAY_URL || 'https://ai-gateway.vercel.sh/v1/chat/completions';
-const MODEL = () => process.env.AI_MODEL || 'anthropic/claude-haiku-4.5';
+const MODEL = () => process.env.AI_MODEL || 'openai/gpt-4.1-mini';
 const DAILY_LIMIT = () => Number(process.env.AI_DAILY_LIMIT || 200);
 
 const used = new Map(); // melhor esforço: cada instância da função tem o seu contador
