@@ -4,7 +4,7 @@ import { openAdd, openModal, toast, toggleSel } from '../actions';
 import type { Folder, Link } from '../types';
 import { filterCount, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
-import { PLAT, ago, autoTitle, clipTitle, fmtDuration, kindOf, originOf, readLabel, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
+import { PLAT, ago, autoTitle, clipTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useTitleMax, useWide } from '../hooks/useMedia';
 import { IcoCheck, IcoCopy, IcoEdit, IcoPlus, IcoWhats } from './icons';
@@ -50,7 +50,7 @@ const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max,
       <Preview link={l} loading={loading} />
       <div className="ltext">
         <h3 className="ttl" title={shown !== titulo ? titulo : undefined}>{shown}</h3>
-        <p className="meta"><span>{originOf(l)}</span>{l.leitura ? <span>{readLabel(l.leitura)}</span> : null}<span>{ago(l.criadoEm || Date.now())}</span></p>
+        <p className="meta"><span>{originOf(l)}</span><span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <p className="sum">{summary}</p>}
         <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
         {l.nota && <p className="note">{l.nota}</p>}

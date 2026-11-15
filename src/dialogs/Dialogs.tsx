@@ -3,7 +3,7 @@ import { get, set, useStore, type ModalState } from '../store';
 import { archiveFolder, cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast } from '../actions';
 import type { Link } from '../types';
 import { isArch } from '../lib/filters';
-import { PLAT, autoTitle, fmtDate, fmtDuration, readLabel, shortUrl } from '../lib/platforms';
+import { PLAT, autoTitle, fmtDate, fmtDuration, shortUrl } from '../lib/platforms';
 import { CFG } from '../config';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
@@ -15,7 +15,7 @@ function LinkDialog({ link: l }: { link: Link }) {
   const [titulo, setTitulo] = useState(d ? d.titulo : l.titulo || ''), [nota, setNota] = useState(d ? d.nota : l.nota || '');
   const [pasta, setPasta] = useState(d ? d.pasta : l.pastaId || '');
   const p = PLAT[l.plataforma] || PLAT.web, arch = isArch(l);
-  const facts = [l.publicadoEm ? 'Publicado em ' + fmtDate(l.publicadoEm) : '', l.duracao ? fmtDuration(l.duracao) : '', l.leitura ? readLabel(l.leitura) : ''].filter(Boolean);
+  const facts = [l.publicadoEm ? 'Publicado em ' + fmtDate(l.publicadoEm) : '', l.duracao ? fmtDuration(l.duracao) : ''].filter(Boolean);
   const unreadable = !!CFG.previewApi && l.enriquecido && !l.tituloAuto && !l.thumb;
 
   const submit = () => {

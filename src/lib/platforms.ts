@@ -160,11 +160,10 @@ export function fmtDuration(sec: number): string {
 
 export const readLabel = (min: number) => min + ' min de leitura';
 
-/** Linha de origem do cartão: rede social com o tipo, ou o domínio do site. */
-export function originOf(l: Pick<Link, 'plataforma' | 'tipo' | 'host' | 'url' | 'leitura'>): string {
-  if (l.plataforma !== 'web') return PLAT[l.plataforma].label + ' · ' + (l.tipo || 'Link');
-  const host = l.host || shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '');
-  return host + (l.leitura ? ' · Artigo' : '');
+/** Linha de origem do cartão: o nome da rede ou o domínio do site. Sem o tipo (Reel, Post, Story) e sem "Artigo". */
+export function originOf(l: Pick<Link, 'plataforma' | 'host' | 'url'>): string {
+  if (l.plataforma !== 'web') return PLAT[l.plataforma].label;
+  return l.host || shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '');
 }
 
 /** Resumo só entra no cartão se acrescenta algo ao título. */

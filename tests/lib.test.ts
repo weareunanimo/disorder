@@ -109,8 +109,8 @@ describe('cartão inteligente', () => {
     expect(fmtDuration(3723)).toBe('1:02:03');
   });
   it('mostra o domínio como origem dos sites', () => {
-    expect(originOf(link({ plataforma: 'web', url: 'https://www.blog.com/a', leitura: 4 }))).toBe('blog.com · Artigo');
-    expect(originOf(link({ plataforma: 'youtube', tipo: 'Short' }))).toBe('YouTube · Short');
+    expect(originOf(link({ plataforma: 'web', url: 'https://www.blog.com/a', leitura: 4 }))).toBe('blog.com');
+    expect(originOf(link({ plataforma: 'youtube', tipo: 'Short' }))).toBe('YouTube');
   });
   it('só mostra resumo quando acrescenta algo', () => {
     expect(summaryOf(link({ plataforma: 'web', descricao: 'Como arrumar uma sala pequena', tituloAuto: 'Sala pequena' }))).toBe('Como arrumar uma sala pequena');
