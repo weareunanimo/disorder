@@ -577,7 +577,7 @@ body { font-weight: 500; }
 .btn.icon.set-btn svg { display: block; }
 
 /* Forma do logo: cantos redondos ou vivos e os quatro lados levemente abaulados. Gerado por shape/gen_shape.py, não editar os polígonos à mão. */
-.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw {
+.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw, .inw, .field, .fpanel {
   --r1: initial; --r2: initial; --r3: initial; --r4: initial; --shc: var(--ink);
   --q1: var(--r1, var(--r)); --q2: var(--r2, var(--r)); --q3: var(--r3, var(--r)); --q4: var(--r4, var(--r)); --w: 2px; --bd: 2px;
   --dx: var(--d); --dy: var(--d);
@@ -588,8 +588,8 @@ body { font-weight: 500; }
   position: relative; border-color: transparent !important; border-radius: 0 !important; box-shadow: none !important; clip-path: var(--sq-u);
 }
 .fab { position: fixed; }
-:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw)::after { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -2; background: var(--shc, var(--ink)); pointer-events: none; }
-:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw)::before { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -1; background: inherit; clip-path: var(--sq-i); pointer-events: none; }
+:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw, .inw, .field, .fpanel)::after { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -2; background: var(--shc, var(--ink)); pointer-events: none; }
+:is(.list.grid .link, .btn:not(.ghost), .chip, .sblock, .banner, .fab, .seg, .pv, .searchw, .inw, .field, .fpanel)::before { content: ""; position: absolute; inset: calc(var(--bd) * -1); z-index: -1; background: inherit; clip-path: var(--sq-i); pointer-events: none; }
 /* Tamanhos e variações. A = tudo redondo, B = barriga e haste (um lado redondo, outro vivo), C = diagonal. Miolo (tags, preview, caixa de seleção, campos) continua reto. */
 .list.grid .link { --rk: 7px; --r: 26px; --d: 6px; --s: 5px; padding: 20px 20px 18px; }
 .list.grid .link, .sblock, .banner, .pv { --dx: 3px; }
@@ -640,3 +640,33 @@ body { font-weight: 500; }
 .searchw .search { flex: 1; min-width: 0; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; padding: 8px 18px; min-height: 44px; }
 .searchw:focus-within { --s: 4px; }
 @media (max-width: 640px) { .tools .searchw { flex: 1 1 100%; } }
+
+/* Campos (input, select, textarea): o invólucro .inw leva a forma, o controle fica sem borda por dentro. O .field do diálogo de salvar já é um invólucro. */
+.inw { --bd: 0px; --rk: 5px; --r: 14px; --d: 3px; --dx: 2px; --s: 0px; --r2: 4px; --r4: 9px; display: flex; min-width: 0; background: var(--field); }
+.inw > input, .inw > select, .inw > textarea { flex: 1; min-width: 0; width: 100%; max-width: none; border: 0 !important; border-radius: 0 !important; background-color: transparent !important; box-shadow: none !important; }
+.inw > input, .inw > select { min-height: 44px; padding-left: 16px; padding-right: 16px; }
+.inw > select { padding-right: 34px; }
+.inw > textarea { padding: 12px 16px; }
+.inw:focus-within { --s: 4px; }
+.f:nth-of-type(even) .inw { --r2: 9px; --r3: 4px; --r4: 14px; }
+.f:nth-of-type(3n) .inw { --r1: 4px; --r2: 14px; --r3: 8px; --r4: 14px; }
+.field { --rk: 5px; --r: 16px; --d: 3px; --dx: 2px; --s: 0px; --r2: 4px; --r4: 10px; }
+.field:focus-within { --s: 4px; }
+.field input { box-shadow: none !important; }
+
+/* Barra de ferramentas: Salvar link ocupa o lugar da busca. Busca, pastas, origem e data ficam no painel de Filtros. */
+.add-row { flex: 1 1 220px; justify-content: center; min-height: 44px; font-size: 16px; --s: 4px; }
+.add-row svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.tools-sp { flex: 1 1 220px; }
+.btn.filt { min-height: 44px; }
+.btn.filt .cnt { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 2px; background: var(--primary); color: var(--primary-fg, #121212); border: 2px solid var(--ink); font: 700 12px/1 var(--f-mono); border-radius: 11px; }
+.fpanel { --rk: 7px; --r: 24px; --d: 5px; --dx: 3px; --s: 5px; --r2: 5px; --r4: 12px; flex: 1 1 100%; display: grid; gap: 18px; padding: 22px; margin-top: 4px; border: 2px solid var(--ink); background: var(--surface); }
+.fp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fp-head b { font: 800 22px/1 var(--f-display, var(--f-body)); text-transform: uppercase; letter-spacing: -.01em; }
+.fpanel .f, .fpanel .fl { display: flex; flex-direction: column; gap: 8px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); }
+.fpanel .fgrp { display: grid; gap: 10px; }
+.fpanel .chips { flex: none; margin: 0; }
+.fpanel input { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; padding: 8px 16px; }
+.fpanel input[type="date"] { min-width: 0; }
+.fdates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .btn.filt { flex: none; } .fpanel { padding: 18px 16px; --r: 22px; --d: 4px; --s: 4px; } .fdates { grid-template-columns: 1fr; } .tools .add-row { flex: 1 1 0; } }

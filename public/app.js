@@ -112,7 +112,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const $ = id => document.getElementById(id);
 
 /* ===== Estado e armazenamento ===== */
-const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plat: 'all', editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false, adding: false };
+const S = { folders: [], links: [], loaded: false, loadError: false, mode: 'local', view: 'all', q: '', plats: [], fp: [], from: '', to: '', filtersOpen: false, editing: null, draft: null, dest: '', flash: null, modal: null, layout: 'cards', sel: [], anchor: null, menu: false, adding: false };
 try { if (localStorage.getItem('brica.layout') === 'list') S.layout = 'list'; } catch (e) {}
 const touchMq = window.matchMedia ? window.matchMedia('(hover: none)') : { matches: false };
 const wideMq = window.matchMedia ? window.matchMedia('(min-width: 901px)') : { matches: true };
@@ -181,7 +181,7 @@ function authHeaders() {
 }
 function renderLogin(msg, kind) {
   document.body.innerHTML = '<div class="brand" role="banner" aria-label="disorder"><b aria-hidden="true">disorder</b></div><main class="login"><p class="lead">Entre com o seu e-mail. Vamos enviar um link para você entrar, sem senha.</p>' +
-    '<form id="login-form"><label class="f">E-mail<input type="email" id="login-email" autocomplete="email" required placeholder="voce@email.com"></label>' +
+    '<form id="login-form"><label class="f">E-mail<span class="inw"><input type="email" id="login-email" autocomplete="email" required placeholder="voce@email.com"></span></label>' +
     '<button class="btn primary" type="submit">Enviar link</button></form><p class="msg ' + (kind || '') + '" id="login-msg" role="status" aria-live="polite">' + esc(msg || '') + '</p></main>';
   $('login-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -296,9 +296,26 @@ function viewTitle() {
   if (S.view === 'settings') return 'Ajustes';
   const f = folderById(S.view); return f ? f.nome : 'Todos os links';
 }
+function dayStart(iso) { const a = String(iso).split('-').map(Number); return new Date(a[0], (a[1] || 1) - 1, a[2] || 1).getTime(); }
+function isoDay(ms) { const d = new Date(ms), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+function filterCount() { return (S.q.trim() ? 1 : 0) + (S.plats.length ? 1 : 0) + (S.view === 'all' && S.fp.length ? 1 : 0) + (S.from || S.to ? 1 : 0); }
+function resetFilters() { S.q = ''; S.plats = []; S.fp = []; S.from = ''; S.to = ''; }
+function datePreset(days) { const to = isoDay(Date.now()); return { from: isoDay(Date.now() - (days - 1) * 864e5), to }; }
+function toggleIn(arr, v) { const i = arr.indexOf(v); if (i < 0) arr.push(v); else arr.splice(i, 1); }
+function syncFilterUi() {
+  const root = $('tools'); if (!root) return;
+  root.querySelectorAll('[data-plat]').forEach(b => b.setAttribute('aria-pressed', String(S.plats.includes(b.dataset.plat))));
+  root.querySelectorAll('[data-fpasta]').forEach(b => b.setAttribute('aria-pressed', String(S.fp.includes(b.dataset.fpasta))));
+  root.querySelectorAll('[data-fdate]').forEach(b => { const d = datePreset(+b.dataset.fdate); b.setAttribute('aria-pressed', String(S.from === d.from && S.to === d.to)); });
+  const n = filterCount(), f = root.querySelector('.btn.filt'), c = f && f.querySelector('.cnt');
+  if (f) { if (n && !c) { const x = document.createElement('span'); x.className = 'cnt'; f.appendChild(x); } if (!n && c) c.remove(); const k = f.querySelector('.cnt'); if (k) { k.textContent = n; k.setAttribute('aria-label', n + (n === 1 ? ' filtro ativo' : ' filtros ativos')); } }
+  const clr = root.querySelector('[data-act=f-clear]'); if (clr) clr.disabled = !n;
+}
 function visibleLinks() {
   const q = S.q.trim().toLowerCase();
-  return S.links.filter(inView).filter(l => S.plat === 'all' || l.plataforma === S.plat).filter(l => {
+  const t0 = S.from ? dayStart(S.from) : 0, t1 = S.to ? dayStart(S.to) + 864e5 : 0;
+  const byFolder = S.view === 'all' && S.fp.length;
+  return S.links.filter(inView).filter(l => !S.plats.length || S.plats.includes(l.plataforma)).filter(l => !byFolder || S.fp.includes(l.pastaId || 'none')).filter(l => (!t0 || (l.criadoEm || 0) >= t0) && (!t1 || (l.criadoEm || 0) < t1)).filter(l => {
     if (!q) return true;
     const f = folderById(l.pastaId);
     return [l.titulo, autoTitle(l), l.nota, l.autor, l.url, f && f.nome].filter(Boolean).join(' ').toLowerCase().includes(q);
@@ -325,7 +342,7 @@ function settingsHtml() {
   const fs = sortedFolders(), act = active();
   const seg = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']].map(o => '<button type="button" data-act="theme" data-theme-v="' + o[0] + '" data-fk="theme:' + o[0] + '" aria-pressed="' + (THEME === o[0]) + '">' + o[1] + '</button>').join('');
   let h = '<section class="sblock" aria-labelledby="s-perfil"><h2 id="s-perfil">Perfil</h2>' +
-    '<label class="f">Nome<input type="text" id="pf-nome" data-fk="pf-nome" maxlength="60" autocomplete="name" placeholder="Como você quer ser chamado" value="' + esc(PROFILE.nome) + '"></label>' +
+    '<label class="f">Nome<span class="inw"><input type="text" id="pf-nome" data-fk="pf-nome" maxlength="60" autocomplete="name" placeholder="Como você quer ser chamado" value="' + esc(PROFILE.nome) + '"></span></label>' +
     (PROFILE.email ? '<div class="f">E-mail<p class="sval">' + esc(PROFILE.email) + '</p></div>' : '') +
     '<div class="f" role="group" aria-labelledby="s-tema"><span id="s-tema">Tema</span><div class="seg txt">' + seg + '</div></div>' + accountExtras() + '</section>';
   h += '<section class="sblock" aria-labelledby="s-pastas"><div class="shead"><h2 id="s-pastas">Pastas</h2><button type="button" class="btn sm" data-act="f-new" data-fk="f-new">Nova pasta</button></div>';
@@ -336,7 +353,7 @@ function settingsHtml() {
       const n = act.filter(l => l.pastaId === f.id).length, c = colorOf(f), id = esc(f.id), nm = esc(f.nome);
       h += '<li class="frow" draggable="true" data-id="' + id + '">' +
         '<button type="button" class="sw-btn" style="background:var(--tag' + c + '-bg)" data-act="f-color" data-id="' + id + '" data-fk="color:' + id + '" aria-expanded="' + (S.pal === f.id) + '" aria-label="Cor da pasta ' + nm + ', ' + SW_NAMES[c] + '. Trocar cor" title="Trocar cor"></button>' +
-        '<input type="text" class="fname" data-fname="' + id + '" data-fk="name:' + id + '" maxlength="40" autocomplete="off" aria-label="Nome da pasta" value="' + nm + '">' +
+        '<span class="inw"><input type="text" class="fname" data-fname="' + id + '" data-fk="name:' + id + '" maxlength="40" autocomplete="off" aria-label="Nome da pasta" value="' + nm + '"></span>' +
         '<span class="fct">' + plural(n, '1 link', 'links') + '</span>' +
         '<span class="fa"><button type="button" class="btn sm icon" data-act="f-up" data-id="' + id + '" data-fk="up:' + id + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Subir ' + nm + '" title="Subir"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button>' +
         '<button type="button" class="btn sm icon" data-act="f-down" data-id="' + id + '" data-fk="down:' + id + '"' + (i === fs.length - 1 ? ' disabled' : '') + ' aria-label="Descer ' + nm + '" title="Descer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg></button>' +
@@ -485,7 +502,7 @@ function renderHead() {
     '</div></div><div class="hr">' +
     (S.view !== 'settings' ? '<button class="btn icon ghost set-btn" data-view="settings" aria-label="Ajustes" title="Ajustes">' + ICO_SET + '</button>'
       : '<button class="btn icon ghost set-btn back-btn" data-view="' + esc(backView()) + '" aria-label="Voltar para ' + esc(backTitle()) + '" title="Voltar">' + ICO_BACK + '</button>') +
-    (S.view !== 'archived' && S.view !== 'settings' ? '<button class="btn primary add-btn" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button>' : '') + '</div>';
+    '</div>';
   document.body.classList.toggle('v-arch', S.view === 'archived');
   document.body.classList.toggle('v-set', S.view === 'settings');
 }
@@ -496,23 +513,49 @@ function setLayout(v) {
 }
 $('tools').addEventListener('click', e => {
   const b = e.target.closest('[data-layout]'); if (b) { setLayout(b.dataset.layout); return; }
-  if (e.target.closest('[data-act=filters]')) { S.filtersOpen = !(S.filtersOpen || S.plat !== 'all'); if (!S.filtersOpen) S.plat = 'all'; renderTools(); renderList(); }
+  if (e.target.closest('[data-act=filters]')) { S.filtersOpen = !S.filtersOpen; renderTools(); if (S.filtersOpen && window.matchMedia('(hover: hover)').matches) { const q = $('q'); if (q) q.focus(); } return; }
+  const pl = e.target.closest('[data-plat]'), fo = e.target.closest('[data-fpasta]'), dt = e.target.closest('[data-fdate]');
+  if (pl) toggleIn(S.plats, pl.dataset.plat);
+  else if (fo) toggleIn(S.fp, fo.dataset.fpasta);
+  else if (dt) { const d = datePreset(+dt.dataset.fdate); if (S.from === d.from && S.to === d.to) { S.from = ''; S.to = ''; } else { S.from = d.from; S.to = d.to; } const a = $('fd-from'), z = $('fd-to'); if (a) a.value = S.from; if (z) z.value = S.to; }
+  else if (e.target.closest('[data-act=f-clear]')) { resetFilters(); renderTools(); renderList(); renderHead(); return; }
+  else return;
+  syncFilterUi(); renderList();
 });
 function renderTools() {
   const base = S.links.filter(inView);
   if (!S.links.length || S.view === 'settings') { $('tools').innerHTML = ''; return; }
   const counts = {}; base.forEach(l => { counts[l.plataforma] = (counts[l.plataforma] || 0) + 1; });
   const present = Object.keys(PLAT).filter(k => counts[k]);
-  if (S.plat !== 'all' && !counts[S.plat]) S.plat = 'all';
-  const open = present.length > 1 && (S.filtersOpen || S.plat !== 'all');
-  let h = '<label class="sr" for="q">Buscar nos links</label><span class="searchw"><input class="search" id="q" type="search" placeholder="Buscar por título, autor, nota ou endereço" value="' + esc(S.q) + '"></span>' +
-    (present.length > 1 ? '<button type="button" class="btn filt" data-act="filters" aria-expanded="' + open + '" aria-controls="chips"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>Filtros' + (S.plat !== 'all' ? '<span class="dot" aria-label="filtro ativo"></span>' : '') + '</button>' : '') +
+  S.plats = S.plats.filter(k => counts[k]);
+  const fs = sortedFolders(); S.fp = S.fp.filter(id => id === 'none' || fs.some(f => f.id === id));
+  const open = !!S.filtersOpen, n = filterCount();
+  const plus = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>';
+  let h = (S.view !== 'archived' ? '<button type="button" class="btn primary add-row" data-act="open-add">' + plus + 'Salvar link</button>' : '<span class="tools-sp"></span>') +
+    '<button type="button" class="btn filt" data-act="filters" aria-expanded="' + open + '" aria-controls="fpanel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>Filtros' + (n ? '<span class="cnt" aria-label="' + n + (n === 1 ? ' filtro ativo' : ' filtros ativos') + '">' + n + '</span>' : '') + '</button>' +
     '<div class="seg" role="group" aria-label="Visualização">' +
     '<button type="button" data-layout="cards" aria-pressed="' + (S.layout !== 'list') + '" aria-label="Ver em cartões" title="Ver em cartões"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></button>' +
     '<button type="button" data-layout="list" aria-pressed="' + (S.layout === 'list') + '" aria-label="Ver em lista" title="Ver em lista"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg></button></div>';
   if (open) {
-    h += '<div class="chips" id="chips" role="group" aria-label="Filtrar por rede"><button class="chip" data-plat="all" aria-pressed="' + (S.plat === 'all') + '">Tudo<span class="n">' + base.length + '</span></button>' +
-      present.map(k => '<button class="chip" data-plat="' + k + '" aria-pressed="' + (S.plat === k) + '">' + PLAT[k].label + '<span class="n">' + counts[k] + '</span></button>').join('') + '</div>';
+    const chip = (attr, val, label, cnt, on) => '<button type="button" class="chip" ' + attr + '="' + esc(val) + '" aria-pressed="' + on + '">' + esc(label) + (cnt != null ? '<span class="n">' + cnt + '</span>' : '') + '</button>';
+    h += '<div class="fpanel" id="fpanel" role="group" aria-label="Filtros">' +
+      '<div class="fp-head"><b>Filtros</b><button type="button" class="btn sm" data-act="f-clear"' + (n ? '' : ' disabled') + '>Limpar</button></div>' +
+      '<label class="f" for="q">Busca<span class="inw"><input class="search" id="q" type="search" placeholder="Título, autor, nota ou endereço" autocomplete="off" value="' + esc(S.q) + '"></span></label>';
+    if (S.view === 'all' && fs.length) {
+      const noneN = base.filter(l => !l.pastaId).length;
+      h += '<div class="fgrp" role="group" aria-label="Filtrar por pasta"><span class="fl">Pastas</span><div class="chips">' +
+        (noneN ? chip('data-fpasta', 'none', 'Sem pasta', noneN, S.fp.includes('none')) : '') +
+        fs.map(f => chip('data-fpasta', f.id, f.nome, base.filter(l => l.pastaId === f.id).length, S.fp.includes(f.id))).join('') + '</div></div>';
+    }
+    if (present.length > 1) {
+      h += '<div class="fgrp" role="group" aria-label="Filtrar por origem"><span class="fl">Origem</span><div class="chips">' +
+        present.map(k => chip('data-plat', k, PLAT[k].label, counts[k], S.plats.includes(k))).join('') + '</div></div>';
+    }
+    const pv = d => { const x = datePreset(d); return S.from === x.from && S.to === x.to; };
+    h += '<div class="fgrp" role="group" aria-label="Filtrar por data"><span class="fl">Data de salvamento</span><div class="chips">' +
+      chip('data-fdate', '7', 'Últimos 7 dias', null, pv(7)) + chip('data-fdate', '30', 'Últimos 30 dias', null, pv(30)) + chip('data-fdate', '90', 'Últimos 90 dias', null, pv(90)) + '</div>' +
+      '<div class="fdates"><label class="f" for="fd-from">De<span class="inw"><input type="date" id="fd-from" value="' + esc(S.from) + '"></span></label>' +
+      '<label class="f" for="fd-to">Até<span class="inw"><input type="date" id="fd-to" value="' + esc(S.to) + '"></span></label></div></div></div>';
   }
   const had = document.activeElement && document.activeElement.id === 'q';
   const caret = had ? document.activeElement.selectionStart : 0;
@@ -561,11 +604,11 @@ function renderList() {
   if (!ls.length) {
     let t, p;
     if (!S.links.length) { t = 'Nada salvo ainda'; p = 'Guarde aqui o que você encontra no X, Threads, Instagram, TikTok e YouTube.'; }
-    else if (base && (S.q || S.plat !== 'all')) { t = 'Nenhum link bate com o filtro'; p = 'Limpe a busca ou escolha outra rede.'; }
+    else if (base && filterCount()) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
     else if (S.view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das pastas e ficam guardados aqui. Você pode restaurar quando quiser.'; }
     else if (S.view === 'none') { t = 'Tudo o que você salvou está em alguma pasta'; p = 'Links sem pasta aparecem aqui.'; }
     else { t = 'Esta pasta está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle() + '.'; }
-    const cta = (S.view !== 'archived' && !(base && (S.q || S.plat !== 'all'))) ? '<button class="btn primary" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button><p class="hint">ou cole um link em qualquer lugar desta página</p>' : '';
+    const cta = (S.view !== 'archived' && !(base && filterCount())) ? '<button class="btn primary" data-act="open-add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Salvar link</button><p class="hint">ou cole um link em qualquer lugar desta página</p>' : '';
     el.innerHTML = '<div class="empty"><b>' + esc(t) + '</b><p>' + esc(p) + '</p>' + cta + '</div>';
     return;
   }
@@ -694,7 +737,7 @@ function reportSaved(r) {
   const n = r.saved.length, last = r.saved[n - 1], fo = folderById(r.dest);
   S.flash = last.id; setTimeout(() => { S.flash = null; }, 1800);
   if (S.view !== 'all' && S.view !== (r.dest || 'none')) S.view = r.dest || 'none';
-  S.q = ''; S.plat = 'all'; hideClip();
+  resetFilters(); hideClip();
   render();
   const row = document.querySelector('.link[data-id="' + last.id + '"]'); if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   const skipped = r.total - n - (r.bad ? 1 : 0);
@@ -702,7 +745,7 @@ function reportSaved(r) {
 }
 function goTo(l) {
   const fo = folderById(l.pastaId);
-  S.view = isArch(l) ? 'archived' : (fo ? fo.id : 'none'); S.q = ''; S.plat = 'all'; S.flash = l.id; setTimeout(() => { S.flash = null; }, 1800);
+  S.view = isArch(l) ? 'archived' : (fo ? fo.id : 'none'); resetFilters(); S.flash = l.id; setTimeout(() => { S.flash = null; }, 1800);
   render(); const r = document.querySelector('.link[data-id="' + l.id + '"]'); if (r) r.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 function restoreLink(l) { const cur = S.links.find(x => x.id === l.id); if (cur) save('links', Object.assign({}, cur, { arquivadoEm: null })); }
@@ -767,9 +810,9 @@ function renderModal() {
       : '<button type="button" class="btn ghost" data-m="archive-one">Arquivar</button>';
     body = '<div class="lm-head">' + previewHtml(l, 'sm') + '<div class="lm-t"><h2 id="mt">Editar link</h2><a class="lm-url" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + p.label + ' · ' + esc(shortUrl(l.url)) + '</a></div></div>' +
       '<form id="link-form" class="mform" novalidate>' +
-      '<label class="f">Título<input type="text" name="titulo" maxlength="140" autocomplete="off" placeholder="' + esc(l.tituloAuto || autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></label>' +
-      (isArch(l) ? '' : '<label class="f">Pasta<select class="sel" name="pasta">' + opts + '</select></label>') +
-      '<label class="f">Nota<textarea name="nota" rows="3" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></label>' +
+      '<label class="f">Título<span class="inw"><input type="text" name="titulo" maxlength="140" autocomplete="off" placeholder="' + esc(l.tituloAuto || autoTitle(l)) + '" value="' + esc(d ? d.titulo : (l.titulo || '')) + '"></span></label>' +
+      (isArch(l) ? '' : '<label class="f">Pasta<span class="inw"><select class="sel" name="pasta">' + opts + '</select></span></label>') +
+      '<label class="f">Nota<span class="inw"><textarea name="nota" rows="3" maxlength="600" placeholder="Por que você guardou este link?">' + esc(d ? d.nota : (l.nota || '')) + '</textarea></span></label>' +
       '<div class="row mfoot">' + left + '<span class="sp"></span><button type="button" class="btn outline" data-m="cancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div></form>';
   } else if (m.kind === 'purge') {
     const n = m.ids.length;
@@ -783,7 +826,7 @@ function renderModal() {
     const f = m.kind === 'edit' ? folderById(m.id) : null;
         body = '<h2 id="mt">' + (f ? 'Editar pasta' : 'Nova pasta') + '</h2>' +
       '<form id="folder-form" novalidate style="display:flex;flex-direction:column;gap:16px">' +
-      '<label class="f">Nome<input type="text" name="nome" maxlength="40" autocomplete="off" value="' + esc(f ? f.nome : (m.nome || '')) + '" placeholder="Por exemplo, Receitas"></label>' +
+      '<label class="f">Nome<span class="inw"><input type="text" name="nome" maxlength="40" autocomplete="off" value="' + esc(f ? f.nome : (m.nome || '')) + '" placeholder="Por exemplo, Receitas"></span></label>' +
       '<p class="ferr" id="ferr" role="alert"></p>' +
       '<div class="row">' + (f ? '<button type="button" class="btn danger" data-m="ask-del" style="margin-right:auto">Excluir pasta</button>' : '') +
       '<button type="button" class="btn outline" data-m="cancel">Cancelar</button><button type="submit" class="btn primary">' + (f ? 'Salvar' : 'Criar pasta') + '</button></div></form>';
@@ -951,8 +994,7 @@ document.addEventListener('click', e => {
     else if (k === 'confirm-purge') purge(S.modal.ids);
     return;
   }
-  if (t.dataset.view) { if (t.dataset.view === 'settings' && S.view !== 'settings') S.prevView = S.view; S.view = t.dataset.view; S.pal = null; S.plat = 'all'; S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') S.dest = S.view; render(); checkClipboard(); return; }
-  if (t.dataset.plat) { S.plat = t.dataset.plat; render(); return; }
+  if (t.dataset.view) { if (t.dataset.view === 'settings' && S.view !== 'settings') S.prevView = S.view; S.view = t.dataset.view; S.pal = null; resetFilters(); S.editing = null; S.draft = null; clearSel(); hideClip(); if (S.view !== 'all' && S.view !== 'none' && S.view !== 'archived' && S.view !== 'settings') S.dest = S.view; render(); checkClipboard(); return; }
   const act = t.dataset.act;
   if (settingsAct(act, t)) return;
   if (act === 'new-folder') { openModal({ kind: 'new' }); return; }
@@ -988,7 +1030,8 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'url') { updateDetected(); if (!e.target.value) say(''); }
-  else if (e.target.id === 'q') { S.q = e.target.value; renderHead(); renderList(); }
+  else if (e.target.id === 'q') { S.q = e.target.value; syncFilterUi(); renderHead(); renderList(); }
+  else if (e.target.id === 'fd-from' || e.target.id === 'fd-to') { if (e.target.id === 'fd-from') S.from = e.target.value; else S.to = e.target.value; syncFilterUi(); renderList(); }
 });
 document.addEventListener('submit', e => {
   const f = e.target;
