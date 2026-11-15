@@ -33,6 +33,21 @@ export function Preview({ link, cls, src, loading }: { link: PreviewLink; cls?: 
   );
 }
 
+/** Resumo do cartão: uma linha. Tocar abre o texto inteiro, tocar fora (ou Esc) fecha. */
+function Summary({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const out = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', out, true);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  return <button ref={ref} type="button" className="sum" aria-expanded={open} title={open ? undefined : 'Ver o resumo inteiro'} onClick={() => setOpen(o => !o)}>{text}</button>;
+}
+
 interface CardProps { link: Link; folders: Folder[]; selected: boolean; flash: boolean; loading: boolean; open: boolean; swipeOn: boolean }
 
 const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loading, open, swipeOn }: CardProps) {
@@ -58,7 +73,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <div className="ltext">
         <h3 className="ttl" title={titulo}>{titulo}</h3>
         <p className="meta"><span>{originOf(l)}</span><span>{ago(l.criadoEm || Date.now())}</span></p>
-        {summary && !l.nota && <p className="sum">{summary}</p>}
+        {summary && !l.nota && <Summary text={summary} />}
         <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
         {l.nota && <p className="note">{l.nota}</p>}
       </div>

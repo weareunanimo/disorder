@@ -204,7 +204,7 @@ export type AddResult =
   | { kind: 'bad'; code: string };
 
 interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string[] }
-export interface PvSnap { key: string; data: PreviewData | null }
+export interface PvSnap { key: string; data: PreviewData | null; ai?: { resumo: string; tema: string } | null }
 
 function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome {
   const found = raw.match(/https?:\/\/[^\s]+/gi);
@@ -225,10 +225,12 @@ function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome
       titulo: '', nota: rest, pastaIds: dest.slice(), criadoEm: base + r.saved.length, enriquecido: false,
     };
     if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
+    // O diálogo de salvar já pediu o resumo: aproveita, para não gastar outro pedido.
+    if (pv && pv.key === p.key && pv.ai && get().ai) { if (pv.ai.resumo) rec.resumoIA = pv.ai.resumo; if (pv.ai.tema) rec.tema = pv.ai.tema; }
     r.saved.push(rec);
   });
   if (r.saved.length) {
-    void saveMany('links', r.saved).then(() => { r.saved.forEach(l => { if (!l.enriquecido) void enrich(l.id); else void addSummary(l.id); }); });
+    void saveMany('links', r.saved).then(() => { r.saved.forEach(l => { if (!l.enriquecido) void enrich(l.id); else if (l.resumoIA) { if (l.tema) void organize(); } else void addSummary(l.id); }); });
   }
   return r;
 }
@@ -563,7 +565,7 @@ async function addSummary(id: string) {
 export async function summarizeExisting() {
   if (!get().ai || !CFG.summarizeApi || get().summarizingAll) return;
   const todo = get().links.filter(l => !isArch(l) && !l.resumoIA).slice(0, 60).map(l => l.id);
-  if (!todo.length) { toast('Todos os links já têm resumo.'); return; }
+  if (!todo.length) { toast('Todos os links já estão organizados.'); return; }
   set({ summarizingAll: true, aiProgress: { done: 0, total: todo.length } });
   bulkAi = true;
   try {
@@ -582,7 +584,7 @@ export async function summarizeExisting() {
   const done = todo.filter(id => get().links.find(l => l.id === id)?.resumoIA).length;
   set({ summarizingAll: false });
   const why = done < todo.length && pv.lastSummarizeStatus !== 200 ? ' Motivo: ' + whySummaryFailed(pv.lastSummarizeStatus) + (pv.lastSummarizeDetail ? ' Resposta da IA: ' + pv.lastSummarizeDetail : '') : '';
-  await organize(done + ' de ' + todo.length + ' links ganharam resumo.' + why + ' ');
+  await organize(done + ' de ' + todo.length + ' links organizados.' + why + ' ');
 }
 
 /* ===== Preview automático ===== */

@@ -85,13 +85,13 @@ export function Settings() {
           <div className="seg txt">{THEMES.map(([k, label]) => <button key={k} type="button" aria-pressed={theme === k} onClick={() => setTheme(k)}>{label}</button>)}</div>
         </div>
         <div className="srow">
-          <div className="st"><b>Resumo com IA</b><span>{ai ? 'Ligado. O título e a descrição de cada link novo são enviados a um serviço de IA para gerar uma frase de resumo e um tema. O endereço do link e suas notas não são enviados.' : 'Desligado. Nada sai do app além do endereço, que já é lido para montar o preview.'}</span></div>
-          <div className="seg txt" role="group" aria-label="Resumo com IA">{([[true, 'Ligado'], [false, 'Desligado']] as const).map(([v, label]) => <button key={label} type="button" aria-pressed={ai === v} onClick={() => setAi(v)}>{label}</button>)}</div>
+          <div className="st"><b>Ordem automática</b><span>{ai ? 'Ligada. A IA lê o título e a descrição de cada link novo, resume o conteúdo quando dá, identifica o tema e organiza em tags sozinha. O endereço do link e suas notas não são enviados.' : 'Desligada. Você organiza tudo à mão, e nada sai do app além do endereço, que já é lido para montar o preview.'}</span></div>
+          <div className="seg txt" role="group" aria-label="Ordem automática">{([[true, 'Ligada'], [false, 'Desligada']] as const).map(([v, label]) => <button key={label} type="button" aria-pressed={ai === v} onClick={() => setAi(v)}>{label}</button>)}</div>
         </div>
         {ai && CFG.summarizeApi && (
           <div className="srow">
-            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em tags. Até 60 por vez, num ritmo de 5 por minuto por causa do plano grátis da IA. Deixe esta aba aberta.</span></div>
-            <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Resumindo ' + aiProgress.done + ' de ' + aiProgress.total : 'Resumir agora'}</button>
+            <div className="st"><b>Organizar links que já existem</b><span>Resume, identifica o tema e organiza em tags os links não arquivados que ainda não passaram pela IA. Até 60 por vez, num ritmo de 5 por minuto por causa do plano grátis da IA. Deixe esta aba aberta.</span></div>
+            <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Organizando ' + aiProgress.done + ' de ' + aiProgress.total : 'Organizar agora'}</button>
           </div>
         )}
         {mode === 'cloud' && (
