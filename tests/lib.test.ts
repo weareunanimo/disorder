@@ -4,6 +4,7 @@ import { extrasOf } from '../src/data/previews';
 import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib/filters';
 import { planImport } from '../src/lib/dataio';
 import { planAutoFolders } from '../src/lib/auto';
+import { sortLinks } from '../src/lib/sort';
 import type { Folder, Link } from '../src/types';
 
 const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaId: null, criadoEm: 0, enriquecido: true, ...o });
@@ -144,4 +145,13 @@ describe('pasta automática', () => {
     expect(planAutoFolders(ls, [], ['Viagens'])).toEqual([]);
     expect(planAutoFolders(ls, [pasta('f', 'Viagem', { arquivadaEm: 9 })])).toHaveLength(1);
   });
+});
+
+describe('ordenar', () => {
+  const mk = (id: string, titulo: string, url: string, criadoEm: number) => ({ id, titulo, url, criadoEm, plataforma: 'web' } as any);
+  const ls = [mk('a', 'banana', 'https://zeta.com/a', 1), mk('b', 'Água', 'https://alfa.com/b', 3), mk('c', 'maçã 10', 'https://alfa.com/c', 2), mk('d', 'maçã 2', 'https://beta.com/d', 4)];
+  const ids = (s: any) => sortLinks(ls, s).map(l => l.id).join('');
+  it('data', () => { expect(ids('new')).toBe('dbca'); expect(ids('old')).toBe('acbd'); });
+  it('nome ignora acento e caixa, números em ordem natural', () => { expect(ids('name')).toBe('badc'); expect(ids('name-desc')).toBe('cdab'); });
+  it('não altera a lista original', () => { sortLinks(ls, 'name'); expect(ls[0].id).toBe('a'); });
 });

@@ -1,13 +1,14 @@
 import { memo, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { get, useStore } from '../store';
-import { openAdd, openModal, toast, toggleSel } from '../actions';
+import { deleteLink, openAdd, openModal, setArchived, setSwipe, toast, toggleSel } from '../actions';
 import type { Folder, Link } from '../types';
-import { filterCount, viewTitle } from '../lib/filters';
+import { filterCount, isArch, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
 import { PLAT, ago, autoTitle, clipTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useTitleMax, useWide } from '../hooks/useMedia';
-import { IcoCheck, IcoCopy, IcoEdit, IcoPlus, IcoWhats } from './icons';
+import { TRAY_W, useSwipe } from '../hooks/useSwipe';
+import { IcoArchive, IcoCheck, IcoCopy, IcoEdit, IcoPlus, IcoRestore, IcoTrash, IcoWhats } from './icons';
 
 const PAGE = 60;
 
@@ -36,12 +37,21 @@ function copy(url: string) {
     .catch(() => toast('Não consegui copiar. Abra o link e copie pelo endereço.'));
 }
 
-interface CardProps { link: Link; folder: Folder | null; selected: boolean; flash: boolean; max: number; loading: boolean }
+interface CardProps { link: Link; folder: Folder | null; selected: boolean; flash: boolean; max: number; loading: boolean; open: boolean; swipeOn: boolean }
 
-const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max, loading }: CardProps) {
+const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max, loading, open, swipeOn }: CardProps) {
+  const { ref, bind, apply } = useSwipe(l.id, open, swipeOn);
+  // Fechou por fora (outro cartão abriu, toque em outro lugar, Esc): volta para a posição inicial.
+  useEffect(() => { if (!ref.current?.classList.contains('dragging')) apply(open ? -TRAY_W : 0, true); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const arq = isArch(l);
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
   const shown = clipTitle(titulo, max), kind = kindOf(l), summary = summaryOf(l);
   return (
+    <div className="swipe" ref={ref} data-id={l.id} data-open={open || undefined} {...bind}>
+    <div className="tray" role="group" aria-label={'Ações rápidas de ' + titulo}>
+      <button type="button" className="t-arq" tabIndex={open ? 0 : -1} onClick={() => setArchived([l], !arq)}>{arq ? <IcoRestore /> : <IcoArchive />}<span>{arq ? 'Restaurar' : 'Arquivar'}</span></button>
+      <button type="button" className="t-del" tabIndex={open ? 0 : -1} onClick={() => deleteLink(l.id)}><IcoTrash /><span>Excluir</span></button>
+    </div>
     <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} aria-selected={selected} aria-busy={loading || undefined}>
       <button type="button" className="pick" role="checkbox" aria-checked={selected} aria-label={'Selecionar ' + titulo}
         onClick={e => { e.preventDefault(); toggleSel(l.id, e.shiftKey); }}>
@@ -63,6 +73,7 @@ const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max,
         <a className="btn outline sm" href={l.url} target="_blank" rel="noopener noreferrer">Abrir</a>
       </div>
     </article>
+    </div>
   );
 });
 
@@ -91,7 +102,7 @@ function Empty({ base }: { base: number }) {
 export function LinkList() {
   const loaded = useStore(s => s.loaded), loadError = useStore(s => s.loadError);
   const layout = useStore(s => s.layout), sel = useStore(s => s.sel), flash = useStore(s => s.flash);
-  const folders = useStore(s => s.folders), view = useStore(s => s.view), loadingIds = useStore(s => s.loading);
+  const folders = useStore(s => s.folders), view = useStore(s => s.view), loadingIds = useStore(s => s.loading), swipeId = useStore(s => s.swipeId);
   const wide = useWide(), max = useTitleMax();
   const visible = useVisible(), base = useBase();
 
@@ -104,6 +115,13 @@ export function LinkList() {
     const i = visible.findIndex(l => l.id === flash);
     if (i >= limit) setLimit(i + PAGE);
   }, [flash, visible, limit]);
+  // Toque fora da gaveta aberta fecha.
+  useEffect(() => {
+    if (!swipeId) return;
+    const close = (e: PointerEvent) => { if (!(e.target as HTMLElement).closest?.('.swipe[data-open]')) setSwipe(null); };
+    document.addEventListener('pointerdown', close, true);
+    return () => document.removeEventListener('pointerdown', close, true);
+  }, [swipeId]);
   const more = visible.length > limit;
   useEffect(() => {
     const el = sentinel.current;
@@ -130,7 +148,7 @@ export function LinkList() {
   return (
     <div className={cls} id="list" style={style} onClick={onClick}>
       {visible.slice(0, limit).map(l => (
-        <LinkCard key={l.id} link={l} folder={(l.pastaId && byId.get(l.pastaId)) || null} selected={picked.has(l.id)} flash={flash === l.id} max={max} loading={busy.has(l.id)} />
+        <LinkCard key={l.id} link={l} folder={(l.pastaId && byId.get(l.pastaId)) || null} selected={picked.has(l.id)} flash={flash === l.id} max={max} loading={busy.has(l.id)} open={swipeId === l.id} swipeOn={!sel.length} />
       ))}
       {more && <div ref={sentinel} className="more" aria-hidden="true" />}
     </div>

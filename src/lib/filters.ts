@@ -1,5 +1,6 @@
 import type { Folder, Link, View } from '../types';
 import { autoTitle } from './platforms';
+import { sortLinks, type Sort } from './sort';
 
 export const FIXED_VIEWS = ['all', 'none', 'archived', 'settings'];
 export const isArch = (l: Link) => !!l.arquivadoEm;
@@ -42,13 +43,13 @@ export function filterCount(f: FilterState, view: View): number {
   return (f.q.trim() ? 1 : 0) + (f.plats.length ? 1 : 0) + (view === 'all' && f.fp.length ? 1 : 0) + (f.from || f.to ? 1 : 0);
 }
 
-/** Links da tela atual com os filtros aplicados, do mais novo para o mais antigo. */
-export function visibleLinks(links: Link[], folders: Folder[], view: View, f: FilterState): Link[] {
+/** Links da tela atual com os filtros aplicados, na ordem escolhida (padrão: do mais novo para o mais antigo). */
+export function visibleLinks(links: Link[], folders: Folder[], view: View, f: FilterState, sort: Sort = 'new'): Link[] {
   const q = f.q.trim().toLowerCase();
   const t0 = f.from ? dayStart(f.from) : 0, t1 = f.to ? dayStart(f.to) + 864e5 : 0;
   const byFolder = view === 'all' && f.fp.length > 0;
   const names = new Map(folders.map(x => [x.id, x.nome]));
-  return links
+  return sortLinks(links
     .filter(l => inView(l, view, folders))
     .filter(l => !f.plats.length || f.plats.includes(l.plataforma))
     .filter(l => !byFolder || f.fp.includes(l.pastaId || 'none'))
@@ -57,8 +58,7 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
       if (!q) return true;
       const nome = l.pastaId ? names.get(l.pastaId) : undefined;
       return [l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.autor, l.url, nome].filter(Boolean).join(' ').toLowerCase().includes(q);
-    })
-    .sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+    }), sort);
 }
 
 export function viewTitle(view: View, folders: Folder[]): string {

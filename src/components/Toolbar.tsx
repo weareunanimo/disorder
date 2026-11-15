@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { set, useStore } from '../store';
-import { openAdd, resetFilters, setLayout, toggleFolderFilter, togglePlat } from '../actions';
+import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, togglePlat } from '../actions';
+import { SORTS, isSort } from '../lib/sort';
 import { datePreset, filterCount } from '../lib/filters';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
 import { useBase, useSortedFolders } from '../hooks/useVisible';
@@ -89,7 +90,7 @@ function FiltersPanel({ n }: { n: number }) {
 export function Toolbar() {
   const hasLinks = useStore(s => s.links.length > 0), view = useStore(s => s.view);
   const open = useStore(s => s.filtersOpen), layout = useStore(s => s.layout);
-  const n = useStore(s => filterCount(s, s.view));
+  const n = useStore(s => filterCount(s, s.view)), sort = useStore(s => s.sort);
   if (!hasLinks || view === 'settings') return <div className="tools" id="tools" style={{ marginTop: 24 }} />;
   return (
     <div className="tools" id="tools" style={{ marginTop: 24 }}>
@@ -99,6 +100,11 @@ export function Toolbar() {
       <button type="button" className="btn filt" aria-expanded={open} aria-controls="fpanel" onClick={() => set({ filtersOpen: !open })}>
         <IcoFilter />Filtros{n > 0 && <span className="cnt" aria-label={n + (n === 1 ? ' filtro ativo' : ' filtros ativos')}>{n}</span>}
       </button>
+      <label className="inw sortw">
+        <select className="sel" aria-label="Ordenar por" value={sort} onChange={e => { if (isSort(e.target.value)) setSort(e.target.value); }}>
+          {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+      </label>
       <div className="seg" role="group" aria-label="Visualização">
         <button type="button" aria-pressed={layout !== 'list'} aria-label="Ver em cartões" title="Ver em cartões" onClick={() => setLayout('cards')}><IcoCards /></button>
         <button type="button" aria-pressed={layout === 'list'} aria-label="Ver em lista" title="Ver em lista" onClick={() => setLayout('list')}><IcoList /></button>

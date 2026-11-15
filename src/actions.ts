@@ -3,6 +3,7 @@ import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
 import { isParsed, parseLink, SOCIAL } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
+import type { Sort } from './lib/sort';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
@@ -53,7 +54,7 @@ export async function removeMany(col: Col, ids: string[]) {
 
 /* ===== Consultas ===== */
 export const folderById = (id: string | null | undefined) => get().folders.find(f => f.id === id) ?? null;
-export const currentVisible = () => { const s = get(); return visibleLinks(s.links, s.folders, s.view, s); };
+export const currentVisible = () => { const s = get(); return visibleLinks(s.links, s.folders, s.view, s, s.sort); };
 
 export function currentDest(): string {
   const { view, dest, folders } = get();
@@ -133,6 +134,7 @@ export function bulkMove(dest: string | null) {
 }
 
 export function setArchived(items: Link[], on: boolean) {
+  set({ swipeId: null });
   const prev = items.map(l => ({ id: l.id, arquivadoEm: l.arquivadoEm || null }));
   const now = Date.now();
   void saveMany('links', items.map(l => ({ ...l, arquivadoEm: on ? now : null })));
@@ -141,6 +143,19 @@ export function setArchived(items: Link[], on: boolean) {
   toast(on ? plural(n, 'Link arquivado.', 'links arquivados.') : plural(n, 'Link restaurado.', 'links restaurados.'), 'Desfazer', () => undoPatch(prev));
 }
 export const archiveSelected = (on: boolean) => setArchived(selItems(), on);
+
+/** Abre a gaveta de ações de um cartão, ou fecha todas com null. Só uma fica aberta por vez. */
+export const setSwipe = (id: string | null) => { if (get().swipeId !== id) set({ swipeId: id }); };
+
+/** Exclui um link na hora, sem passar para Arquivados. O aviso permite desfazer. */
+export function deleteLink(id: string) {
+  const l = get().links.find(x => x.id === id);
+  if (!l) return;
+  const copy = { ...l };
+  set({ swipeId: null, sel: get().sel.filter(x => x !== id) });
+  void removeMany('links', [id]);
+  toast('Link excluído.', 'Desfazer', () => { void save('links', copy); });
+}
 
 export function purge(ids: string[]) {
   closeModal();
@@ -411,6 +426,12 @@ export function applyTheme(t: Theme) {
   const r = document.documentElement;
   if (t === 'light' || t === 'dark') r.dataset.theme = t; else delete r.dataset.theme;
 }
+/** Ordem da lista. Vale para todas as telas e fica guardada neste aparelho. */
+export function setSort(s: Sort) {
+  set({ sort: s });
+  try { localStorage.setItem('disorder.sort', s); } catch { /* sem armazenamento */ }
+}
+
 export function setTheme(t: Theme) {
   set({ theme: t });
   try { localStorage.setItem('disorder.theme', t); } catch { /* sem armazenamento */ }

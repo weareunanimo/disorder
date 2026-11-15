@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { get, set } from '../store';
-import { cancelModal, checkClipboard, clearSel, closeAdd, currentDest, openAdd, quickSave, selectAll } from '../actions';
+import { cancelModal, checkClipboard, clearSel, closeAdd, currentDest, openAdd, quickSave, selectAll, setSwipe } from '../actions';
 
 const FIELD = 'input,textarea,select,[contenteditable]';
 
@@ -22,6 +22,7 @@ export function useGlobalEvents() {
         if (s.modal) cancelModal();
         else if (s.adding) closeAdd();
         else if (s.menu) { set({ menu: false }); document.querySelector<HTMLElement>('#bar [data-move]')?.focus(); }
+        else if (s.swipeId) setSwipe(null);
         else if (s.sel.length) clearSel();
         return;
       }

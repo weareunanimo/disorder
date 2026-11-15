@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Folder, Link, View } from './types';
 import type { Backend } from './data/backend';
 import { EMPTY_FILTERS, type FilterState } from './lib/filters';
+import { isSort, type Sort } from './lib/sort';
 
 export type Then =
   | { type: 'stay' }
@@ -62,6 +63,10 @@ export interface State extends FilterState {
   theme: Theme;
   /** Resumo por IA ligado neste aparelho. Desligado por padrão: liga em Configurações. */
   ai: boolean;
+  /** Cartão com a gaveta de ações aberta (arrastado para a esquerda). */
+  swipeId: string | null;
+  /** Ordem da lista: data, nome ou origem. */
+  sort: Sort;
 }
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -101,6 +106,8 @@ export const useStore = create<State>(() => ({
 
   profile: { nome: read('disorder.nome') || '', email: '' },
   ai: read('disorder.ai') === '1',
+  swipeId: null,
+  sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',
 
   ...EMPTY_FILTERS,
