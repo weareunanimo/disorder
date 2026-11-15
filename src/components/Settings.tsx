@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { set, useStore, type Theme } from '../store';
-import { exportData, importData, moveFolder, openModal, refreshPreviews, renameFolder, restoreFolder, setFolderColor, setAi, setProfileName, setTheme, signOut } from '../actions';
+import { exportData, importData, moveFolder, openModal, refreshPreviews, renameFolder, restoreFolder, setFolderColor, setAi, setProfileName, setTheme, signOut, summarizeExisting } from '../actions';
 import { CFG } from '../config';
 import type { Folder } from '../types';
 import { SW_NAMES, colorOf } from '../lib/folders';
@@ -52,7 +52,7 @@ function FolderRow({ f, i, last, count, drag }: { f: Folder; i: number; last: bo
 
 export function Settings() {
   const profile = useStore(s => s.profile), theme = useStore(s => s.theme), ai = useStore(s => s.ai), mode = useStore(s => s.mode);
-  const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing);
+  const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing), summarizingAll = useStore(s => s.summarizingAll);
   const folders = useSortedFolders(), counts = useCounts();
   const arq = useStore(s => s.foldersArq), allLinks = useStore(s => s.links);
   const arqCount = (id: string) => allLinks.filter(l => l.pastaId === id && l.arquivadoEm).length;
@@ -87,6 +87,12 @@ export function Settings() {
           <div className="st"><b>Resumo com IA</b><span>{ai ? 'Ligado. O título e a descrição de cada link novo são enviados a um serviço de IA para gerar uma frase de resumo e um tema. O endereço do link e suas notas não são enviados.' : 'Desligado. Nada sai do app além do endereço, que já é lido para montar o preview.'}</span></div>
           <div className="seg txt" role="group" aria-label="Resumo com IA">{([[true, 'Ligado'], [false, 'Desligado']] as const).map(([v, label]) => <button key={label} type="button" aria-pressed={ai === v} onClick={() => setAi(v)}>{label}</button>)}</div>
         </div>
+        {ai && CFG.summarizeApi && (
+          <div className="srow">
+            <div className="st"><b>Resumir links que já existem</b><span>Gera resumo e tema para os links não arquivados que ainda não têm, e organiza em pastas. Até 150 por vez.</span></div>
+            <button type="button" className="btn" disabled={summarizingAll} onClick={() => void summarizeExisting()}>{summarizingAll ? 'Resumindo' : 'Resumir agora'}</button>
+          </div>
+        )}
         {mode === 'cloud' && (
           <div className="srow">
             <div className="st"><b>Sair</b><span>Encerra a sessão neste aparelho. Seus links continuam na conta.</span></div>

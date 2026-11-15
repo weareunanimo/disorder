@@ -470,7 +470,7 @@ function ignoreTheme(nome: string) {
 
 let orgBusy = false, orgAgain = false;
 /** Agrupa links soltos por tema. Só adiciona: cria pasta com 3 links do mesmo tema ou põe o link numa pasta que já tem o nome do tema. */
-export async function organize() {
+export async function organize(prefix = '') {
   if (!get().ai) return;
   if (orgBusy) { orgAgain = true; return; }
   orgBusy = true;
@@ -478,7 +478,7 @@ export async function organize() {
     do {
       orgAgain = false;
       const plan = planAutoFolders(get().links, get().folders, ignoredThemes());
-      if (!plan.length) continue;
+      if (!plan.length) { if (prefix) toast(prefix.trim()); continue; }
       const made: Folder[] = [];
       const patch = new Map<string, string>();
       for (const g of plan) {
@@ -493,7 +493,7 @@ export async function organize() {
       const text = plan.length === 1
         ? (made.length ? 'Criei a pasta ' + plan[0].nome + ' com ' + plural(n, '1 link', 'links') + '.' : plural(n, '1 link foi', 'links foram') + ' para ' + plan[0].nome + '.')
         : 'Organizei ' + plural(n, '1 link', 'links') + ' em ' + plural(plan.length, '1 pasta', 'pastas') + '.';
-      toast(text, 'Desfazer', async () => {
+      toast(prefix + text, 'Desfazer', async () => {
         made.forEach(f => ignoreTheme(f.nome));
         autoWriting = true;
         try {
@@ -508,6 +508,7 @@ export async function organize() {
 
 /* ===== Resumo por IA ===== */
 const summarizing = new Set<string>();
+let bulkAi = false;
 /** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
 async function addSummary(id: string) {
   const l = get().links.find(x => x.id === id);
@@ -517,8 +518,31 @@ async function addSummary(id: string) {
     const s = await summarize(l);
     const now = get().links.find(x => x.id === id);
     if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}) });
-    if (s && s.tema) void organize();
+    if (s && s.tema && !bulkAi) void organize();
   } finally { summarizing.delete(id); }
+}
+
+/** Roda o resumo e a organização nos links que já existem. No máximo 150 por vez, para respeitar o limite diário. */
+export async function summarizeExisting() {
+  if (!get().ai || !CFG.summarizeApi || get().summarizingAll) return;
+  const todo = get().links.filter(l => !isArch(l) && !l.resumoIA).slice(0, 150).map(l => l.id);
+  if (!todo.length) { toast('Todos os links já têm resumo.'); return; }
+  set({ summarizingAll: true });
+  bulkAi = true;
+  try {
+    let i = 0;
+    const worker = async () => {
+      while (i < todo.length) {
+        const id = todo[i++], l = get().links.find(x => x.id === id);
+        if (!l) continue;
+        if (l.enriquecido) await addSummary(id); else await enrich(id);
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+  } finally { bulkAi = false; }
+  const done = todo.filter(id => get().links.find(l => l.id === id)?.resumoIA).length;
+  set({ summarizingAll: false });
+  await organize(done + ' de ' + todo.length + ' links ganharam resumo. ');
 }
 
 /* ===== Preview automático ===== */

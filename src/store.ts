@@ -52,6 +52,7 @@ export interface State extends FilterState {
   clip: { url: string; key: string } | null;
   toast: ToastState | null;
   refreshing: boolean;
+  summarizingAll: boolean;
   /** Links novos cujo preview ainda está sendo lido. */
   loading: string[];
 
@@ -92,6 +93,7 @@ export const useStore = create<State>(() => ({
   clip: null,
   toast: null,
   refreshing: false,
+  summarizingAll: false,
   loading: [],
 
   profile: { nome: read('disorder.nome') || '', email: '' },
