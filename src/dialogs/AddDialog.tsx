@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ClipboardEvent } from 'react
 import { set, useStore } from '../store';
 import { clipCandidate, closeAdd, describeError, folderById, goTo, openModal, restoreLink, submitAdd, toast, type PvSnap } from '../actions';
 import { fetchPreview } from '../data/previews';
-import { PLAT, autoTitle, isParsed, parseLink, type Parsed } from '../lib/platforms';
+import { PLAT, autoTitle, fmtDuration, isParsed, parseLink, readLabel, type Parsed } from '../lib/platforms';
 import type { PreviewData } from '../types';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
@@ -23,13 +23,15 @@ export function AddDialog() {
   const det = useMemo((): { label: string; one: Parsed | null } | null => {
     const v = url.trim();
     if (!v) return null;
-    const many = v.match(/https?:\/\/[^\s]+/gi);
-    if (many && many.length > 1) {
-      const n = many.filter(u => isParsed(parseLink(u))).length;
+    const urls = v.match(/https?:\/\/[^\s]+/gi);
+    if (urls && urls.length > 1) {
+      const n = urls.filter(u => isParsed(parseLink(u))).length;
       return n ? { label: n + ' links', one: null } : null;
     }
-    const p = parseLink(v);
-    return isParsed(p) ? { label: PLAT[p.plataforma].label + ' · ' + p.tipo, one: p } : null;
+    // Um link com texto junto: o link é salvo e o texto vira a nota.
+    const withText = !!urls && v.replace(urls[0], '').trim().length > 0;
+    const p = parseLink(urls ? urls[0] : v);
+    return isParsed(p) ? { label: PLAT[p.plataforma].label + ' · ' + p.tipo + (withText ? ' + nota' : ''), one: p } : null;
   }, [url]);
   const one = det?.one ?? null, key = one?.key ?? null;
 
@@ -102,11 +104,12 @@ export function AddDialog() {
       {!one && <p className="hint" id="add-hint">X, Threads, Instagram, TikTok e YouTube. Pode colar vários de uma vez.</p>}
       {one && (
         <div className="pv" role="status" aria-live="polite">
-          <Preview link={{ plataforma: one.plataforma }} src={img} />
+          <Preview link={{ plataforma: one.plataforma, duracao: pv?.data?.duracao, icone: pv?.data?.icone }} src={img} />
           <div className="pt">
             <b className="t">{title}</b>
             <span className="m">{PLAT[one.plataforma].label} · {one.tipo}</span>
-            {pv?.loading && <span className="st">Buscando preview</span>}
+            {(pv?.data?.duracao || pv?.data?.leitura) ? <span className="m">{pv.data.duracao ? fmtDuration(pv.data.duracao) : readLabel(pv.data.leitura!)}</span> : null}
+            {pv?.loading && <span className="st">Lendo a página</span>}
           </div>
         </div>
       )}

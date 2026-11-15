@@ -140,3 +140,42 @@ export function clipTitle(t: string, max: number): string {
 }
 
 export const thumbOf = (l: Pick<Link, 'thumb'>) => (l.thumb && /^https:\/\//i.test(l.thumb) ? l.thumb : '');
+
+/* ===== Tipo de conteúdo (decide como o cartão se apresenta) ===== */
+export type Kind = 'video' | 'post' | 'profile' | 'article' | 'site';
+
+export function kindOf(l: Pick<Link, 'plataforma' | 'tipo' | 'leitura' | 'duracao'>): Kind {
+  if (l.tipo === 'Perfil' || l.tipo === 'Canal') return 'profile';
+  if (['Vídeo', 'Short', 'Live', 'Reel'].includes(l.tipo) || l.duracao) return 'video';
+  if (l.plataforma !== 'web') return l.tipo === 'Playlist' ? 'video' : 'post';
+  return l.leitura ? 'article' : 'site';
+}
+
+/** 253 vira 4:13, 3723 vira 1:02:03. */
+export function fmtDuration(sec: number): string {
+  const s = Math.max(0, Math.round(sec)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  const z = (n: number) => String(n).padStart(2, '0');
+  return h ? h + ':' + z(m) + ':' + z(r) : m + ':' + z(r);
+}
+
+export const readLabel = (min: number) => min + ' min de leitura';
+
+/** Linha de origem do cartão: rede social com o tipo, ou o domínio do site. */
+export function originOf(l: Pick<Link, 'plataforma' | 'tipo' | 'host' | 'url' | 'leitura'>): string {
+  if (l.plataforma !== 'web') return PLAT[l.plataforma].label + ' · ' + (l.tipo || 'Link');
+  const host = l.host || shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '');
+  return host + (l.leitura ? ' · Artigo' : '');
+}
+
+/** Resumo só entra no cartão se acrescenta algo ao título. */
+export function summaryOf(l: Pick<Link, 'descricao' | 'titulo' | 'tituloAuto' | 'plataforma' | 'tipo' | 'leitura' | 'duracao'>): string {
+  const d = (l.descricao || '').trim();
+  if (!d || kindOf(l) === 'post' || kindOf(l) === 'profile') return '';
+  const t = (l.titulo || l.tituloAuto || '').toLowerCase();
+  if (t && (d.toLowerCase().startsWith(t.slice(0, 40)) || t.startsWith(d.toLowerCase().slice(0, 40)))) return '';
+  return d;
+}
+
+export function fmtDate(ms: number): string {
+  return new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\./g, '');
+}

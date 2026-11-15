@@ -1,4 +1,4 @@
-// GET /api/preview?url=...  ->  { title, image, site }
+// GET /api/preview?url=...  ->  { title, image, site, descricao, duracao, leitura, publicadoEm, icone }
 // Lê o título e a imagem de um link, como o WhatsApp faz. Roda como função serverless da Vercel.
 const dns = require('node:dns').promises;
 const net = require('node:net');
@@ -56,6 +56,29 @@ function decode(s) {
   }).replace(/\s+/g, ' ').trim();
 }
 
+// "PT1H2M3S", "P0DT4M13S" ou segundos puros viram segundos. Devolve 0 se não entender.
+function parseDuration(v) {
+  v = String(v || '').trim();
+  if (/^\d+(\.\d+)?$/.test(v)) return Math.round(Number(v));
+  const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i.exec(v);
+  if (!m) return 0;
+  return Math.round((+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0));
+}
+
+function toMs(v) {
+  const t = Date.parse(String(v || ''));
+  return Number.isFinite(t) && t > 0 && t < Date.now() + 864e5 ? t : 0;
+}
+
+// Estimativa de leitura: só para páginas com cara de artigo, a 200 palavras por minuto.
+function readingMinutes(html, isArticle) {
+  if (!isArticle) return 0;
+  const art = /<article[\s>][\s\S]*?<\/article>/i.exec(html);
+  const body = (art ? art[0] : html).replace(/<(script|style|noscript|svg|nav|header|footer|aside)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ');
+  const words = decode(body).split(' ').filter(w => w.length > 1).length;
+  return words >= 250 ? Math.min(90, Math.ceil(words / 200)) : 0;
+}
+
 function parseMeta(html, base) {
   const head = html.slice(0, MAX_HTML);
   const meta = {};
@@ -63,15 +86,29 @@ function parseMeta(html, base) {
   while ((m = re.exec(head))) {
     const attrs = {}; const ar = /([a-zA-Z:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g; let a;
     while ((a = ar.exec(m[1]))) attrs[a[1].toLowerCase()] = a[3] ?? a[4];
-    const key = (attrs.property || attrs.name || '').toLowerCase();
+    const key = (attrs.property || attrs.name || attrs.itemprop || '').toLowerCase();
     if (key && attrs.content != null && !(key in meta)) meta[key] = attrs.content;
   }
   const t = /<title[^>]*>([^<]*)<\/title>/i.exec(head);
   const title = decode(meta['og:title'] || meta['twitter:title'] || (t && t[1]) || '');
-  let image = meta['og:image:secure_url'] || meta['og:image'] || meta['twitter:image'] || meta['twitter:image:src'] || '';
-  image = decode(image);
-  try { image = image ? new URL(image, base).toString() : ''; } catch (e) { image = ''; }
-  return { title, image, site: decode(meta['og:site_name'] || '') };
+  const abs = v => { try { return v ? new URL(decode(v), base).toString() : ''; } catch (e) { return ''; } };
+  const image = abs(meta['og:image:secure_url'] || meta['og:image'] || meta['twitter:image'] || meta['twitter:image:src']);
+  let icon = '';
+  const lr = /<link\s+([^>]*?)\/?>/gi; let l;
+  while ((l = lr.exec(head))) {
+    const rel = /rel\s*=\s*["']([^"']*)["']/i.exec(l[1]), href = /href\s*=\s*["']([^"']*)["']/i.exec(l[1]);
+    if (rel && href && /(^|\s)(shortcut\s+)?icon(\s|$)/i.test(rel[1])) { icon = abs(href[1]); break; }
+  }
+  const ld = k => { const x = new RegExp('"' + k + '"\\s*:\\s*"([^"]+)"').exec(head); return x ? x[1] : ''; };
+  const type = (meta['og:type'] || '').toLowerCase();
+  const duration = parseDuration(meta['og:video:duration'] || meta['video:duration'] || meta['duration'] || ld('duration'));
+  const published = toMs(meta['article:published_time'] || meta['og:article:published_time'] || meta['datepublished'] || meta['uploaddate'] || ld('datePublished') || ld('uploadDate'));
+  const isArticle = type === 'article' || /<article[\s>]/i.test(head);
+  return {
+    title, image, site: decode(meta['og:site_name'] || ''),
+    descricao: decode(meta['og:description'] || meta['twitter:description'] || meta['description'] || '').slice(0, 240),
+    duracao: duration, leitura: duration ? 0 : readingMinutes(head, isArticle), publicadoEm: published, icone: icon,
+  };
 }
 
 function youtubeId(u) {
@@ -92,24 +129,35 @@ async function oembed(endpoint, url) {
   return JSON.parse((await readLimited(res, 200 * 1024)).toString('utf8'));
 }
 
+const EMPTY = { title: '', image: '', site: '', descricao: '', duracao: 0, leitura: 0, publicadoEm: 0, icone: '' };
+
+async function pageMeta(url) {
+  const { res, url: finalUrl } = await safeFetch(url);
+  if (!res.ok) return { ...EMPTY };
+  const ct = res.headers.get('content-type') || '';
+  if (/^image\//.test(ct)) return { ...EMPTY, image: finalUrl.toString() };
+  if (!/html|xml/.test(ct)) return { ...EMPTY };
+  return parseMeta((await readLimited(res, MAX_HTML)).toString('utf8'), finalUrl);
+}
+
 async function getMeta(url) {
   const host = new URL(url).hostname.replace(/^www\.|^m\./, '');
+  const id = youtubeId(url);
   try {
-    if (youtubeId(url)) {
-      const d = await oembed('https://www.youtube.com/oembed', url);
-      const id = youtubeId(url);
-      if (d) return { title: decode(d.title), image: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', site: 'YouTube' };
-    } else if (host.endsWith('tiktok.com')) {
-      const d = await oembed('https://www.tiktok.com/oembed', url);
-      if (d) return { title: decode(d.title) || (d.author_name ? 'Vídeo de @' + d.author_name : ''), image: d.thumbnail_url || '', site: 'TikTok' };
+    if (id || host.endsWith('tiktok.com')) {
+      const [d, pg] = await Promise.all([
+        oembed(id ? 'https://www.youtube.com/oembed' : 'https://www.tiktok.com/oembed', url).catch(() => null),
+        // A página do vídeo traz duração, descrição e data de publicação. Se falhar, o oEmbed basta.
+        pageMeta(id ? 'https://www.youtube.com/watch?v=' + id : url).catch(() => ({ ...EMPTY })),
+      ]);
+      if (d) {
+        const title = decode(d.title) || (d.author_name && !id ? 'Vídeo de @' + d.author_name : '');
+        const image = id ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : d.thumbnail_url || '';
+        return { ...pg, title, image, site: id ? 'YouTube' : 'TikTok', leitura: 0 };
+      }
     }
   } catch (e) { /* cai para as tags da página */ }
-  const { res, url: finalUrl } = await safeFetch(url);
-  if (!res.ok) return { title: '', image: '', site: '' };
-  const ct = res.headers.get('content-type') || '';
-  if (/^image\//.test(ct)) return { title: '', image: finalUrl.toString(), site: '' };
-  if (!/html|xml/.test(ct)) return { title: '', image: '', site: '' };
-  return parseMeta((await readLimited(res, MAX_HTML)).toString('utf8'), finalUrl);
+  return pageMeta(url);
 }
 
 // Guarda a imagem no Supabase Storage para não depender do link original, que costuma expirar.
@@ -149,9 +197,14 @@ module.exports = async function handler(req, res) {
     const meta = await getMeta(u.toString());
     meta.image = await mirrorImage(meta.image);
     res.setHeader('cache-control', 's-maxage=86400, stale-while-revalidate=604800');
-    res.statusCode = 200; res.end(JSON.stringify({ title: (meta.title || '').slice(0, 300), image: meta.image || '', site: meta.site || '' }));
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+      title: (meta.title || '').slice(0, 300), image: meta.image || '', site: meta.site || '',
+      descricao: meta.descricao || '', duracao: meta.duracao || 0, leitura: meta.leitura || 0, publicadoEm: meta.publicadoEm || 0,
+      icone: /^https:\/\//i.test(meta.icone || '') ? meta.icone : '',
+    }));
   } catch (e) {
     res.statusCode = 422; res.end(JSON.stringify({ error: 'não consegui ler esse link' }));
   }
 };
-module.exports.parseMeta = parseMeta; module.exports.isPrivateIp = isPrivateIp;
+module.exports.parseMeta = parseMeta; module.exports.isPrivateIp = isPrivateIp; module.exports.parseDuration = parseDuration;

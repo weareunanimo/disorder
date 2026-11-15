@@ -4,20 +4,28 @@ import { openAdd, openModal, toast, toggleSel } from '../actions';
 import type { Folder, Link } from '../types';
 import { filterCount, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
-import { PLAT, ago, autoTitle, clipTitle, shortUrl, thumbOf } from '../lib/platforms';
+import { PLAT, ago, autoTitle, clipTitle, fmtDuration, kindOf, originOf, readLabel, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useTitleMax, useWide } from '../hooks/useMedia';
 import { IcoCheck, IcoCopy, IcoEdit, IcoPlus, IcoWhats } from './icons';
 
 const PAGE = 60;
 
-export function Preview({ link, cls, src }: { link: Pick<Link, 'plataforma' | 'thumb'>; cls?: string; src?: string }) {
-  const url = src ?? thumbOf(link);
-  const [broken, setBroken] = useState<string | null>(null);
+type PreviewLink = Pick<Link, 'plataforma'> & Partial<Pick<Link, 'thumb' | 'duracao' | 'icone'>>;
+
+/** Quadrado do cartão. Sem imagem, mostra as iniciais da rede (ou o ícone do site, nos links comuns). Vídeo leva o selo de duração. */
+export function Preview({ link, cls, src, loading }: { link: PreviewLink; cls?: string; src?: string; loading?: boolean }) {
+  const url = src ?? thumbOf({ thumb: link.thumb });
+  const icon = link.plataforma === 'web' && link.icone && /^https:\/\//i.test(link.icone) ? link.icone : '';
+  const [broken, setBroken] = useState<string | null>(null), [iconBroken, setIconBroken] = useState(false);
+  const showImg = !!url && broken !== url;
   return (
-    <div className={'preview' + (cls ? ' ' + cls : '')} aria-hidden="true">
-      {(PLAT[link.plataforma] || PLAT.web).short}
-      {url && broken !== url && <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(url)} />}
+    <div className={'preview' + (cls ? ' ' + cls : '') + (loading ? ' sk' : '')} aria-hidden="true">
+      {icon && !showImg && !iconBroken
+        ? <img className="ico" src={icon} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} />
+        : (PLAT[link.plataforma] || PLAT.web).short}
+      {showImg && <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(url)} />}
+      {link.duracao ? <span className="dur">{fmtDuration(link.duracao)}</span> : null}
     </div>
   );
 }
@@ -28,23 +36,23 @@ function copy(url: string) {
     .catch(() => toast('Não consegui copiar. Abra o link e copie pelo endereço.'));
 }
 
-interface CardProps { link: Link; folder: Folder | null; selected: boolean; flash: boolean; max: number }
+interface CardProps { link: Link; folder: Folder | null; selected: boolean; flash: boolean; max: number; loading: boolean }
 
-const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max }: CardProps) {
-  const p = PLAT[l.plataforma] || PLAT.web;
+const LinkCard = memo(function LinkCard({ link: l, folder, selected, flash, max, loading }: CardProps) {
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
-  const shown = clipTitle(titulo, max);
+  const shown = clipTitle(titulo, max), kind = kindOf(l), summary = summaryOf(l);
   return (
-    <article className={'link' + (flash ? ' flash' : '')} data-id={l.id} aria-selected={selected}>
+    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} aria-selected={selected} aria-busy={loading || undefined}>
       <button type="button" className="pick" role="checkbox" aria-checked={selected} aria-label={'Selecionar ' + titulo}
         onClick={e => { e.preventDefault(); toggleSel(l.id, e.shiftKey); }}>
         <span className="box"><IcoCheck /></span>
       </button>
-      <Preview link={l} />
+      <Preview link={l} loading={loading} />
       <div className="ltext">
         <h3 className="ttl" title={shown !== titulo ? titulo : undefined}>{shown}</h3>
-        <p className="meta"><span>{p.label} · {l.tipo || 'Link'}</span><span>{ago(l.criadoEm || Date.now())}</span></p>
-        <p className="url" title={l.url}>{shortUrl(l.url)}</p>
+        <p className="meta"><span>{originOf(l)}</span>{l.leitura ? <span>{readLabel(l.leitura)}</span> : null}<span>{ago(l.criadoEm || Date.now())}</span></p>
+        {summary && !l.nota && <p className="sum">{summary}</p>}
+        <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
         {l.nota && <p className="note">{l.nota}</p>}
       </div>
       <div className="acts">
@@ -83,7 +91,7 @@ function Empty({ base }: { base: number }) {
 export function LinkList() {
   const loaded = useStore(s => s.loaded), loadError = useStore(s => s.loadError);
   const layout = useStore(s => s.layout), sel = useStore(s => s.sel), flash = useStore(s => s.flash);
-  const folders = useStore(s => s.folders), view = useStore(s => s.view);
+  const folders = useStore(s => s.folders), view = useStore(s => s.view), loadingIds = useStore(s => s.loading);
   const wide = useWide(), max = useTitleMax();
   const visible = useVisible(), base = useBase();
 
@@ -118,11 +126,11 @@ export function LinkList() {
     if (get().sel.length || isTouch()) toggleSel(card.dataset.id!, e.shiftKey);
   };
   const byId = new Map(folders.map(f => [f.id, f]));
-  const picked = new Set(sel);
+  const picked = new Set(sel), busy = new Set(loadingIds);
   return (
     <div className={cls} id="list" style={style} onClick={onClick}>
       {visible.slice(0, limit).map(l => (
-        <LinkCard key={l.id} link={l} folder={(l.pastaId && byId.get(l.pastaId)) || null} selected={picked.has(l.id)} flash={flash === l.id} max={max} />
+        <LinkCard key={l.id} link={l} folder={(l.pastaId && byId.get(l.pastaId)) || null} selected={picked.has(l.id)} flash={flash === l.id} max={max} loading={busy.has(l.id)} />
       ))}
       {more && <div ref={sentinel} className="more" aria-hidden="true" />}
     </div>

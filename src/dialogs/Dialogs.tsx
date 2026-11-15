@@ -3,7 +3,8 @@ import { get, set, useStore, type ModalState } from '../store';
 import { cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast } from '../actions';
 import type { Link } from '../types';
 import { isArch } from '../lib/filters';
-import { PLAT, autoTitle, shortUrl } from '../lib/platforms';
+import { PLAT, autoTitle, fmtDate, fmtDuration, readLabel, shortUrl } from '../lib/platforms';
+import { CFG } from '../config';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
 import { Modal } from './Modal';
@@ -14,6 +15,8 @@ function LinkDialog({ link: l }: { link: Link }) {
   const [titulo, setTitulo] = useState(d ? d.titulo : l.titulo || ''), [nota, setNota] = useState(d ? d.nota : l.nota || '');
   const [pasta, setPasta] = useState(d ? d.pasta : l.pastaId || '');
   const p = PLAT[l.plataforma] || PLAT.web, arch = isArch(l);
+  const facts = [l.publicadoEm ? 'Publicado em ' + fmtDate(l.publicadoEm) : '', l.duracao ? fmtDuration(l.duracao) : '', l.leitura ? readLabel(l.leitura) : ''].filter(Boolean);
+  const unreadable = !!CFG.previewApi && l.enriquecido && !l.tituloAuto && !l.thumb;
 
   const submit = () => {
     const novaPasta = arch ? l.pastaId || null : pasta || null, antes = l.pastaId || null;
@@ -32,8 +35,13 @@ function LinkDialog({ link: l }: { link: Link }) {
     <Modal labelledBy="mt" onClose={cancelModal}>
       <div className="lm-head">
         <Preview link={l} cls="sm" />
-        <div className="lm-t"><h2 id="mt">Editar link</h2><a className="lm-url" href={l.url} target="_blank" rel="noopener noreferrer">{p.label} · {shortUrl(l.url)}</a></div>
+        <div className="lm-t">
+          <h2 id="mt">Editar link</h2>
+          <a className="lm-url" href={l.url} target="_blank" rel="noopener noreferrer">{p.label} · {shortUrl(l.url)}</a>
+          {facts.length > 0 && <span className="lm-meta">{facts.join(' · ')}</span>}
+        </div>
       </div>
+      {unreadable && <p className="hint">Este {l.plataforma === 'web' ? 'site' : 'link'} não deixou ler o título e a imagem. O link foi salvo assim mesmo, e você pode escrever o título abaixo.</p>}
       <form className="mform" noValidate onSubmit={e => { e.preventDefault(); submit(); }}>
         <label className="f">Título<span className="inw"><input type="text" name="titulo" maxLength={140} autoComplete="off" placeholder={l.tituloAuto || autoTitle(l)} value={titulo} onChange={e => setTitulo(e.target.value)} /></span></label>
         {!arch && (

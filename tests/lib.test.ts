@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { autoTitle, clipTitle, isParsed, parseLink } from '../src/lib/platforms';
+import { autoTitle, clipTitle, fmtDuration, isParsed, kindOf, originOf, parseLink, summaryOf } from '../src/lib/platforms';
+import { extrasOf } from '../src/data/previews';
 import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib/filters';
 import { planImport } from '../src/lib/dataio';
 import type { Folder, Link } from '../src/types';
@@ -89,4 +90,34 @@ describe('importação', () => {
     expect(plan).toMatchObject({ dup: 1, bad: 1 });
   });
   it('recusa arquivo sem dados', () => { expect(planImport({ nada: 1 }, [], [])).toBeNull(); });
+});
+
+describe('cartão inteligente', () => {
+  it('classifica o tipo de conteúdo', () => {
+    expect(kindOf(link({ plataforma: 'youtube', tipo: 'Vídeo' }))).toBe('video');
+    expect(kindOf(link({ plataforma: 'instagram', tipo: 'Reel' }))).toBe('video');
+    expect(kindOf(link({ plataforma: 'x', tipo: 'Post' }))).toBe('post');
+    expect(kindOf(link({ plataforma: 'youtube', tipo: 'Canal' }))).toBe('profile');
+    expect(kindOf(link({ plataforma: 'web', leitura: 6 }))).toBe('article');
+    expect(kindOf(link({ plataforma: 'web' }))).toBe('site');
+    expect(kindOf(link({ plataforma: 'web', duracao: 90 }))).toBe('video');
+  });
+  it('formata duração', () => {
+    expect(fmtDuration(45)).toBe('0:45');
+    expect(fmtDuration(253)).toBe('4:13');
+    expect(fmtDuration(3723)).toBe('1:02:03');
+  });
+  it('mostra o domínio como origem dos sites', () => {
+    expect(originOf(link({ plataforma: 'web', url: 'https://www.blog.com/a', leitura: 4 }))).toBe('blog.com · Artigo');
+    expect(originOf(link({ plataforma: 'youtube', tipo: 'Short' }))).toBe('YouTube · Short');
+  });
+  it('só mostra resumo quando acrescenta algo', () => {
+    expect(summaryOf(link({ plataforma: 'web', descricao: 'Como arrumar uma sala pequena', tituloAuto: 'Sala pequena' }))).toBe('Como arrumar uma sala pequena');
+    expect(summaryOf(link({ plataforma: 'web', descricao: 'Sala pequena: dez ideias', tituloAuto: 'Sala pequena: dez ideias para você' }))).toBe('');
+    expect(summaryOf(link({ plataforma: 'x', tipo: 'Post', descricao: 'texto do post' }))).toBe('');
+  });
+  it('aproveita só o que veio do preview', () => {
+    expect(extrasOf(null)).toEqual({});
+    expect(extrasOf({ title: 'T', image: 'http://inseguro/a.jpg', duracao: 0, leitura: 5, icone: 'https://a.com/i.png' })).toEqual({ tituloAuto: 'T', leitura: 5, icone: 'https://a.com/i.png' });
+  });
 });

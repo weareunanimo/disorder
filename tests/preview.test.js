@@ -24,3 +24,22 @@ srv.listen(0, async () => {
   r = await call(base + '/p'); assert.strictEqual(r.status, 422); // bloqueia endereço privado
   console.log('ok'); srv.close();
 });
+
+// Metadados extras: duração, leitura, data, resumo e ícone.
+{
+  const { parseMeta, parseDuration } = handler;
+  assert.strictEqual(parseDuration('PT4M13S'), 253);
+  assert.strictEqual(parseDuration('PT1H2M3S'), 3723);
+  assert.strictEqual(parseDuration('P0DT0H0M45S'), 45);
+  assert.strictEqual(parseDuration('187'), 187);
+  assert.strictEqual(parseDuration('lixo'), 0);
+  const video = parseMeta('<head><meta property="og:title" content="V"><meta itemprop="duration" content="PT4M13S"><meta itemprop="uploadDate" content="2024-03-01"><meta property="og:description" content="Resumo do vídeo"></head>', 'https://y.com/watch');
+  assert.strictEqual(video.duracao, 253); assert.strictEqual(video.leitura, 0);
+  assert.strictEqual(video.descricao, 'Resumo do vídeo'); assert.ok(video.publicadoEm > 0);
+  const words = Array.from({ length: 900 }, (_, i) => 'palavra' + i).join(' ');
+  const art = parseMeta('<head><meta property="og:type" content="article"><link rel="icon" href="/f.png"><meta property="article:published_time" content="2025-05-02T10:00:00Z"></head><body><article><p>' + words + '</p></article></body>', 'https://blog.com/a/b');
+  assert.strictEqual(art.leitura, 5); assert.strictEqual(art.icone, 'https://blog.com/f.png'); assert.ok(art.publicadoEm > 0);
+  const short = parseMeta('<head><meta property="og:type" content="article"></head><body><article>curto demais</article></body>', 'https://a.com');
+  assert.strictEqual(short.leitura, 0);
+  console.log('ok extras');
+}

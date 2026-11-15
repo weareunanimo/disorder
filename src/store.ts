@@ -49,6 +49,8 @@ export interface State extends FilterState {
   clip: { url: string; key: string } | null;
   toast: ToastState | null;
   refreshing: boolean;
+  /** Links novos cujo preview ainda está sendo lido. */
+  loading: string[];
 
   profile: { nome: string; email: string };
   theme: Theme;
@@ -84,6 +86,7 @@ export const useStore = create<State>(() => ({
   clip: null,
   toast: null,
   refreshing: false,
+  loading: [],
 
   profile: { nome: read('disorder.nome') || '', email: '' },
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',

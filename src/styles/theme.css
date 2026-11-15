@@ -689,3 +689,33 @@ html { overscroll-behavior-y: none; }
 
 /* Marcador do fim da lista: quando entra na tela, mais links são desenhados. */
 .list > .more { grid-column: 1 / -1; height: 1px; }
+
+/* Cartão inteligente: selo de duração, resumo da página, estado de leitura e ícone do site no lugar das iniciais. */
+.preview .ico { position: static; inset: auto; width: 34%; height: 34%; min-width: 16px; min-height: 16px; object-fit: contain; }
+.preview .dur { position: absolute; right: 0; bottom: 0; padding: 3px 5px; background: var(--ink); color: var(--bg); font: 700 11px/1 var(--f-mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.compact .preview .dur, .preview.sm .dur { font-size: 10px; padding: 2px 4px; }
+.sum { font-size: 13px; line-height: 1.4; color: var(--muted-fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.compact .sum { display: none; }
+.lm-meta { font: 400 12px/1.4 var(--f-mono); color: var(--muted-fg); }
+.mform + .hint, .lm-head + .hint { margin: 0; }
+
+.url { display: grid; }
+.url > * { grid-area: 1 / 1; min-width: 0; }
+.url .ul { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.url .rd { font: 700 11px/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--fg); opacity: 0; }
+.link.loading .url .rd { animation: rd-in 0s .4s forwards, rd-pulse 1.1s .4s ease-in-out infinite alternate; }
+.link.loading .url .ul { animation: ul-out 0s .4s forwards; }
+@keyframes rd-in { to { opacity: 1; } }
+@keyframes rd-pulse { from { color: var(--fg); } to { color: var(--muted-fg); } }
+@keyframes ul-out { to { opacity: 0; } }
+/* Só aparece se a leitura passar de 0,4s. Depois de pronta, a imagem entra com um fade curto. */
+.preview.sk { animation: sk 1.2s linear .4s infinite; background-image: linear-gradient(100deg, transparent 30%, var(--muted) 50%, transparent 70%); background-size: 250% 100%; background-position: 100% 0; background-repeat: no-repeat; }
+@keyframes sk { to { background-position: -100% 0; } }
+.preview img:not(.ico) { animation: pv-in .22s ease-out; }
+@keyframes pv-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .preview.sk { animation: sk-still 0s .4s forwards; }
+  @keyframes sk-still { to { background-image: linear-gradient(var(--muted), var(--muted)); background-size: 100% 100%; background-position: 0 0; } }
+  .link.loading .url .rd { animation: rd-in 0s .4s forwards; }
+  .preview img:not(.ico) { animation: none; }
+}

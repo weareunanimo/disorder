@@ -5,7 +5,7 @@ import { isParsed, parseLink, SOCIAL } from './lib/platforms';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
-import { enrichLink } from './data/previews';
+import { enrichLink, extrasOf } from './data/previews';
 import { saveProfileName, signOut as sbSignOut, getClient } from './data/supabase';
 import { CFG } from './config';
 
@@ -172,6 +172,8 @@ function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
   const r: SaveOutcome = { saved: [], dup: null, bad: null, total: items.length, dest: dest || null };
   const known = new Map(get().links.map(l => [l.chave, l]));
   const base = Date.now();
+  // Texto colado junto com um único link vira a nota dele.
+  const rest = found && found.length === 1 ? raw.replace(found[0], ' ').replace(/\s+/g, ' ').trim().slice(0, 600) : '';
   items.forEach(it => {
     const p = parseLink(it);
     if (!isParsed(p)) { r.bad = r.bad || p.error; return; }
@@ -180,13 +182,9 @@ function saveLinks(raw: string, dest: string, pv?: PvSnap | null): SaveOutcome {
     if (r.saved.some(x => x.chave === p.key)) return;
     const rec: Link = {
       id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor,
-      titulo: '', nota: '', pastaId: dest || null, criadoEm: base + r.saved.length, enriquecido: false,
+      titulo: '', nota: rest, pastaId: dest || null, criadoEm: base + r.saved.length, enriquecido: false,
     };
-    if (pv && pv.key === p.key && pv.data) {
-      if (pv.data.title) rec.tituloAuto = pv.data.title;
-      if (pv.data.image) rec.thumb = pv.data.image;
-      rec.enriquecido = true;
-    }
+    if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
     r.saved.push(rec);
   });
   if (r.saved.length) {
@@ -414,13 +412,18 @@ export async function enrich(id: string, force = false): Promise<boolean> {
   const l = get().links.find(x => x.id === id);
   if (!CFG.previewApi || !l || (l.enriquecido && !force) || enriching.has(id)) return false;
   enriching.add(id);
+  const showLoading = !l.enriquecido;
+  if (showLoading) set({ loading: [...get().loading, id] });
   try {
     const r = await enrichLink(l);
     const cur = get().links.find(x => x.id === id);
     if (!r || !cur) return false;
-    await save('links', { ...cur, enriquecido: true, ...(r.link.tituloAuto ? { tituloAuto: r.link.tituloAuto } : {}), ...(r.link.thumb ? { thumb: r.link.thumb } : {}) });
+    await save('links', { ...cur, ...r.extras, enriquecido: true });
     return r.got;
-  } finally { enriching.delete(id); }
+  } finally {
+    enriching.delete(id);
+    if (showLoading) set({ loading: get().loading.filter(x => x !== id) });
+  }
 }
 
 async function pool(ids: string[], force: boolean, n = 3) {
