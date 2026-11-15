@@ -32,7 +32,7 @@ npm test                 # regras (vitest) e função de preview
 npm run build            # confere os tipos e gera dist/
 ```
 
-A versão anterior, em HTML e JS puro, está na tag `vanilla-final`.
+A versão anterior, em HTML e JS puro, está no ramo `vanilla-final`.
 
 ## Limites conhecidos
 
