@@ -3,6 +3,7 @@ import { autoTitle, clipTitle, fmtDuration, isParsed, kindOf, originOf, parseLin
 import { extrasOf } from '../src/data/previews';
 import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib/filters';
 import { planImport } from '../src/lib/dataio';
+import { planAutoFolders } from '../src/lib/auto';
 import type { Folder, Link } from '../src/types';
 
 const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaId: null, criadoEm: 0, enriquecido: true, ...o });
@@ -119,5 +120,28 @@ describe('cartão inteligente', () => {
   it('aproveita só o que veio do preview', () => {
     expect(extrasOf(null)).toEqual({});
     expect(extrasOf({ title: 'T', image: 'http://inseguro/a.jpg', duracao: 0, leitura: 5, icone: 'https://a.com/i.png' })).toEqual({ tituloAuto: 'T', leitura: 5, icone: 'https://a.com/i.png' });
+  });
+});
+
+describe('pasta automática', () => {
+  const t = (id: string, tema: string, o: Partial<Link> = {}) => link({ id, tema, ...o });
+  const pasta = (id: string, nome: string, o: Partial<Folder> = {}): Folder => ({ id, nome, ...o });
+  it('só cria pasta quando há 3 links do mesmo tema', () => {
+    expect(planAutoFolders([t('a', 'receitas'), t('b', 'receitas')], [])).toEqual([]);
+    const p = planAutoFolders([t('a', 'receitas'), t('b', 'Receita'), t('c', 'receitas')], []);
+    expect(p).toEqual([{ folderId: null, nome: 'Receitas', linkIds: ['a', 'b', 'c'] }]);
+  });
+  it('entra em pasta que já existe com o mesmo nome, mesmo com um link só', () => {
+    const p = planAutoFolders([t('a', 'decoração')], [pasta('f1', 'Decoracao')]);
+    expect(p).toEqual([{ folderId: 'f1', nome: 'Decoracao', linkIds: ['a'] }]);
+  });
+  it('não mexe em link com pasta, arquivado, sem tema ou movido à mão', () => {
+    const ls = [t('a', 'pet', { pastaId: 'f9' }), t('b', 'pet', { arquivadoEm: 5 }), t('c', ''), t('d', 'pet', { pastaManual: true }), t('e', 'pet')];
+    expect(planAutoFolders(ls, [])).toEqual([]);
+  });
+  it('não recria tema dispensado e ignora pasta arquivada', () => {
+    const ls = [t('a', 'viagem'), t('b', 'viagem'), t('c', 'viagem')];
+    expect(planAutoFolders(ls, [], ['Viagens'])).toEqual([]);
+    expect(planAutoFolders(ls, [pasta('f', 'Viagem', { arquivadaEm: 9 })])).toHaveLength(1);
   });
 });

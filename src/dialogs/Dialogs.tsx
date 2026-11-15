@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { get, set, useStore, type ModalState } from '../store';
-import { cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast } from '../actions';
+import { archiveFolder, cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast } from '../actions';
 import type { Link } from '../types';
 import { isArch } from '../lib/filters';
 import { PLAT, autoTitle, fmtDate, fmtDuration, readLabel, shortUrl } from '../lib/platforms';
@@ -96,6 +96,21 @@ function FolderDialog({ m }: { m: Extract<ModalState, { kind: 'new' | 'edit' }> 
   );
 }
 
+function ArchiveFolder({ id }: { id: string }) {
+  const f = folderById(id), n = useStore(s => s.links.filter(l => l.pastaId === id && !l.arquivadoEm).length);
+  return (
+    <Modal labelledBy="mt" onClose={cancelModal}>
+      <h2 id="mt">Arquivar a pasta {f ? f.nome : ''}?</h2>
+      <p>{n ? 'Ela tem ' + (n === 1 ? '1 link' : n + ' links') + '. O que fazer com ' + (n === 1 ? 'ele' : 'eles') + '?' : 'A pasta está vazia. Você pode restaurar em Ajustes.'}</p>
+      <div className="choices">
+        <button type="button" className="btn primary" onClick={() => void archiveFolder(id, true)}>Arquivar pasta e links<span>{n ? (n === 1 ? 'O link vai para Arquivados.' : 'Os links vão para Arquivados.') + ' Voltam juntos se você restaurar a pasta.' : 'Guarda a pasta fora do menu.'}</span></button>
+        {n > 0 && <button type="button" className="btn" onClick={() => void archiveFolder(id, false)}>Arquivar só a pasta<span>{n === 1 ? 'O link continua visível, em Sem pasta.' : 'Os links continuam visíveis, em Sem pasta.'}</span></button>}
+        <button type="button" className="btn outline" onClick={cancelModal}>Cancelar</button>
+      </div>
+    </Modal>
+  );
+}
+
 function ConfirmFolder({ id }: { id: string }) {
   const f = folderById(id), n = useStore(s => s.links.filter(l => l.pastaId === id).length);
   return (
@@ -125,5 +140,6 @@ export function ModalHost() {
   if (m.kind === 'link') return link ? <LinkDialog key={m.id} link={link} /> : null;
   if (m.kind === 'purge') return <Purge ids={m.ids} />;
   if (m.kind === 'confirm') return <ConfirmFolder id={m.id} />;
+  if (m.kind === 'archive-folder') return <ArchiveFolder id={m.id} />;
   return <FolderDialog key={m.kind} m={m} />;
 }

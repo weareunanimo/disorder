@@ -21,6 +21,10 @@ export interface Link {
   publicadoEm?: number;
   icone?: string;
   /** Gerados pela IA (opcionais): uma frase sobre o link e um tema curto. Só existem se o resumo por IA estiver ligado. */
+  /** A pessoa escolheu a pasta deste link (ou tirou dela). A IA nunca mais mexe nele. */
+  pastaManual?: boolean;
+  /** Foi arquivado junto com a pasta, então volta junto quando a pasta for restaurada. */
+  arquivadoComPasta?: boolean;
   resumoIA?: string;
   tema?: string;
   arquivadoEm?: number | null;
@@ -33,6 +37,10 @@ export interface Folder {
   cor?: number;
   ordem?: number;
   criadaEm?: number;
+  /** Criada pela IA. Deixa de ser quando a pessoa renomeia. */
+  auto?: boolean;
+  /** Quando foi arquivada. Pasta arquivada some do menu, mas guarda o nome e a cor. */
+  arquivadaEm?: number | null;
 }
 
 export type Col = 'folders' | 'links';

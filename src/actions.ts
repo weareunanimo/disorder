@@ -2,6 +2,7 @@ import { backend, get, set, type ModalState, type Then, type Theme } from './sto
 import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
 import { isParsed, parseLink, SOCIAL } from './lib/platforms';
+import { planAutoFolders } from './lib/auto';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
@@ -24,8 +25,16 @@ const upsertAll = <T extends { id: string }>(arr: T[], recs: T[]): T[] => {
   return out;
 };
 
+/** Verdadeiro enquanto a IA mexe nos links. Uma troca de pasta feita por ela não conta como escolha da pessoa. */
+let autoWriting = false;
+
 export async function saveMany(col: Col, recs: (Folder | Link)[], failMsg = 'Não consegui salvar agora. Tente de novo.') {
   if (!recs.length) return;
+  if (col === 'links' && !autoWriting) {
+    // Quando a pessoa troca a pasta de um link, a escolha é dela e a IA não mexe mais nesse link.
+    const cur = new Map(get().links.map(l => [l.id, l]));
+    recs = (recs as Link[]).map(r => { const old = cur.get(r.id); return old && (old.pastaId || null) !== (r.pastaId || null) ? { ...r, pastaManual: true } : r; });
+  }
   set(col === 'links'
     ? { links: upsertAll(get().links, recs as Link[]) }
     : { folders: upsertAll(get().folders, recs as Folder[]) });
@@ -325,12 +334,53 @@ export async function deleteFolder(id: string) {
   });
 }
 
+/** Arquiva a pasta. Com links: eles vão junto e voltam juntos. Sem links: eles continuam visíveis, em Sem pasta. */
+export async function archiveFolder(id: string, withLinks: boolean) {
+  const f = folderById(id);
+  if (!f) return;
+  const affected = get().links.filter(l => l.pastaId === id);
+  const prev = affected.map(l => ({ id: l.id, pastaId: l.pastaId, arquivadoEm: l.arquivadoEm || null, arquivadoComPasta: !!l.arquivadoComPasta }));
+  const now = Date.now(), rec: Folder = { ...f, arquivadaEm: now };
+  const stay = get().view === 'settings';
+  if (f.auto) ignoreTheme(f.nome);
+  set({
+    modal: null, sel: [], anchor: null, menu: false,
+    folders: get().folders.filter(x => x.id !== id), foldersArq: [...get().foldersArq, rec],
+    ...(get().dest === id ? { dest: '' } : {}), ...(get().view === id ? { view: 'all' } : {}),
+  });
+  try { await backend().set('folders', id, rec); } catch { toast('Não consegui arquivar agora. Tente de novo.'); }
+  await saveMany('links', affected.map(l => withLinks
+    ? { ...l, arquivadoEm: l.arquivadoEm || now, arquivadoComPasta: !l.arquivadoEm }
+    : { ...l, pastaId: null }));
+  const n = affected.filter(l => !l.arquivadoEm).length;
+  const what = !n ? '' : withLinks ? ' ' + (n === 1 ? 'O link foi junto.' : 'Os ' + n + ' links foram juntos.') : ' ' + (n === 1 ? 'O link continua em Sem pasta.' : 'Os ' + n + ' links continuam em Sem pasta.');
+  toast('Pasta ' + f.nome + ' arquivada.' + what, 'Desfazer', async () => {
+    await restoreFolder(id, false);
+    undoPatch(prev);
+    if (!stay) set({ view: id });
+  });
+}
+
+/** Traz a pasta de volta. Os links que foram arquivados junto com ela voltam também. */
+export async function restoreFolder(id: string, withLinks = true) {
+  const f = get().foldersArq.find(x => x.id === id);
+  if (!f) return;
+  if (get().folders.some(x => sameName(x.nome, f.nome))) { toast('Você já tem uma pasta chamada ' + f.nome + '. Renomeie uma delas antes de restaurar.'); return; }
+  const rec: Folder = { ...f, arquivadaEm: null };
+  set({ foldersArq: get().foldersArq.filter(x => x.id !== id), folders: [...get().folders, rec] });
+  try { await backend().set('folders', id, rec); } catch { toast('Não consegui restaurar agora. Tente de novo.'); }
+  if (!withLinks) return;
+  const back = get().links.filter(l => l.pastaId === id && l.arquivadoComPasta);
+  await saveMany('links', back.map(l => ({ ...l, arquivadoEm: null, arquivadoComPasta: false })));
+  toast('Pasta ' + f.nome + ' restaurada.' + (back.length ? ' ' + plural(back.length, '1 link voltou junto.', 'links voltaram juntos.') : ''));
+}
+
 export function renameFolder(id: string, value: string): boolean {
   const f = folderById(id), nome = String(value || '').trim();
   if (!f || nome === f.nome) return false;
   if (!nome) { toast('A pasta precisa de um nome.'); return false; }
   if (get().folders.some(x => x.id !== id && sameName(x.nome, nome))) { toast('Você já tem uma pasta com esse nome.'); return false; }
-  void save('folders', { ...f, nome });
+  void save('folders', { ...f, nome, ...(f.auto ? { auto: false } : {}) });
   return true;
 }
 
@@ -381,10 +431,10 @@ export async function setProfileName(nome: string) {
 export const signOut = () => { void sbSignOut(); };
 
 export function exportData() {
-  const { folders, links } = get();
+  const { folders, foldersArq, links } = get();
   try {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(buildExport(folders, links), null, 2)], { type: 'application/json' }));
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(buildExport([...folders, ...foldersArq], links), null, 2)], { type: 'application/json' }));
     a.download = 'disorder-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -410,6 +460,52 @@ export async function importData(file: File | undefined) {
   toast(plural(nl.length, '1 link importado', 'links importados') + ' e ' + plural(nf.length, '1 pasta criada', 'pastas criadas') + '.' + (dup ? ' ' + plural(dup, '1 já existia', 'já existiam') + '.' : '') + (bad ? ' ' + plural(bad, '1 endereço inválido ficou de fora', 'endereços inválidos ficaram de fora') + '.' : '') + (lost ? ' ' + plural(lost, '1 item não foi salvo', 'itens não foram salvos') + ', tente importar de novo.' : ''));
 }
 
+/* ===== Pasta automática ===== */
+const IGNORE_KEY = 'disorder.auto.ignore';
+const ignoredThemes = (): string[] => { try { return JSON.parse(localStorage.getItem(IGNORE_KEY) || '[]'); } catch { return []; } };
+/** Lembra que a pessoa não quis esse tema como pasta, para a IA não criar de novo. */
+function ignoreTheme(nome: string) {
+  try { localStorage.setItem(IGNORE_KEY, JSON.stringify([...new Set([...ignoredThemes(), nome])].slice(-100))); } catch { /* sem armazenamento */ }
+}
+
+let orgBusy = false, orgAgain = false;
+/** Agrupa links soltos por tema. Só adiciona: cria pasta com 3 links do mesmo tema ou põe o link numa pasta que já tem o nome do tema. */
+export async function organize() {
+  if (!get().ai) return;
+  if (orgBusy) { orgAgain = true; return; }
+  orgBusy = true;
+  try {
+    do {
+      orgAgain = false;
+      const plan = planAutoFolders(get().links, get().folders, ignoredThemes());
+      if (!plan.length) continue;
+      const made: Folder[] = [];
+      const patch = new Map<string, string>();
+      for (const g of plan) {
+        let id = g.folderId;
+        if (!id) { const f: Folder = { ...makeFolder(g.nome, [...get().folders, ...made]), auto: true }; made.push(f); id = f.id; }
+        g.linkIds.forEach(l => patch.set(l, id as string));
+      }
+      const links = get().links.filter(l => patch.has(l.id)).map(l => ({ ...l, pastaId: patch.get(l.id) as string }));
+      autoWriting = true;
+      try { await saveMany('folders', made); await saveMany('links', links); } finally { autoWriting = false; }
+      const n = links.length;
+      const text = plan.length === 1
+        ? (made.length ? 'Criei a pasta ' + plan[0].nome + ' com ' + plural(n, '1 link', 'links') + '.' : plural(n, '1 link foi', 'links foram') + ' para ' + plan[0].nome + '.')
+        : 'Organizei ' + plural(n, '1 link', 'links') + ' em ' + plural(plan.length, '1 pasta', 'pastas') + '.';
+      toast(text, 'Desfazer', async () => {
+        made.forEach(f => ignoreTheme(f.nome));
+        autoWriting = true;
+        try {
+          const now = new Map(get().links.map(l => [l.id, l]));
+          await saveMany('links', links.flatMap(l => { const c = now.get(l.id); return c ? [{ ...c, pastaId: null, pastaManual: true }] : []; }));
+        } finally { autoWriting = false; }
+        if (made.length) await removeMany('folders', made.map(f => f.id));
+      });
+    } while (orgAgain);
+  } finally { orgBusy = false; }
+}
+
 /* ===== Resumo por IA ===== */
 const summarizing = new Set<string>();
 /** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
@@ -421,6 +517,7 @@ async function addSummary(id: string) {
     const s = await summarize(l);
     const now = get().links.find(x => x.id === id);
     if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}) });
+    if (s && s.tema) void organize();
   } finally { summarizing.delete(id); }
 }
 

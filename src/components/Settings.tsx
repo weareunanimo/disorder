@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { set, useStore, type Theme } from '../store';
-import { exportData, importData, moveFolder, openModal, refreshPreviews, renameFolder, setFolderColor, setAi, setProfileName, setTheme, signOut } from '../actions';
+import { exportData, importData, moveFolder, openModal, refreshPreviews, renameFolder, restoreFolder, setFolderColor, setAi, setProfileName, setTheme, signOut } from '../actions';
 import { CFG } from '../config';
 import type { Folder } from '../types';
 import { SW_NAMES, colorOf } from '../lib/folders';
 import { plural } from '../lib/text';
 import { useCounts, useSortedFolders } from '../hooks/useVisible';
-import { IcoDown, IcoTrashSm, IcoUp } from './icons';
+import { IcoArchive, IcoDown, IcoTrashSm, IcoUp } from './icons';
 
 const THEMES: [Theme, string][] = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']];
 const blurOnEnter = (e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') e.currentTarget.blur(); };
@@ -31,10 +31,11 @@ function FolderRow({ f, i, last, count, drag }: { f: Folder; i: number; last: bo
       <button type="button" ref={swatch} className="sw-btn" style={{ background: `var(--tag${c}-bg)` }} aria-expanded={palOpen}
         aria-label={'Cor da pasta ' + f.nome + ', ' + SW_NAMES[c] + '. Trocar cor'} title="Trocar cor" onClick={() => set({ pal: palOpen ? null : f.id })} />
       <span className="inw"><CommitInput className="fname" maxLength={40} autoComplete="off" aria-label="Nome da pasta" value={f.nome} onCommit={v => renameFolder(f.id, v)} /></span>
-      <span className="fct">{plural(count, '1 link', 'links')}</span>
+      <span className="fct">{f.auto && <span className="fauto" title="Criada pela IA. Ao renomear, ela passa a ser sua.">IA</span>}{plural(count, '1 link', 'links')}</span>
       <span className="fa">
         <button type="button" className="btn sm icon" disabled={i === 0} aria-label={'Subir ' + f.nome} title="Subir" onClick={() => moveFolder(f.id, i - 1)}><IcoUp /></button>
         <button type="button" className="btn sm icon" disabled={last} aria-label={'Descer ' + f.nome} title="Descer" onClick={() => moveFolder(f.id, i + 1)}><IcoDown /></button>
+        <button type="button" className="btn sm icon" aria-label={'Arquivar pasta ' + f.nome} title="Arquivar pasta" onClick={() => openModal({ kind: 'archive-folder', id: f.id })}><IcoArchive /></button>
         <button type="button" className="btn sm icon danger" aria-label={'Excluir pasta ' + f.nome} title="Excluir pasta" onClick={() => openModal({ kind: 'confirm', id: f.id })}><IcoTrashSm /></button>
       </span>
       {palOpen && (
@@ -53,6 +54,8 @@ export function Settings() {
   const profile = useStore(s => s.profile), theme = useStore(s => s.theme), ai = useStore(s => s.ai), mode = useStore(s => s.mode);
   const nLinks = useStore(s => s.links.length), nFolders = useStore(s => s.folders.length), refreshing = useStore(s => s.refreshing);
   const folders = useSortedFolders(), counts = useCounts();
+  const arq = useStore(s => s.foldersArq), allLinks = useStore(s => s.links);
+  const arqCount = (id: string) => allLinks.filter(l => l.pastaId === id && l.arquivadoEm).length;
   const file = useRef<HTMLInputElement>(null);
   const [dragId, setDragId] = useState<string | null>(null), [overId, setOverId] = useState<string | null>(null);
 
@@ -105,6 +108,23 @@ export function Settings() {
             </>
           )}
       </section>
+
+      {!!arq.length && (
+        <section className="sblock" aria-labelledby="s-arq">
+          <h2 id="s-arq">Pastas arquivadas</h2>
+          <p className="snote">Ficam fora do menu. Ao restaurar, voltam os links que foram arquivados junto com a pasta.</p>
+          <ul className="flist">
+            {arq.map(f => (
+              <li key={f.id} className="frow arq">
+                <span className="sw-btn" style={{ background: `var(--tag${colorOf(f)}-bg)` }} aria-hidden="true" />
+                <span className="fname-ro">{f.nome}</span>
+                <span className="fct">{plural(arqCount(f.id), '1 link arquivado', 'links arquivados')}</span>
+                <span className="fa"><button type="button" className="btn sm" onClick={() => void restoreFolder(f.id)}>Restaurar</button></span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="sblock" aria-labelledby="s-dados">
         <h2 id="s-dados">Dados</h2>

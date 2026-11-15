@@ -14,6 +14,7 @@ export type ModalState =
   | { kind: 'new'; then?: Then }
   | { kind: 'edit'; id: string }
   | { kind: 'confirm'; id: string }
+  | { kind: 'archive-folder'; id: string }
   | { kind: 'purge'; ids: string[] };
 
 export interface Draft { id: string; titulo: string; nota: string; pasta: string }
@@ -26,6 +27,8 @@ export interface State extends FilterState {
   loaded: boolean;
   loadError: boolean;
   folders: Folder[];
+  /** Pastas arquivadas. Ficam fora do menu e das listas, e voltam em Ajustes. */
+  foldersArq: Folder[];
   links: Link[];
 
   view: View;
@@ -66,6 +69,7 @@ export const useStore = create<State>(() => ({
   loaded: false,
   loadError: false,
   folders: [],
+  foldersArq: [],
   links: [],
 
   view: 'all',

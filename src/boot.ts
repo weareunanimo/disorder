@@ -35,7 +35,7 @@ export async function boot() {
 
   let first = true;
   const onData = (d: Snapshot) => {
-    set({ folders: d.folders, links: d.links, loaded: true, loadError: false });
+    set({ folders: d.folders.filter(f => !f.arquivadaEm), foldersArq: d.folders.filter(f => f.arquivadaEm), links: d.links, loaded: true, loadError: false });
     fixView();
     if (first) { first = false; if (!applyShare()) void checkClipboard(); enrichPending(); }
   };

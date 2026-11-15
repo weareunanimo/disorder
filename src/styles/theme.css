@@ -719,3 +719,12 @@ html { overscroll-behavior-y: none; }
   .link.loading .url .rd { animation: rd-in 0s .4s forwards; }
   .preview img:not(.ico) { animation: none; }
 }
+
+/* ===== Pasta automática e arquivar pasta ===== */
+.frow .fauto { display: inline-block; margin-right: 8px; padding: 2px 5px 1px; border: 2px solid var(--ink); font: 700 10px/1.1 var(--f-mono); letter-spacing: .06em; color: var(--ink); background: var(--surface); }
+.frow.arq .fname-ro { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frow.arq .sw-btn { cursor: default; }
+.modal .choices { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.modal .choices .btn { height: auto; min-height: 44px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 10px 14px; text-align: left; white-space: normal; }
+.modal .choices .btn span { font: 400 12px/1.35 var(--f-body, inherit); opacity: .8; }
+.modal .choices .btn.outline { align-items: center; min-height: 40px; }
