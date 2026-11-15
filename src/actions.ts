@@ -544,7 +544,7 @@ export async function summarizeExisting() {
   } finally { bulkAi = false; }
   const done = todo.filter(id => get().links.find(l => l.id === id)?.resumoIA).length;
   set({ summarizingAll: false });
-  const why = done < todo.length && pv.lastSummarizeStatus !== 200 ? ' Motivo: ' + whySummaryFailed(pv.lastSummarizeStatus) : '';
+  const why = done < todo.length && pv.lastSummarizeStatus !== 200 ? ' Motivo: ' + whySummaryFailed(pv.lastSummarizeStatus) + (pv.lastSummarizeDetail ? ' Resposta da IA: ' + pv.lastSummarizeDetail : '') : '';
   await organize(done + ' de ' + todo.length + ' links ganharam resumo.' + why + ' ');
 }
 

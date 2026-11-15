@@ -82,7 +82,12 @@ module.exports = async function handler(req, res) {
         ],
       }),
     });
-    if (!r.ok) { console.error('AI Gateway', r.status, String(await r.text()).slice(0, 300)); return out(502, { error: 'a IA não respondeu', gateway: r.status }); }
+    if (!r.ok) {
+      const raw = String(await r.text()).slice(0, 400);
+      console.error('AI Gateway', r.status, raw);
+      let detail = ''; try { const j = JSON.parse(raw); detail = String((j.error && (j.error.message || j.error)) || j.message || ''); } catch (e) { detail = raw; }
+      return out(502, { error: 'a IA não respondeu', gateway: r.status, detail: detail.replace(/vck_[A-Za-z0-9]+/g, '[chave]').slice(0, 160) });
+    }
     const j = await r.json();
     const a = parseAnswer(j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content);
     if (!a) return out(502, { error: 'resposta inválida' });

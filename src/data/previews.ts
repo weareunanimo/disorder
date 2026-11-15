@@ -46,6 +46,8 @@ export type Resumo = { resumo: string; tema: string };
 
 /** Como foi a última chamada de resumo: 200, o código HTTP da falha, ou 0 quando nem chegou ao servidor. Serve para explicar por que não funcionou. */
 export let lastSummarizeStatus = 200;
+/** Mensagem que o serviço de IA devolveu na última falha (sem a chave). */
+export let lastSummarizeDetail = '';
 
 /** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. */
 export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma'>): Promise<Resumo | null> {
@@ -59,7 +61,7 @@ export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descric
       body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
     });
     lastSummarizeStatus = r.status;
-    if (!r.ok) return null;
+    if (!r.ok) { try { const e = (await r.json()) as { gateway?: number; detail?: string }; lastSummarizeDetail = (e.gateway ? e.gateway + ': ' : '') + (e.detail || ''); } catch { lastSummarizeDetail = ''; } return null; }
     const d = (await r.json()) as Partial<Resumo>;
     const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
     return resumo || tema ? { resumo, tema } : null;
