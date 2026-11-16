@@ -85,7 +85,7 @@ export function Settings() {
           <div className="seg txt">{THEMES.map(([k, label]) => <button key={k} type="button" aria-pressed={theme === k} onClick={() => setTheme(k)}>{label}</button>)}</div>
         </div>
         <div className="srow">
-          <div className="st"><b>Ordem automática</b><span>{ai ? 'Ligada. A IA lê o título e a descrição de cada link novo, resume o conteúdo quando dá, identifica o que ele é (loja, artigo, receita...) e o tema, e organiza em tags sozinha. O endereço do link e suas notas não são enviados.' : 'Desligada. Você organiza tudo à mão, e nada sai do app além do endereço, que já é lido para montar o preview.'}</span></div>
+          <div className="st"><b>Ordem automática</b><span>{ai ? 'Ligada. A IA lê o título e a descrição de cada link novo, resume o conteúdo quando dá, identifica o que ele é (loja, artigo, receita...) e o tema, e organiza em tags sozinha.' : 'Desligada. Você organiza tudo à mão, e nada sai do app além do endereço, que já é lido para montar o preview.'}</span></div>
           <div className="seg txt" role="group" aria-label="Ordem automática">{([[true, 'Ligada'], [false, 'Desligada']] as const).map(([v, label]) => <button key={label} type="button" aria-pressed={ai === v} onClick={() => setAi(v)}>{label}</button>)}</div>
         </div>
         {ai && CFG.summarizeApi && (
