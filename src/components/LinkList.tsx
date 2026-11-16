@@ -166,7 +166,7 @@ export function LinkList() {
   return (
     <div className={cls} id="list" style={style} onClick={onClick}>
       {gallery ? visible.slice(0, limit).map(l => (
-        <GalleryCard key={l.id} link={l} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} selecting={sel.length > 0} />
+        <GalleryCard key={l.id} link={l} folders={folders} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} selecting={sel.length > 0} />
       )) : visible.slice(0, limit).map(l => (
         <LinkCard key={l.id} link={l} folders={folders} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} open={swipeId === l.id} swipeOn={!sel.length} />
       ))}

@@ -91,7 +91,8 @@ export const useStore = create<State>(() => ({
   view: 'all',
   prevView: null,
   filtersOpen: false,
-  layout: (['list', 'gallery'] as const).find(v => v === read('brica.layout')) || 'cards',
+  // Galeria é a visualização principal. Quem já escolheu outra continua com a sua.
+  layout: (['cards', 'list', 'gallery'] as const).find(v => v === read('brica.layout')) || 'gallery',
   dest: [],
   pal: null,
 
