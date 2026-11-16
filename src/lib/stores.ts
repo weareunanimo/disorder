@@ -28,3 +28,20 @@ export function storeOf(url: string): Store | null {
   if (title) title = title.charAt(0).toUpperCase() + title.slice(1);
   return { name: s.name, title: title.length >= 4 ? title : '' };
 }
+
+/**
+ * Texto que veio junto com o link ao compartilhar de um app (ex.: "Confira Fone Bluetooth por R$ 29,90 na Shopee!").
+ * Quando a página não deixa ler, ele vira o título e a descrição, e a IA consegue achar o tipo e a tag.
+ */
+export function fromShareText(txt: string): { tituloAuto: string; descricao: string } | null {
+  const clean = txt.replace(/https?:\/\/\S+/g, ' ').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, ' ').replace(/\s+/g, ' ').trim();
+  if (clean.length < 6) return null;
+  const title = clean
+    .replace(/^(confira|olha|veja|olha s[oó]|achei|dá uma olhada( n[oa])?|check out|look at)\s*(isso|esse|essa|este|esta)?[:!,.\s-]*/i, '')
+    .replace(/\s*(por|a partir de|apenas|só)\s*R\$\s*[\d.,]+.*$/i, '')
+    .replace(/\s*(na|no|pela|pelo|in|on)\s+(shopee|mercado livre|amazon|aliexpress|shein|magalu)\b.*$/i, '')
+    .replace(/[\s!.,:;-]+$/, '')
+    .trim();
+  const t = (title.length >= 4 ? title : clean).slice(0, 120);
+  return { tituloAuto: t.charAt(0).toUpperCase() + t.slice(1), descricao: clean.slice(0, 400) };
+}

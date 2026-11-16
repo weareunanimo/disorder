@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { cancelBuild, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
@@ -94,7 +94,7 @@ function Building() {
       <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
         <button type="button" className="bd-x" aria-label="Cancelar e descartar o link" title="Cancelar" onClick={cancelBuild}><IcoX /></button></div>
       <ol className="steps" aria-live="polite">
-        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : loja ? loja.name + ' não deixa ler a página' + (loja.title ? ', o nome veio do endereço' : '. Escreva o nome do produto') : 'A página não deixou ler, preencha você'} />
+        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? (l.notaColada && !l.thumb ? 'Título tirado do texto que veio com o link' : 'Título e imagem lidos') : loja ? loja.name + ' não deixa ler a página' + (loja.title ? ', o nome veio do endereço' : '. Escreva o nome do produto') : 'A página não deixou ler, preencha você'} />
         {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
         {loja && !read ? <Step state="done" text="Loja, reconhecida pelo endereço" /> : aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
         <Step state={done ? 'run' : 'wait'} text={done ? 'Confirme o título e as tags' : 'Sugerir título e tags'} />
@@ -168,7 +168,7 @@ function OmniBar() {
 
   const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
     const txt = e.clipboardData.getData('text');
-    if (!looksLikeLink(txt) || input.current?.value.trim()) return;
+    if (!containsLink(txt) || input.current?.value.trim()) return;
     e.preventDefault();
     if (capture(txt)) { setOpen(false); input.current?.blur(); }
   };

@@ -5,6 +5,7 @@ import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from '
 import { isParsed, parseLink } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
 import type { Sort } from './lib/sort';
+import { fromShareText } from './lib/stores';
 import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
@@ -251,6 +252,7 @@ function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome
     const rec: Link = {
       id: uid(), url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor,
       titulo: '', nota: rest, pastaIds: dest.slice(), criadoEm: base + r.saved.length, enriquecido: false,
+      ...(rest ? { notaColada: true } : {}),
     };
     if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
     // O diálogo de salvar já pediu o resumo: aproveita, para não gastar outro pedido.
@@ -337,6 +339,8 @@ export function capture(raw: string): boolean {
   quickSave(raw, dest);
   return false;
 }
+/** Texto que traz um link em qualquer posição (ex.: o que um app manda ao compartilhar). */
+export const containsLink = (txt: string) => /https?:\/\/\S/i.test(txt) || looksLikeLink(txt);
 export const looksLikeLink = (txt: string) => /^\s*(https?:\/\/\S+|www\.\S+|[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}\/\S*)/i.test(txt) && !/\s\S+\s\S+/.test(txt.trim().replace(/https?:\/\/\S+/g, ''));
 /** Abre o link no modal do app. */
 export function openLink(id: string) { set({ cardMenu: null, swipeId: null }); openModal({ kind: 'view', id }); }
@@ -348,7 +352,7 @@ export async function pasteFromClipboard(pasteKey: string): Promise<boolean> {
   if (get().clip) { acceptClip(); return true; }
   try {
     const txt = await navigator.clipboard.readText();
-    if (looksLikeLink(txt)) return capture(txt);
+    if (containsLink(txt)) return capture(txt);
     toast('Não achei um link copiado. Copie um link e tente de novo, ou cole na barra.');
   } catch { toast('Cole o link na barra do topo com ' + pasteKey + '.'); }
   document.getElementById('q')?.focus();
@@ -712,10 +716,14 @@ export async function enrich(id: string, force = false): Promise<boolean> {
   try {
     const r = await enrichLink(l);
     const cur = get().links.find(x => x.id === id);
-    if (!r || !cur) return false;
-    await save('links', { ...cur, ...r.extras, enriquecido: true });
+    if (!cur) return false;
+    // Página que não deixa ler (lojas como a Shopee): usa o texto que veio junto ao compartilhar, se veio.
+    const ex = r?.extras || {};
+    const share = !ex.tituloAuto && !ex.descricao && cur.notaColada && cur.nota ? fromShareText(cur.nota) : null;
+    if (!r && !share) return false;
+    await save('links', { ...cur, ...ex, ...(share || {}), enriquecido: true });
     await addSummary(id);
-    return r.got;
+    return !!r?.got || !!share;
   } finally {
     enriching.delete(id);
     if (showLoading) set({ loading: get().loading.filter(x => x !== id) });

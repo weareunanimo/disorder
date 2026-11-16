@@ -24,6 +24,8 @@ export interface Link {
   /** Gerados pela IA (opcionais): uma frase sobre o link e um tema curto. Só existem se o resumo por IA estiver ligado. */
   /** A pessoa mexeu nas tags deste link. A IA nunca mais mexe nele. */
   pastaManual?: boolean;
+  /** A nota veio do texto colado junto com o link (compartilhar de um app), não foi escrita pela pessoa. */
+  notaColada?: boolean;
   /** Foi arquivado junto com a tag, então volta junto quando a tag for restaurada. */
   arquivadoComPasta?: boolean;
   resumoIA?: string;
