@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { loadSetup, type Setup } from './lib/setup';
 import type { Folder, Link, View } from './types';
 import type { Backend } from './data/backend';
 import { EMPTY_FILTERS, type FilterState } from './lib/filters';
@@ -18,7 +19,8 @@ export type ModalState =
   | { kind: 'edit'; id: string }
   | { kind: 'confirm'; id: string }
   | { kind: 'archive-folder'; id: string }
-  | { kind: 'purge'; ids: string[] };
+  | { kind: 'purge'; ids: string[] }
+  | { kind: 'guide'; part?: 'app' | 'share' };
 
 export interface Draft { id: string; titulo: string; nota: string; tags: string[] }
 export interface ToastState { id: number; text: string; label?: string; fn?: () => void }
@@ -51,6 +53,10 @@ export interface State extends FilterState {
   flash: string | null;
 
   modal: ModalState | null;
+  /** Passos para deixar o disorder 100% (app instalado, salvar pelo Compartilhar). */
+  setup: Setup;
+  /** O navegador ofereceu instalar (Chrome no Android e no computador). */
+  canInstall: boolean;
   draft: Draft | null;
   clip: { url: string; key: string } | null;
   toast: ToastState | null;
@@ -108,6 +114,8 @@ export const useStore = create<State>(() => ({
   flash: null,
 
   modal: null,
+  setup: loadSetup(),
+  canInstall: false,
   draft: null,
   clip: null,
   toast: null,

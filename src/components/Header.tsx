@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { openGuide, cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
 import { tagsOf } from '../lib/tags';
+import { platform, setupDone, type Setup } from '../lib/setup';
 import { storeOf } from '../lib/stores';
 import { thumbOf } from '../lib/platforms';
 import { flyToCard } from '../lib/fly';
@@ -14,7 +15,7 @@ import { temaKey } from '../lib/auto';
 import { sameName } from '../lib/folders';
 import { colorOf, shapeOf } from '../lib/folders';
 import { FilterGroups } from './Toolbar';
-import { IcoArchive, IcoGear, IcoPaste, IcoSearch, IcoUser, IcoX } from './icons';
+import { IcoApp, IcoArchive, IcoCheck, IcoGear, IcoPaste, IcoSearch, IcoUser, IcoX } from './icons';
 
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
 export const PASTE_KEY = MAC ? '⌘V' : 'Ctrl+V';
@@ -211,6 +212,40 @@ function OmniBar() {
   );
 }
 
+/** "Seu disorder 100%": os passos que deixam salvar links sem copiar e colar. Cada um abre a explicação. */
+function SetupList() {
+  const setup = useStore(s => s.setup);
+  const ios = platform() === 'ios';
+  const n = setupDone(setup);
+  const items: [keyof Setup, string, string][] = [
+    ['app', 'Instalar o app', ios ? 'Safari, Compartilhar, Adicionar à Tela de Início' : 'Chrome, menu ⋮, Instalar app'],
+    ['share', ios ? 'Criar o atalho de compartilhar' : 'Salvar pelo Compartilhar', ios ? 'Salvar no disorder direto de qualquer app' : 'O disorder aparece no Compartilhar dos apps'],
+  ];
+  return (
+    <div className="pf-setup" role="group" aria-labelledby="pf-setup-t">
+      <div className="pf-sh"><b id="pf-setup-t">Seu disorder {n === 2 ? '100%' : n === 1 ? '50%' : '0%'}</b><span className="pf-bar" aria-hidden="true"><span style={{ width: n * 50 + '%' }} /></span></div>
+      {items.map(([k, t, d]) => (
+        <button key={k} type="button" className={'pf-row pf-todo' + (setup[k] ? ' done' : '')} onClick={() => openGuide(k)}>
+          <span className="pf-ck" aria-hidden="true">{setup[k] && <IcoCheck />}</span>
+          <span className="pf-t"><b>{t}</b><span>{d}</span></span>
+          <span className="sr">{setup[k] ? ', feito' : ', a fazer'}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Ícone de app ao lado do perfil enquanto falta algum passo. Abre a explicação de instalar e compartilhar. */
+function AppButton() {
+  const setup = useStore(s => s.setup);
+  if (setup.app && setup.share) return null;
+  return (
+    <button type="button" className="appbtn" aria-label="Instalar o app e salvar pelo Compartilhar" title="Instalar o app" onClick={() => openGuide(setup.app ? 'share' : 'app')}>
+      <IcoApp />
+    </button>
+  );
+}
+
 const THEMES: [Theme, string][] = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']];
 
 /** Perfil: tudo o que não é conteúdo mora aqui. Popover no mouse, folha na base no toque. */
@@ -237,6 +272,7 @@ function Profile() {
         <span className="pf-av" aria-hidden="true">{initial || <IcoUser />}</span>
         <span className="pf-id"><b>{profile.nome || (mode === 'cloud' ? 'Sua conta' : 'Neste aparelho')}</b><span>{profile.email || (mode === 'cloud' ? '' : 'Seus links ficam só neste navegador')}</span></span>
       </div>
+      <SetupList />
       <button type="button" className="pf-row" onClick={goTo('archived')}><IcoArchive /><span>Arquivados</span><span className="pf-n">{c.arch}</span></button>
       {CFG.summarizeApi && (
         <div className="pf-row pf-sw">
@@ -300,7 +336,7 @@ export function Header() {
       <div className="hdr-in">
         <Tabs />
         <OmniBar />
-        <Profile />
+        <div className="hdr-r"><AppButton /><Profile /></div>
       </div>
       <Building />
     </header>

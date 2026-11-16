@@ -8,6 +8,7 @@ import { CFG } from '../config';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
 import { Modal } from './Modal';
+import { Guide } from './Guide';
 import { LinkView } from './LinkView';
 import { TagPicker } from '../components/TagPicker';
 import { tagsOf, hasTag } from '../lib/tags';
@@ -135,5 +136,6 @@ export function ModalHost() {
   if (m.kind === 'purge') return <Purge ids={m.ids} />;
   if (m.kind === 'confirm') return <ConfirmFolder id={m.id} />;
   if (m.kind === 'archive-folder') return <ArchiveFolder id={m.id} />;
+  if (m.kind === 'guide') return <Guide part={m.part} />;
   return <FolderDialog key={m.kind} m={m} />;
 }

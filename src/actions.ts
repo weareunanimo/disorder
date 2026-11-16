@@ -1,6 +1,7 @@
 import { flushSync } from 'react-dom';
 import { backend, get, set, type Layout, type ModalState, type Then, type Theme } from './store';
 import type { Col, Folder, Link, PreviewData, View } from './types';
+import { saveSetup, type Setup } from './lib/setup';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists, isHome } from './lib/filters';
 import { isParsed, parseLink } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
@@ -223,6 +224,29 @@ export function purge(ids: string[]) {
 
 /* ===== Diálogos ===== */
 export function openModal(m: ModalState) { set({ modal: m }); }
+
+/** Marca um passo do "disorder 100%". Fica neste aparelho. */
+export function markSetup(k: keyof Setup, v = true) {
+  const next = { ...get().setup, [k]: v };
+  saveSetup(next);
+  set({ setup: next });
+}
+type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+let installEvt: InstallEvent | null = null;
+/** Guarda o convite de instalação do navegador para usar no nosso botão. */
+export function holdInstall(e: Event) { e.preventDefault(); installEvt = e as InstallEvent; set({ canInstall: true }); }
+/** Abre o convite nativo de instalar. Sem convite disponível, devolve false e a tela mostra o passo a passo. */
+export async function installApp(): Promise<boolean> {
+  if (!installEvt) return false;
+  const e = installEvt;
+  installEvt = null;
+  set({ canInstall: false });
+  await e.prompt();
+  const r = await e.userChoice;
+  if (r.outcome === 'accepted') markSetup('app');
+  return true;
+}
+export function openGuide(part?: 'app' | 'share') { setProfileOpen(false); openModal({ kind: 'guide', part }); }
 export function closeModal() { set({ modal: null }); }
 /** Esc ou Cancelar: se o diálogo de tag veio da edição de um link, volta para a edição. */
 export function cancelModal() {
