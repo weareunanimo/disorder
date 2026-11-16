@@ -85,6 +85,7 @@ export const setLayout = (layout: 'cards' | 'list') => {
   try { localStorage.setItem('brica.layout', layout); } catch { /* sem armazenamento */ }
 };
 
+export function toggleKind(k: string) { const p = get().kinds; set({ kinds: p.includes(k) ? p.filter(x => x !== k) : [...p, k] }); }
 export function togglePlat(k: string) { const p = get().plats; set({ plats: p.includes(k) ? p.filter(x => x !== k) : [...p, k] }); }
 export function toggleFolderFilter(id: string) { const p = get().fp; set({ fp: p.includes(id) ? p.filter(x => x !== id) : [...p, id] }); }
 
@@ -204,7 +205,7 @@ export type AddResult =
   | { kind: 'bad'; code: string };
 
 interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string[] }
-export interface PvSnap { key: string; data: PreviewData | null; ai?: { resumo: string; tema: string } | null }
+export interface PvSnap { key: string; data: PreviewData | null; ai?: { resumo: string; tema: string; categoria: string } | null }
 
 function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome {
   const found = raw.match(/https?:\/\/[^\s]+/gi);
@@ -226,7 +227,7 @@ function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome
     };
     if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
     // O diálogo de salvar já pediu o resumo: aproveita, para não gastar outro pedido.
-    if (pv && pv.key === p.key && pv.ai && get().ai) { if (pv.ai.resumo) rec.resumoIA = pv.ai.resumo; if (pv.ai.tema) rec.tema = pv.ai.tema; }
+    if (pv && pv.key === p.key && pv.ai && get().ai) { if (pv.ai.resumo) rec.resumoIA = pv.ai.resumo; if (pv.ai.tema) rec.tema = pv.ai.tema; if (pv.ai.categoria) rec.categoria = pv.ai.categoria; rec.iaEm = Date.now(); }
     r.saved.push(rec);
   });
   if (r.saved.length) {
@@ -550,14 +551,17 @@ export async function organize(prefix = '') {
 const summarizing = new Set<string>();
 let bulkAi = false;
 /** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
+/** Falta passar pela IA: nunca respondeu, e ainda falta resumo ou tipo. */
+const needsAi = (l: Link) => !l.iaEm && (!l.resumoIA || !l.categoria);
+
 async function addSummary(id: string) {
   const l = get().links.find(x => x.id === id);
-  if (!get().ai || !l || l.resumoIA || summarizing.has(id)) return;
+  if (!get().ai || !l || !needsAi(l) || summarizing.has(id)) return;
   summarizing.add(id);
   try {
     const s = await summarize(l);
     const now = get().links.find(x => x.id === id);
-    if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}) });
+    if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}), ...(s.categoria ? { categoria: s.categoria } : {}), iaEm: Date.now() });
     if (s && s.tema && !bulkAi) void organize();
   } finally { summarizing.delete(id); }
 }
@@ -565,7 +569,7 @@ async function addSummary(id: string) {
 /** Roda o resumo e a organização nos links que já existem. No máximo 150 por vez, para respeitar o limite diário. */
 export async function summarizeExisting() {
   if (!get().ai || !CFG.summarizeApi || get().summarizingAll) return;
-  const todo = get().links.filter(l => !isArch(l) && !l.resumoIA).slice(0, 60).map(l => l.id);
+  const todo = get().links.filter(l => !isArch(l) && needsAi(l)).slice(0, 60).map(l => l.id);
   if (!todo.length) { toast('Todos os links já estão organizados.'); return; }
   set({ summarizingAll: true, aiProgress: { done: 0, total: todo.length } });
   bulkAi = true;

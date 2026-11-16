@@ -181,3 +181,11 @@ describe('tags', () => {
     expect(r).toEqual(['2', '3']);
   });
 });
+
+describe('tipo do link', () => {
+  it('filtra por tipo, com "none" para não identificado', () => {
+    const ls = [link({ id: '1', categoria: 'loja' }), link({ id: '2', categoria: 'artigo' }), link({ id: '3' })];
+    const ids = (k: string[]) => visibleLinks(ls, [], 'all', { ...EMPTY_FILTERS, kinds: k }).map(l => l.id).sort();
+    expect(ids(['loja'])).toEqual(['1']); expect(ids(['artigo', 'none'])).toEqual(['2', '3']); expect(ids([]).length).toBe(3);
+  });
+});

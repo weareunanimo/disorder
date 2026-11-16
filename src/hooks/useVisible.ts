@@ -8,9 +8,9 @@ import { tagsOf } from '../lib/tags';
 export function useVisible() {
   const links = useStore(s => s.links), folders = useStore(s => s.folders), view = useStore(s => s.view);
   const q = useDeferredValue(useStore(s => s.q));
-  const plats = useStore(s => s.plats), fp = useStore(s => s.fp), from = useStore(s => s.from), to = useStore(s => s.to);
+  const plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp), from = useStore(s => s.from), to = useStore(s => s.to);
   const sort = useStore(s => s.sort);
-  return useMemo(() => visibleLinks(links, folders, view, { q, plats, fp, from, to }, sort), [links, folders, view, q, plats, fp, from, to, sort]);
+  return useMemo(() => visibleLinks(links, folders, view, { q, plats, kinds, fp, from, to }, sort), [links, folders, view, q, plats, kinds, fp, from, to, sort]);
 }
 
 export function useSortedFolders() {

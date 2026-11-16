@@ -1,4 +1,5 @@
 import { CFG } from '../config';
+import { isKind } from '../lib/kinds';
 import { authHeaders } from './supabase';
 import type { Extras, Link, PreviewData } from '../types';
 
@@ -13,6 +14,7 @@ export function extrasOf(d: PreviewData | null): Extras {
   if (d.leitura && d.leitura > 0) o.leitura = Math.round(d.leitura);
   if (d.publicadoEm && d.publicadoEm > 0) o.publicadoEm = d.publicadoEm;
   if (d.icone && /^https:\/\//i.test(d.icone)) o.icone = d.icone;
+  if (d.pista) o.pista = d.pista.slice(0, 20);
   return o;
 }
 
@@ -42,7 +44,7 @@ export async function enrichLink(l: Link): Promise<EnrichResult> {
   } catch { return null; }
 }
 
-export type Resumo = { resumo: string; tema: string };
+export type Resumo = { resumo: string; tema: string; categoria: string };
 
 /** Como foi a última chamada de resumo: 200, o código HTTP da falha, ou 0 quando nem chegou ao servidor. Serve para explicar por que não funcionou. */
 export let lastSummarizeStatus = 200;
@@ -59,7 +61,7 @@ async function waitSlot() {
 }
 
 /** Pede à função /api/summarize uma frase e um tema. Devolve null se a IA estiver desligada, falhar ou não souber. Espera e repete quando o serviço pede calma. */
-export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma'>): Promise<Resumo | null> {
+export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descricao' | 'plataforma' | 'pista'> & { host?: string }): Promise<Resumo | null> {
   if (!CFG.summarizeApi) return null;
   const titulo = l.titulo || l.tituloAuto || '';
   if (!titulo && !l.descricao) return null;
@@ -69,7 +71,7 @@ export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descric
       const r = await fetch(CFG.summarizeApi, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(await authHeaders()) },
-        body: JSON.stringify({ titulo, descricao: l.descricao || '', site: l.plataforma || '' }),
+        body: JSON.stringify({ titulo, descricao: l.descricao || '', site: (l.plataforma === 'web' ? l.host : l.plataforma) || '', pista: l.pista || '' }),
       });
       lastSummarizeStatus = r.status;
       if (!r.ok) {
@@ -83,9 +85,9 @@ export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descric
         }
         return null;
       }
-      const d = (await r.json()) as Partial<Resumo>;
-      const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim();
-      return resumo || tema ? { resumo, tema } : null;
+      const d = (await r.json()) as Partial<Resumo> & { tipo?: string };
+      const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim(), categoria = isKind(d.tipo) ? d.tipo : '';
+      return resumo || tema || categoria ? { resumo, tema, categoria } : null;
     } catch { lastSummarizeStatus = 0; return null; }
   }
   return null;

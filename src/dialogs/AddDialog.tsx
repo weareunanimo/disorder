@@ -3,6 +3,7 @@ import { set, useStore } from '../store';
 import { clipCandidate, closeAdd, describeError, folderById, goTo, openModal, restoreLink, submitAdd, toast, type PvSnap } from '../actions';
 import { fetchPreview, summarize, type Resumo } from '../data/previews';
 import { temaKey } from '../lib/auto';
+import { kindLabel } from '../lib/kinds';
 import { CFG } from '../config';
 import { PLAT, autoTitle, fmtDuration, isParsed, parseLink, type Parsed } from '../lib/platforms';
 import type { PreviewData } from '../types';
@@ -71,9 +72,9 @@ export function AddDialog() {
     let live = true;
     const k = pv.key;
     setAi({ key: k, state: 'run', r: null });
-    void summarize({ titulo: '', tituloAuto: pv.data?.title, descricao: pv.data?.descricao, plataforma: one.plataforma }).then(r => {
+    void summarize({ titulo: '', tituloAuto: pv.data?.title, descricao: pv.data?.descricao, plataforma: one.plataforma, pista: pv.data?.pista, host: one.host }).then(r => {
       if (!live) return;
-      const good = !!r && !!(r.resumo || r.tema);
+      const good = !!r && !!(r.resumo || r.tema || r.categoria);
       setAi({ key: k, state: good ? 'done' : 'fail', r: good ? r : null });
       const tk = r?.tema ? temaKey(r.tema) : '';
       const match = tk ? folders.find(f => temaKey(f.nome) === tk) : undefined;
@@ -152,7 +153,7 @@ export function AddDialog() {
             <b className="t">{title}</b>
             <span className="m">{one.plataforma === 'web' ? (pv?.data?.site || one.host) : PLAT[one.plataforma].label}{pv?.data?.duracao ? ', ' + fmtDuration(pv.data.duracao) : ''}</span>
             {resumo && <p className="ps">{resumo}</p>}
-            {aiMine?.r?.tema && <span className="pk">Tema: {aiMine.r.tema}</span>}
+            {(aiMine?.r?.categoria || aiMine?.r?.tema) && <span className="pks">{kindLabel(aiMine?.r?.categoria) && <span className="pk">{kindLabel(aiMine?.r?.categoria)}</span>}{aiMine?.r?.tema && <span className="pk">Tema: {aiMine.r.tema}</span>}</span>}
           </div>
         </div>
       )}
@@ -160,7 +161,7 @@ export function AddDialog() {
         <ol className="steps" aria-label="Montando o cartão">
           <Step state={reading ? 'run' : pv?.data ? 'done' : 'skip'} run="Lendo a página" done="Título e imagem lidos" skip="A página não deixou ler título e imagem" />
           {aiOn && <Step state={reading ? 'wait' : !readable ? 'skip' : aiPending ? 'run' : aiMine?.r?.resumo ? 'done' : 'skip'} wait="Resumir o conteúdo" run="Resumindo o conteúdo" done="Resumo pronto" skip="Sem resumo desta vez" />}
-          {aiOn && <Step state={reading ? 'wait' : !readable ? 'skip' : aiPending ? 'run' : aiMine?.r?.tema ? 'done' : 'skip'} wait="Identificar o tema" run="Identificando o tema" done={'Tema: ' + (aiMine?.r?.tema || '')} skip="Tema não identificado" />}
+          {aiOn && <Step state={reading ? 'wait' : !readable ? 'skip' : aiPending ? 'run' : aiMine?.r?.tema || aiMine?.r?.categoria ? 'done' : 'skip'} wait="Identificar o que é e o tema" run="Identificando o que é e o tema" done={[kindLabel(aiMine?.r?.categoria), aiMine?.r?.tema ? 'tema ' + aiMine.r.tema : ''].filter(Boolean).join(', ')} skip="Tipo e tema não identificados" />}
           <Step state={ready ? 'done' : 'wait'} wait="Escolher as tags" done={sugName ? 'Tag sugerida: ' + sugName : 'Cartão montado. Escolha as tags, se quiser'} />
         </ol>
       )}

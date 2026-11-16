@@ -43,3 +43,16 @@ srv.listen(0, async () => {
   assert.strictEqual(short.leitura, 0);
   console.log('ok extras');
 }
+
+// Pista do tipo de página, para a IA.
+{
+  const { parseMeta: pm } = require('../api/preview.js');
+  const assert = require('node:assert');
+  const P = h => pm('<html><head>' + h + '</head></html>', 'https://x.com/a').pista;
+  assert.strictEqual(P('<meta property="og:type" content="product">'), 'produto');
+  assert.strictEqual(P('<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Tênis"}</script>'), 'produto');
+  assert.strictEqual(P('<script type="application/ld+json">{"@type":"Recipe"}</script>'), 'receita');
+  assert.strictEqual(P('<meta property="og:type" content="article">'), 'artigo');
+  assert.strictEqual(P('<title>Oi</title>'), '');
+  console.log('ok pista');
+}

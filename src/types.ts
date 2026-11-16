@@ -27,6 +27,12 @@ export interface Link {
   /** Foi arquivado junto com a tag, então volta junto quando a tag for restaurada. */
   arquivadoComPasta?: boolean;
   resumoIA?: string;
+  /** O que o link é (loja, artigo, receita...), identificado pela IA. Ver lib/kinds. */
+  categoria?: string;
+  /** Quando a IA já leu este link e respondeu. Evita pedir de novo o que ela não soube dizer. */
+  iaEm?: number;
+  /** Pista do tipo lida da página, usada pela IA. */
+  pista?: string;
   tema?: string;
   arquivadoEm?: number | null;
   host?: string;
@@ -53,7 +59,9 @@ export type View = string;
 export interface PreviewData {
   title?: string; image?: string; site?: string;
   descricao?: string; duracao?: number; leitura?: number; publicadoEm?: number; icone?: string;
+  /** Tipo que a própria página declara (produto, receita...). Só uma pista para a IA. */
+  pista?: string;
 }
 
 /** Campos do link que vêm do preview. */
-export type Extras = Pick<Link, 'tituloAuto' | 'thumb' | 'descricao' | 'duracao' | 'leitura' | 'publicadoEm' | 'icone'>;
+export type Extras = Pick<Link, 'tituloAuto' | 'thumb' | 'descricao' | 'duracao' | 'leitura' | 'publicadoEm' | 'icone' | 'pista'>;

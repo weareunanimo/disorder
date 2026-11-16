@@ -9,7 +9,7 @@ const fake = http.createServer((q, r) => {
     if (p.messages[1].content.includes('Limite')) { r.writeHead(429, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ error: { message: 'Rate limit exceeded: limit of 5 requests per minute. Retry after 12s.' } })); }
     assert.ok(p.messages[1].content.includes('Bolo'));
     r.writeHead(200, { 'content-type': 'application/json' });
-    r.end(JSON.stringify({ choices: [{ message: { content: '```json\n{"resumo":"Receita de bolo fofinho de cenoura — com cobertura","tema":"Receitas!"}\n```' } }] }));
+    r.end(JSON.stringify({ choices: [{ message: { content: '```json\n{"resumo":"Receita de bolo fofinho de cenoura — com cobertura","tema":"Receitas!","tipo":"Receita"}\n```' } }] }));
   });
 });
 
@@ -28,11 +28,12 @@ fake.listen(0, async () => {
   process.env.AI_GATEWAY_API_KEY = 'teste';
   assert.strictEqual((await call({}, 'GET')).status, 405);
   r = await call({ titulo: '', descricao: '' });
-  assert.deepStrictEqual(r.body, { resumo: '', tema: '' }); // sem texto, nem chama a IA
+  assert.deepStrictEqual(r.body, { resumo: '', tema: '', tipo: '' }); // sem texto, nem chama a IA
   r = await call({ titulo: 'Bolo de cenoura', site: 'Receitas' });
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.body.resumo, 'Receita de bolo fofinho de cenoura, com cobertura'); // sem travessão
   assert.strictEqual(r.body.tema, 'receitas');
+  assert.strictEqual(r.body.tipo, 'receita'); // normaliza caixa e só aceita a lista fechada
   r = await call({ titulo: 'Limite' });
   assert.strictEqual(r.status, 429); assert.strictEqual(r.body.porMinuto, true); assert.strictEqual(r.body.retry, 12); // o app espera e tenta de novo
   process.env.AI_DAILY_LIMIT = '2';

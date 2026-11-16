@@ -9,11 +9,13 @@ export const isArch = (l: Link) => !!l.arquivadoEm;
 export interface FilterState {
   q: string;
   plats: string[];
+  /** Tipos de link (loja, artigo...). "none" é link que a IA ainda não identificou. */
+  kinds: string[];
   fp: string[];
   from: string;
   to: string;
 }
-export const EMPTY_FILTERS: FilterState = { q: '', plats: [], fp: [], from: '', to: '' };
+export const EMPTY_FILTERS: FilterState = { q: '', plats: [], kinds: [], fp: [], from: '', to: '' };
 
 export function folderExists(folders: Folder[], id: string | null | undefined) {
   return !!id && folders.some(f => f.id === id);
@@ -47,7 +49,7 @@ export function datePreset(days: number, now = Date.now()) {
 }
 
 export function filterCount(f: FilterState, view: View): number {
-  return (f.q.trim() ? 1 : 0) + (f.plats.length ? 1 : 0) + (view === 'all' && f.fp.length ? 1 : 0) + (f.from || f.to ? 1 : 0);
+  return (f.q.trim() ? 1 : 0) + (f.plats.length ? 1 : 0) + (f.kinds.length ? 1 : 0) + (view === 'all' && f.fp.length ? 1 : 0) + (f.from || f.to ? 1 : 0);
 }
 
 /** Links da tela atual com os filtros aplicados, na ordem escolhida (padrão: do mais novo para o mais antigo). */
@@ -59,6 +61,7 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
   return sortLinks(links
     .filter(l => inView(l, view, folders))
     .filter(l => !f.plats.length || f.plats.includes(l.plataforma))
+    .filter(l => !f.kinds.length || f.kinds.includes(l.categoria || 'none'))
     .filter(l => !byFolder || matchTags(l, folders, f.fp))
     .filter(l => (!t0 || (l.criadoEm || 0) >= t0) && (!t1 || (l.criadoEm || 0) < t1))
     .filter(l => {

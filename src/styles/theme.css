@@ -810,3 +810,6 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* Selo do link detectado: site com nome longo é cortado */
 .detected { max-width: 45%; overflow: hidden; text-overflow: ellipsis; text-transform: none; }
+.pv .pks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.pv .pks .pk { margin-top: 0; }
+.meta .kd { font-weight: 700; color: var(--fg); }

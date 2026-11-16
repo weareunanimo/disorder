@@ -104,10 +104,22 @@ function parseMeta(html, base) {
   const duration = parseDuration(meta['og:video:duration'] || meta['video:duration'] || meta['duration'] || ld('duration'));
   const published = toMs(meta['article:published_time'] || meta['og:article:published_time'] || meta['datepublished'] || meta['uploaddate'] || ld('datePublished') || ld('uploadDate'));
   const isArticle = type === 'article' || /<article[\s>]/i.test(head);
+  // Pista do tipo de página, lida do que o próprio site declara (og:type e dados estruturados).
+  const ldTypes = (head.match(/"@type"\s*:\s*"([A-Za-z]+)"/g) || []).map(x => x.replace(/.*"([A-Za-z]+)"$/, '$1').toLowerCase());
+  const has = t => ldTypes.includes(t);
+  const pista = type.startsWith('product') || has('product') || meta['product:price:amount'] || meta['og:price:amount'] ? 'produto'
+    : has('recipe') ? 'receita'
+    : has('newsarticle') ? 'noticia'
+    : has('event') ? 'evento'
+    : has('restaurant') || has('localbusiness') || type.includes('restaurant') || type.includes('place') ? 'lugar'
+    : type.startsWith('music') ? 'musica'
+    : type.startsWith('video') ? 'video'
+    : has('blogposting') || has('article') || type === 'article' ? 'artigo'
+    : '';
   return {
     title, image, site: decode(meta['og:site_name'] || ''),
     descricao: decode(meta['og:description'] || meta['twitter:description'] || meta['description'] || '').slice(0, 240),
-    duracao: duration, leitura: duration ? 0 : readingMinutes(head, isArticle), publicadoEm: published, icone: icon,
+    duracao: duration, leitura: duration ? 0 : readingMinutes(head, isArticle), publicadoEm: published, icone: icon, pista,
   };
 }
 
@@ -129,7 +141,7 @@ async function oembed(endpoint, url) {
   return JSON.parse((await readLimited(res, 200 * 1024)).toString('utf8'));
 }
 
-const EMPTY = { title: '', image: '', site: '', descricao: '', duracao: 0, leitura: 0, publicadoEm: 0, icone: '' };
+const EMPTY = { title: '', image: '', site: '', descricao: '', duracao: 0, leitura: 0, publicadoEm: 0, icone: '', pista: '' };
 
 async function pageMeta(url) {
   const { res, url: finalUrl } = await safeFetch(url);
@@ -200,7 +212,7 @@ module.exports = async function handler(req, res) {
     res.statusCode = 200;
     res.end(JSON.stringify({
       title: (meta.title || '').slice(0, 300), image: meta.image || '', site: meta.site || '',
-      descricao: meta.descricao || '', duracao: meta.duracao || 0, leitura: meta.leitura || 0, publicadoEm: meta.publicadoEm || 0,
+      descricao: meta.descricao || '', duracao: meta.duracao || 0, leitura: meta.leitura || 0, publicadoEm: meta.publicadoEm || 0, pista: meta.pista || '',
       icone: /^https:\/\//i.test(meta.icone || '') ? meta.icone : '',
     }));
   } catch (e) {

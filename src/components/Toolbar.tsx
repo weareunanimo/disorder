@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { set, useStore } from '../store';
-import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, togglePlat } from '../actions';
+import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, toggleKind, togglePlat } from '../actions';
 import { SORTS, isSort } from '../lib/sort';
+import { KINDS } from '../lib/kinds';
 import { datePreset, filterCount } from '../lib/filters';
 import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
@@ -18,31 +19,34 @@ function Chip({ label, count, on, onClick }: { label: string; count?: number; on
 }
 
 function FiltersPanel({ n }: { n: number }) {
-  const view = useStore(s => s.view), q = useStore(s => s.q), plats = useStore(s => s.plats), fp = useStore(s => s.fp);
+  const view = useStore(s => s.view), q = useStore(s => s.q), plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp);
   const from = useStore(s => s.from), to = useStore(s => s.to);
   const folders = useSortedFolders(), base = useBase();
   const search = useRef<HTMLInputElement>(null);
 
   const stats = useMemo(() => {
-    const plat = new Map<string, number>(), folder = new Map<string, number>(), known = new Set(folders.map(f => f.id));
+    const kind = new Map<string, number>(), plat = new Map<string, number>(), folder = new Map<string, number>(), known = new Set(folders.map(f => f.id));
     let none = 0;
     for (const l of base) {
       plat.set(l.plataforma, (plat.get(l.plataforma) || 0) + 1);
+      const k = l.categoria || 'none'; kind.set(k, (kind.get(k) || 0) + 1);
       const live = tagsOf(l).filter(id => known.has(id));
       live.forEach(id => folder.set(id, (folder.get(id) || 0) + 1));
       if (!live.length) none++;
     }
-    return { plat, folder, none };
+    return { kind, plat, folder, none };
   }, [base, folders]);
   const present = PLAT_KEYS.filter(k => stats.plat.get(k));
+  const presentKinds = KINDS.filter(k => stats.kind.get(k.key));
 
   useEffect(() => { if (canHover()) search.current?.focus(); }, []);
   // Filtro que deixou de existir (plataforma sem links, tag excluída) sai da seleção.
   useEffect(() => {
-    const okP = plats.filter(k => stats.plat.get(k));
+    const okP = plats.filter(k => stats.plat.get(k)), okK = kinds.filter(k => stats.kind.get(k));
+    if (okK.length !== kinds.length) set({ kinds: okK });
     const okF = fp.filter(id => id === 'none' || folders.some(f => f.id === id));
     if (okP.length !== plats.length || okF.length !== fp.length) set({ plats: okP, fp: okF });
-  }, [plats, fp, stats, folders]);
+  }, [plats, kinds, fp, stats, folders]);
 
   const isPreset = (d: number) => { const x = datePreset(d); return from === x.from && to === x.to; };
   const preset = (d: number) => set(isPreset(d) ? { from: '', to: '' } : datePreset(d));
@@ -64,6 +68,15 @@ function FiltersPanel({ n }: { n: number }) {
             <div className="chips">
               {stats.none > 0 && <Chip label="Sem tag" count={stats.none} on={fp.includes('none')} onClick={() => toggleFolderFilter('none')} />}
               {folders.map(f => <Chip key={f.id} label={f.nome} count={stats.folder.get(f.id) || 0} on={fp.includes(f.id)} onClick={() => toggleFolderFilter(f.id)} />)}
+            </div>
+          </div>
+        )}
+        {presentKinds.length > 0 && (
+          <div className="fgrp" role="group" aria-label="Filtrar por tipo">
+            <span className="fl">Tipo</span>
+            <div className="chips">
+              {presentKinds.map(k => <Chip key={k.key} label={k.label} count={stats.kind.get(k.key)} on={kinds.includes(k.key)} onClick={() => toggleKind(k.key)} />)}
+              {stats.kind.get('none') ? <Chip label="Não identificado" count={stats.kind.get('none')} on={kinds.includes('none')} onClick={() => toggleKind('none')} /> : null}
             </div>
           </div>
         )}

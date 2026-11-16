@@ -5,6 +5,7 @@ import type { Folder, Link } from '../types';
 import { filterCount, isArch, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
+import { kindLabel } from '../lib/kinds';
 import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useWide } from '../hooks/useMedia';
@@ -72,7 +73,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <Preview link={l} loading={loading} />
       <div className="ltext">
         <h3 className="ttl" title={titulo}>{titulo}</h3>
-        <p className="meta"><span>{originOf(l)}</span><span>{ago(l.criadoEm || Date.now())}</span></p>
+        <p className="meta"><span>{originOf(l)}</span>{kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <Summary text={summary} />}
         <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
         {l.nota && <p className="note">{l.nota}</p>}
