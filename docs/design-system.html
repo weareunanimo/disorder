@@ -1241,6 +1241,17 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .bd-add { display: flex; gap: 8px; align-items: center; text-transform: none; letter-spacing: 0; }
 .bd-add .inw { flex: 1 1 auto; }
 .bd-sum { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted-fg); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Busca unificada: tags que batem, numa linha acima dos links (Tudo e Tags) */
+.thits { display: flex; align-items: center; gap: 12px; margin-top: 14px; min-width: 0; }
+.thits-l { flex: none; font: 700 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
+.thits-row { display: flex; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
+.thits-row::-webkit-scrollbar { display: none; }
+.thit { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; max-width: 70vw; padding-top: 4px; padding-bottom: 4px; cursor: pointer; font-size: 12px; }
+.thit-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.thit-n { flex: none; opacity: .7; font-variant-numeric: tabular-nums; }
+.thit:hover { filter: brightness(.94); }
+.thit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
 .bd-btns { display: flex; gap: 10px; }
 .bd-btns .btn.primary { min-width: 140px; }
 @media (max-width: 640px) { .bd-btns .btn { flex: 1 1 0; } }
@@ -1310,7 +1321,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 }
 .spec-list { margin: 8px 0 8px 18px; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v8.8</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v8.9</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -1396,6 +1407,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 
 <div class="spec"><header><h3>Perfil</h3><p>Círculo de 40px em accent com a inicial do nome (ou um ícone), no canto direito do cabeçalho. Abre um painel de 340px no mouse e uma folha na base da tela no toque, com fundo escurecido e linhas de 48px. Conteúdo, nesta ordem: quem é (nome e e-mail, ou "Neste aparelho" no modo local), Arquivados com a contagem, Ordem automática com chave liga e desliga e uma frase do que ela faz, Aparência (Claro, Escuro, Sistema), Conta, tags e dados (a tela de ajustes completa: renomear, cores e ordem das tags, exportar e importar), e Sair quando há conta. Não há "Plano" porque o app ainda não tem planos. Fecha com Esc, tocando fora ou ao escolher um destino. Classes <code>.avatar</code>, <code>.prof</code>.</p></header><div class="stage"><div class="prof" style="position:static"><div class="pf-who"><span class="pf-av">F</span><span class="pf-id"><b>Felippe</b><span>conta conectada</span></span></div><button type="button" class="pf-row"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><path d="M3 6v6.5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V6M6.5 9h3"/></svg><span>Arquivados</span><span class="pf-n">7</span></button><div class="pf-row pf-sw"><span class="pf-t"><b>Ordem automática</b><span>A IA resume, identifica e organiza em tags.</span></span><button type="button" role="switch" aria-checked="true" class="tgl"><span></span></button></div><div class="pf-row pf-theme"><span class="pf-t"><b>Aparência</b></span><div class="seg txt"><button aria-pressed="true">Claro</button><button aria-pressed="false">Escuro</button><button aria-pressed="false">Sistema</button></div></div><button type="button" class="pf-row"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></svg><span>Conta, tags e dados</span></button></div></div></div>
 
+<div class="spec"><header><h3>Busca unificada</h3><p>Tudo e Tags têm a mesma busca. Digitar na omni-bar em qualquer das duas abas mostra o mesmo resultado, e trocar de aba mantém o texto. Primeiro uma linha "Tags" com as tags cujo nome bate (<code>.thits</code>, rolagem lateral no celular), cada uma com a forma e a cor dela e a contagem de links. Tocar entra na tag e limpa a busca. Embaixo, os links que batem no título, nota, resumo, autor, endereço ou nome das tags, na visualização escolhida. Acento não importa: "musica" acha "Música". A linha de contexto diz "1 tag, 2 links". Os filtros rápidos continuam só em Tudo, porque na grade de tags não teriam efeito. Classes <code>.thits</code>, <code>.thit</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="thits"><span class="thits-l">Tags</span><div class="thits-row"><button type="button" class="tag thit" data-c="3" data-s="1"><span class="thit-t">Receitas</span><span class="thit-n">12</span></button><button type="button" class="tag thit" data-c="5" data-s="2"><span class="thit-t">Receitas rápidas</span><span class="thit-n">4</span></button></div></div></div></div>
 <div class="spec"><header><h3>Primeiro acesso</h3><p>Com zero links, a área de conteúdo vira um convite só: "Cole um link para começar", uma frase do que acontece depois, o botão Colar link em destaque e a dica do atalho com a tecla desenhada (<code>⌘V</code> no Mac e iPhone, <code>Ctrl+V</code> no resto). O botão lê a área de transferência. Sem permissão ou sem link copiado, ele explica e põe o cursor na omni-bar. Linha de contexto e filtros ficam escondidos até existir o primeiro link. Classe <code>.first</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="first" style="min-height:0;padding:12px 0"><h2>Cole um link para começar</h2><p>Qualquer site, post ou vídeo. A IA lê, resume e organiza em tags para você.</p><button type="button" class="btn primary first-cta"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3" width="9" height="11" rx="1.5"/><path d="M6 3V2h4v1M6 7.5h4M6 10h3"/></svg>Colar link</button><p class="first-k">ou aperte <kbd>Ctrl+V</kbd> em qualquer lugar desta tela</p></div></div></div>
 
 

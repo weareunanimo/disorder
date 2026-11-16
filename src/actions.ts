@@ -1,7 +1,7 @@
 import { flushSync } from 'react-dom';
 import { backend, get, set, type Layout, type ModalState, type Then, type Theme } from './store';
 import type { Col, Folder, Link, PreviewData, View } from './types';
-import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
+import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists, isHome } from './lib/filters';
 import { isParsed, parseLink } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
 import type { Sort } from './lib/sort';
@@ -77,6 +77,8 @@ export function go(view: View) {
   set({
     prevView: view === 'settings' && s.view !== 'settings' ? s.view : s.prevView,
     view, pal: null, ...EMPTY_FILTERS, sel: [], anchor: null, menu: false, clip: null,
+    // Trocar entre Tudo e Tags mantém a busca: é a mesma nas duas abas.
+    ...(isHome(view) && isHome(s.view) ? { q: s.q } : {}),
     ...(isFolder ? { dest: [view] } : {}),
   });
   void checkClipboard();

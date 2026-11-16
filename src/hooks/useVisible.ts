@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo } from 'react';
 import { useStore } from '../store';
-import { inView, isArch, visibleLinks } from '../lib/filters';
+import { inView, isArch, matchingTags, visibleLinks } from '../lib/filters';
 import { sortFolders } from '../lib/folders';
 import { tagsOf } from '../lib/tags';
 
@@ -40,4 +40,10 @@ export function useCounts() {
     }
     return { total, none, arch: links.length - total, by };
   }, [links, folders]);
+}
+
+/** Tags que batem com a busca (Tudo e Tags), na mesma ordem da grade. */
+export function useTagHits() {
+  const folders = useSortedFolders(), q = useDeferredValue(useStore(s => s.q));
+  return useMemo(() => matchingTags(folders, q), [folders, q]);
 }

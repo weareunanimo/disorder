@@ -1280,3 +1280,15 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .lv-acts .lv-open { gap: 6px; height: 40px; padding: 0 14px; max-width: 220px; }
 .lv-acts .lv-open { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lv-acts .lv-open svg { flex: none; }
+
+/* Busca unificada: tags que batem, numa linha acima dos links (Tudo e Tags) */
+.thits { display: flex; align-items: center; gap: 12px; margin-top: 14px; min-width: 0; }
+.thits-l { flex: none; font: 700 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
+.thits-row { display: flex; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
+.thits-row::-webkit-scrollbar { display: none; }
+.thit { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; max-width: 70vw; padding-top: 4px; padding-bottom: 4px; cursor: pointer; font-size: 12px; }
+.thit-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.thit-n { flex: none; opacity: .7; font-variant-numeric: tabular-nums; }
+.thit:hover { filter: brightness(.94); }
+.thit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.thits + .list { margin-top: 16px !important; }

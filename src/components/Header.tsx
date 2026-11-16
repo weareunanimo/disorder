@@ -149,7 +149,9 @@ function OmniBar() {
     window.addEventListener('scroll', place, { passive: true });
     return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place); };
   }, [open]);
-  const canSearch = view !== 'tags' && view !== 'settings';
+  const canSearch = view !== 'settings';
+  // Filtros rápidos só valem para links. Na grade de tags eles não teriam efeito.
+  const canFilter = canSearch && view !== 'tags';
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -190,7 +192,7 @@ function OmniBar() {
         <span className="sr">Colar um link ou buscar</span>
         <input ref={input} id="q" type="search" enterKeyHint={isLink ? 'done' : 'search'} autoComplete="off" autoCapitalize="off" spellCheck={false}
           placeholder={canSearch ? 'Cole um link ou busque' : 'Cole um link'} value={q}
-          onChange={e => { set({ q: e.target.value }); if (canSearch && e.target.value && !looksLikeLink(e.target.value) && view !== 'all' && view !== 'none' && !get().folders.some(f => f.id === view) && view !== 'archived') go('all'); }}
+          onChange={e => { const v = e.target.value; if (!canSearch && v && !looksLikeLink(v)) go('all'); set({ q: v }); }}
           onFocus={() => setOpen(true)} onPaste={onPaste} onKeyDown={onKeyDown}
           aria-describedby="omni-hint" />
         {q
@@ -199,8 +201,8 @@ function OmniBar() {
             : <button type="button" className="omni-btn" aria-label="Limpar busca" onClick={() => { set({ q: '' }); input.current?.focus(); }}><IcoX /></button>)
           : <button type="button" className={'omni-btn' + (clip ? ' pri' : '')} onClick={() => { setOpen(false); void pasteFromClipboard(PASTE_KEY); }} title={clip ? 'Salvar o link copiado' : 'Colar o link copiado'}><IcoPaste /><span>{clip ? 'Colar link' : 'Colar'}</span></button>}
       </label>
-      <span id="omni-hint" className="sr">Colar um link salva na hora. Digitar busca nos seus links. Atalho: barra.</span>
-      {open && !q && canSearch && (
+      <span id="omni-hint" className="sr">Colar um link salva na hora. Digitar busca nos seus links e nas suas tags. Atalho: barra.</span>
+      {open && !q && canFilter && (
         <div className="omni-pop" role="group" aria-label="Filtros rápidos" style={{ top: popTop }}>
           <FilterGroups />
         </div>

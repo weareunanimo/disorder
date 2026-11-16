@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { autoTitle, clipTitle, fmtDuration, isParsed, kindOf, originOf, parseLink, summaryOf } from '../src/lib/platforms';
 import { extrasOf } from '../src/data/previews';
-import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks } from '../src/lib/filters';
+import { EMPTY_FILTERS, datePreset, filterCount, visibleLinks, matchingTags } from '../src/lib/filters';
 import { planImport } from '../src/lib/dataio';
 import { planAutoFolders } from '../src/lib/auto';
 import { sortLinks } from '../src/lib/sort';
@@ -206,5 +206,24 @@ describe('texto compartilhado', () => {
     expect(fromShareText('Confira Fone Bluetooth TWS sem fio por R$29,90. Compre na Shopee agora! https://s.shopee.com.br/abc')?.tituloAuto).toBe('Fone Bluetooth TWS sem fio');
     expect(fromShareText('Tênis de corrida leve na Shopee https://s.shopee.com.br/x')?.tituloAuto).toBe('Tênis de corrida leve');
     expect(fromShareText('🔥 https://x.com')).toBeNull();
+  });
+});
+
+describe('busca unificada', () => {
+  const folders = [{ id: 'm', nome: 'Música', cor: 0, criadaEm: 0 }, { id: 'r', nome: 'Receitas', cor: 1, criadaEm: 0 }] as Folder[];
+  const ls = [
+    link({ id: '1', titulo: 'Playlist de jazz', pastaIds: ['m'] }),
+    link({ id: '2', titulo: 'Bolo de cenoura', resumoIA: 'Receita fácil de bolo' }),
+    link({ id: '3', titulo: 'Outra coisa', arquivadoEm: 1 }),
+  ];
+  it('Tudo e Tags devolvem os mesmos links', () => {
+    const q = (v: string, s: string) => visibleLinks(ls, folders, v as any, { ...EMPTY_FILTERS, q: s }).map(l => l.id);
+    expect(q('tags', 'musica')).toEqual(q('all', 'musica'));
+    expect(q('tags', 'musica')).toEqual(['1']);
+    expect(q('all', 'facil')).toEqual(['2']);
+  });
+  it('acha tags pelo nome, sem acento', () => {
+    expect(matchingTags(folders, 'musi').map(f => f.id)).toEqual(['m']);
+    expect(matchingTags(folders, '  ')).toEqual([]);
   });
 });

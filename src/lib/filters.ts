@@ -6,6 +6,10 @@ import { tagsOf } from './tags';
 /** 'tags' é a grade de tags (aba Tags). */
 export const FIXED_VIEWS = ['all', 'tags', 'none', 'archived', 'settings'];
 export const isArch = (l: Link) => !!l.arquivadoEm;
+/** Tudo e Tags compartilham a mesma busca: nas duas abas ela procura em todos os links e no nome das tags. */
+export const isHome = (view: View) => view === 'all' || view === 'tags';
+/** Texto para comparar na busca: minúsculo e sem acento, então "musica" acha "Música". */
+export const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export interface FilterState {
   q: string;
@@ -26,7 +30,7 @@ export function inView(l: Link, view: View, folders: Folder[]): boolean {
   if (view === 'settings') return false;
   if (view === 'archived') return isArch(l);
   if (isArch(l)) return false;
-  if (view === 'all') return true;
+  if (isHome(view)) return true;
   if (view === 'none') return !tagsOf(l).some(id => folderExists(folders, id));
   return tagsOf(l).includes(view);
 }
@@ -50,14 +54,14 @@ export function datePreset(days: number, now = Date.now()) {
 }
 
 export function filterCount(f: FilterState, view: View): number {
-  return (f.q.trim() ? 1 : 0) + (f.plats.length ? 1 : 0) + (f.kinds.length ? 1 : 0) + (view === 'all' && f.fp.length ? 1 : 0) + (f.from || f.to ? 1 : 0);
+  return (f.q.trim() ? 1 : 0) + (f.plats.length ? 1 : 0) + (f.kinds.length ? 1 : 0) + (isHome(view) && f.fp.length ? 1 : 0) + (f.from || f.to ? 1 : 0);
 }
 
 /** Links da tela atual com os filtros aplicados, na ordem escolhida (padrão: do mais novo para o mais antigo). */
 export function visibleLinks(links: Link[], folders: Folder[], view: View, f: FilterState, sort: Sort = 'new'): Link[] {
-  const q = f.q.trim().toLowerCase();
+  const q = fold(f.q.trim());
   const t0 = f.from ? dayStart(f.from) : 0, t1 = f.to ? dayStart(f.to) + 864e5 : 0;
-  const byFolder = view === 'all' && f.fp.length > 0;
+  const byFolder = isHome(view) && f.fp.length > 0;
   const names = new Map(folders.map(x => [x.id, x.nome]));
   return sortLinks(links
     .filter(l => inView(l, view, folders))
@@ -68,8 +72,14 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
     .filter(l => {
       if (!q) return true;
       const nome = tagsOf(l).map(id => names.get(id)).filter(Boolean).join(' ');
-      return [l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.autor, l.url, nome].filter(Boolean).join(' ').toLowerCase().includes(q);
+      return fold([l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.resumoIA, l.autor, l.url, nome].filter(Boolean).join(' ')).includes(q);
     }), sort);
+}
+
+/** Tags cujo nome contém o texto buscado. */
+export function matchingTags(folders: Folder[], q: string): Folder[] {
+  const t = fold(q.trim());
+  return t ? folders.filter(f => !f.arquivadaEm && fold(f.nome).includes(t)) : [];
 }
 
 export function viewTitle(view: View, folders: Folder[]): string {

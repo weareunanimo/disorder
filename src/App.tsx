@@ -4,8 +4,9 @@ import { useGlobalEvents } from './hooks/useGlobalEvents';
 import { Brand, LoadError, Toast } from './components/Bits';
 import { Header } from './components/Header';
 import { SubBar } from './components/Toolbar';
-import { TagsGrid } from './components/TagsGrid';
+import { TagHits, TagsGrid } from './components/TagsGrid';
 import { useVisible } from './hooks/useVisible';
+import { useSearching } from './hooks/useSearching';
 import { LinkList } from './components/LinkList';
 import { Settings } from './components/Settings';
 import { SelectionBar } from './components/SelectionBar';
@@ -26,11 +27,11 @@ function useBodyClasses() {
 }
 
 function Content({ settings }: { settings: boolean }) {
-  const view = useStore(s => s.view), n = useVisible().length;
+  const view = useStore(s => s.view), n = useVisible().length, searching = useSearching();
   return (
     <section aria-labelledby="view-title">
       <SubBar count={n} />
-      {settings ? <Settings /> : view === 'tags' ? <TagsGrid /> : <LinkList />}
+      {settings ? <Settings /> : searching ? <><TagHits /><LinkList /></> : view === 'tags' ? <TagsGrid /> : <LinkList />}
     </section>
   );
 }

@@ -7,7 +7,8 @@ import { KINDS } from '../lib/kinds';
 import { datePreset, filterCount, viewTitle } from '../lib/filters';
 import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
-import { useBase, useSortedFolders } from '../hooks/useVisible';
+import { useBase, useSortedFolders, useTagHits } from '../hooks/useVisible';
+import { useSearching } from '../hooks/useSearching';
 import { plural } from '../lib/text';
 import { kindLabel } from '../lib/kinds';
 import { IcoBack, IcoCards, IcoEdit, IcoGallery, IcoList, IcoX } from './icons';
@@ -154,6 +155,8 @@ export function SubBar({ count }: { count: number }) {
   const view = useStore(s => s.view), folders = useStore(s => s.folders), sort = useStore(s => s.sort);
   const hasLinks = useStore(s => s.links.length > 0);
   const n = useStore(s => filterCount(s, s.view));
+  const searching = useSearching(), hits = useTagHits().length;
+  const grid = view === 'tags' && !searching;
   const folder = folders.find(f => f.id === view) || null;
   const inside = !!folder || view === 'none';
   const back = inside ? 'tags' : 'all';
@@ -163,11 +166,11 @@ export function SubBar({ count }: { count: number }) {
     <div className="subbar">
       <div className="sb-l">
         {showBack && <button type="button" className="sb-back" onClick={() => go(back)}><IcoBack />{back === 'tags' ? 'Tags' : 'Tudo'}</button>}
-        <h1 id="view-title" className={showBack || view === 'tags' ? '' : 'sr'}>{viewTitle(view, folders)}</h1>
+        <h1 id="view-title" className={showBack || grid ? '' : 'sr'}>{searching ? 'Busca' : viewTitle(view, folders)}</h1>
         {folder && <button type="button" className="sb-edit" aria-label={'Editar tag ' + folder.nome} title="Editar tag" onClick={() => openModal({ kind: 'edit', id: folder.id })}><IcoEdit /></button>}
-        {view !== 'settings' && <span className="sb-n">{view === 'tags' ? plural(folders.length, '1 tag', 'tags') : plural(count, '1 link', 'links') + (n ? ' com filtro' : '')}</span>}
+        {view !== 'settings' && <span className="sb-n">{grid ? plural(folders.length, '1 tag', 'tags') : (hits && searching ? plural(hits, '1 tag', 'tags') + ', ' : '') + plural(count, '1 link', 'links') + (n ? ' com filtro' : '')}</span>}
       </div>
-      {view !== 'settings' && view !== 'tags' && (
+      {view !== 'settings' && !grid && (
         <div className="sb-r">
           <label className="sortq">
             <span className="sr">Ordenar por</span>
@@ -178,7 +181,7 @@ export function SubBar({ count }: { count: number }) {
           <ViewSwitch />
         </div>
       )}
-      {view !== 'settings' && view !== 'tags' && <ActiveFilters />}
+      {view !== 'settings' && !grid && <ActiveFilters />}
     </div>
   );
 }

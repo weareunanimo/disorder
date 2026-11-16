@@ -1,9 +1,9 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useStore } from '../store';
 import { go, openModal } from '../actions';
-import { useCounts, useSortedFolders } from '../hooks/useVisible';
+import { useCounts, useSortedFolders, useTagHits } from '../hooks/useVisible';
 import { isArch } from '../lib/filters';
-import { colorOf } from '../lib/folders';
+import { colorOf, shapeOf } from '../lib/folders';
 import { tagsOf } from '../lib/tags';
 import { thumbOf } from '../lib/platforms';
 import { plural } from '../lib/text';
@@ -85,6 +85,27 @@ export function TagsGrid() {
       <button type="button" className="tcard new" onClick={() => openModal({ kind: 'new', then: { type: 'stay' } })}>
         <span className="mosaic" aria-hidden="true"><span className="mz-plus">+</span><span className="tc-new">Criar tag</span></span>
       </button>
+    </div>
+  );
+}
+
+/** Na busca (Tudo ou Tags): as tags cujo nome bate, numa linha acima dos links. Tocar entra na tag. */
+export function TagHits() {
+  const hits = useTagHits(), c = useCounts();
+  if (!hits.length) return null;
+  return (
+    <div className="thits" role="group" aria-label="Tags encontradas">
+      <span className="thits-l">Tags</span>
+      <div className="thits-row">
+        {hits.map(f => {
+          const n = c.by.get(f.id) || 0;
+          return (
+            <button key={f.id} type="button" className="tag thit" data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => go(f.id)} aria-label={'Abrir tag ' + f.nome + ', ' + plural(n, '1 link', 'links')}>
+              <span className="thit-t">{f.nome}</span><span className="thit-n" aria-hidden="true">{n}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
