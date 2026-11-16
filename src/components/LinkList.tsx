@@ -9,7 +9,7 @@ import { liveTags } from '../lib/tags';
 import { kindLabel } from '../lib/kinds';
 import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
-import { isTouch, useWide } from '../hooks/useMedia';
+import { useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
 import { CardMenu } from './CardMenu';
 import { GalleryCard, vtName } from './GalleryCard';
@@ -75,7 +75,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       </button>
       <Preview link={l} loading={loading} />
       <div className="ltext">
-        <h3 className="ttl" title={titulo}>{titulo}</h3>
+        <h3 className="ttl" title={titulo}><button type="button" className="ttl-btn" onClick={() => { if (!get().sel.length) openLink(l.id); else toggleSel(l.id, false); }}>{titulo}</button></h3>
         <p className="meta"><span>{originOf(l)}</span>{kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <Summary text={summary} />}
         {loading && <p className="url"><span className="rd">Lendo a página</span></p>}
@@ -88,7 +88,6 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
             {tags.length > 2 && <span className="tag more" title={tags.slice(2).map(t => t.nome).join(', ')}>+{tags.length - 2}</span>}
           </span>
         )}
-        <button type="button" className="btn outline sm" onClick={() => openLink(l.id)}>Abrir link</button>
         <CardMenu link={l} titulo={titulo} arq={arq} />
       </div>
     </article>
@@ -169,11 +168,14 @@ export function LinkList() {
   if (loadError) return <div className={cls} id="list" style={style} />;
   if (!visible.length) return <div className={cls} id="list" style={style}><Empty base={base.length} /></div>;
 
-  // Com seleção ativa (ou em tela de toque), tocar no cartão seleciona.
+  // O cartão inteiro abre o link no app. Com seleção ativa, tocar marca e desmarca.
+  // Botões dentro do cartão (três pontos, seleção, resumo) fazem a ação deles.
   const onClick = (e: MouseEvent) => {
     const t = e.target as HTMLElement, card = t.closest<HTMLElement>('.link');
-    if (!card || gallery || t.closest('a,button,select,input,textarea,label')) return;
-    if (get().sel.length || isTouch()) toggleSel(card.dataset.id!, e.shiftKey);
+    if (!card || gallery || t.closest('a,button,select,input,textarea,label,.tray')) return;
+    if (get().sel.length || e.shiftKey) { toggleSel(card.dataset.id!, e.shiftKey); return; }
+    if (window.getSelection()?.toString()) return;
+    openLink(card.dataset.id!);
   };
   const picked = new Set(sel), busy = new Set(loadingIds);
   return (

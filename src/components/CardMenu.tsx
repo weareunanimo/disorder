@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
-import { deleteLink, openModal, setArchived, setCardMenu, toast, toggleLinkTag, toggleSel } from '../actions';
+import { deleteLink, openLink, openModal, setArchived, setCardMenu, toast, toggleLinkTag, toggleSel } from '../actions';
 import type { Link } from '../types';
 import { useSortedFolders } from '../hooks/useVisible';
 import { colorOf, shapeOf } from '../lib/folders';
 import { tagsOf } from '../lib/tags';
 import { isTouch } from '../hooks/useMedia';
-import { IcoArchive, IcoCheck, IcoCopy, IcoEdit, IcoMore, IcoRestore, IcoTag, IcoTrash, IcoWhats } from './icons';
+import { IcoArchive, IcoCheck, IcoCopy, IcoEdit, IcoMore, IcoOpen, IcoRestore, IcoTag, IcoTrash, IcoWhats } from './icons';
 
 function copy(url: string) {
   (navigator.clipboard?.writeText ? navigator.clipboard.writeText(url) : Promise.reject())
@@ -86,6 +86,7 @@ export function CardMenu({ link: l, titulo, arq, hideTrigger, anchor }: Props) {
   ) : (
     <>
       {sheet && <div className="cm-h"><span title={titulo}>{titulo}</span></div>}
+      <button type="button" role="menuitem" onClick={run(() => openLink(l.id))}><IcoOpen />Abrir</button>
       <button type="button" role="menuitem" onClick={run(() => copy(l.url))}><IcoCopy />Copiar link</button>
       <a role="menuitem" href={'https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url)} target="_blank" rel="noopener noreferrer" onClick={() => setCardMenu(null)}><IcoWhats />Compartilhar no WhatsApp</a>
       <button type="button" role="menuitem" onClick={() => setTags(true)}><IcoTag />Tags{mine.length ? <span className="cm-n">{mine.length}</span> : null}</button>

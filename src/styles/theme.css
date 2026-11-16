@@ -1270,3 +1270,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .landed { animation: landed .6s cubic-bezier(.2, .9, .25, 1.2); }
 @keyframes landed { 0% { transform: scale(.94); box-shadow: 0 0 0 0 var(--accent); } 45% { transform: scale(1.04); box-shadow: 0 0 0 6px var(--accent); } 100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .landed { animation: none; outline: 3px solid var(--accent); } }
+/* Cartão inteiro clicável: abre o link no app. O título é o botão para teclado e leitor de tela. */
+.list .link { cursor: pointer; }
+.ttl-btn { all: unset; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font: inherit; color: inherit; }
+.ttl-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.list .link:hover .ttl-btn { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+/* Abrir no original, junto das outras ações do modal: rótulo curto (a rede ou o domínio) e ícone de nova aba. */
+.lv-acts .lv-open { gap: 6px; height: 40px; padding: 0 14px; max-width: 220px; }
+.lv-acts .lv-open { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-acts .lv-open svg { flex: none; }

@@ -74,6 +74,8 @@ export function LinkView({ id }: { id: string }) {
   const media = mediaOf(l), tags = liveTags(l, folders), arq = isArch(l);
   const resumo = summaryOf(l), kind = kindLabel(l.categoria), origem = originOf(l);
   const where = l.plataforma === 'web' ? 'no site' : 'no ' + PLAT[l.plataforma].label;
+  // Rótulo curto: o nome da rede, ou o domínio do site.
+  const label = l.plataforma === 'web' ? origem : PLAT[l.plataforma].label;
   const copy = () => navigator.clipboard?.writeText(l.url).then(() => toast('Link copiado.'), () => toast('Não consegui copiar.'));
   const trap = (e: React.KeyboardEvent) => {
     if (e.key !== 'Tab' || !root.current) return;
@@ -94,7 +96,6 @@ export function LinkView({ id }: { id: string }) {
               <button type="button" aria-label="Próximo link" title="Próximo (→)" disabled={!next} onClick={() => goTo(next)}><IcoBack /></button>
             </span>
           )}
-          <a className="btn primary sm lv-open" href={l.url} target="_blank" rel="noopener noreferrer"><IcoOpen /><span className="lv-open-l">Abrir {where}</span><span className="lv-open-s">Abrir</span></a>
         </div>
         <div className="lv-media">
           {media.embed && (play || !media.image)
@@ -116,6 +117,7 @@ export function LinkView({ id }: { id: string }) {
             <button type="button" className="lv-tagbtn" onClick={() => openModal({ kind: 'link', id: l.id })}>{tags.length ? 'Mudar tags' : '+ Tag'}</button>
           </div>
           <div className="lv-acts">
+            <a className="btn primary sm lv-open" href={l.url} target="_blank" rel="noopener noreferrer" aria-label={'Abrir ' + where + ' em nova aba'} title={'Abrir ' + where}>{label}<IcoOpen /></a>
             <button type="button" className="btn outline sm icon" aria-label="Copiar link" title="Copiar link" onClick={copy}><IcoCopy /></button>
             <button type="button" className="btn outline sm icon" aria-label="Editar" title="Editar" onClick={() => openModal({ kind: 'link', id: l.id })}><IcoEdit /></button>
             <button type="button" className="btn outline sm icon" aria-label={arq ? 'Restaurar' : 'Arquivar'} title={arq ? 'Restaurar' : 'Arquivar'} onClick={() => { const to = next || prev; setArchived([l], arq); if (to) goTo(to); else closeModal(); }}>{arq ? <IcoRestore /> : <IcoArchive />}</button>
