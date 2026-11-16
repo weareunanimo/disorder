@@ -1021,7 +1021,7 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .omni-pop .fp-body { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .omni-pop .fgrp { display: grid; align-content: start; gap: 8px; min-width: 0; }
 .omni-pop .fl { font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
-.omni-pop .chips { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; margin: 0 -18px; padding-left: 18px; padding-right: 18px; scrollbar-width: none; }
+.omni-pop .chips { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 18px; padding-bottom: 4px; margin: 0 -18px; padding-left: 18px; padding-right: 18px; scrollbar-width: none; }
 .omni-pop .chips::-webkit-scrollbar { display: none; }
 .omni-pop .chips > * { flex: none; scroll-snap-align: start; }
 .omni-pop .fdates { display: flex; gap: 10px; flex-wrap: wrap; }
