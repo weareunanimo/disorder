@@ -13,23 +13,33 @@ export function usePullReveal(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    let startY: number | null = null, acc = 0, idle = 0, snapTimer = 0;
+    let startY: number | null = null, acc = 0, idle = 0;
 
     const max = () => (el.clientWidth / 7.185) * MAX;
+    let cur = 0, raf = 0;
+    const setPull = (v: number) => { cur = v; el.style.setProperty('--pull', v.toFixed(1) + 'px'); };
     const show = (raw: number) => {
       const m = max();
-      const p = m * (1 - Math.exp(-raw / (m * 2.2)));   // resistência: quanto mais puxa, mais duro fica
-      el.classList.remove('snap');
-      el.style.setProperty('--pull', p.toFixed(1) + 'px');
+      cancelAnimationFrame(raf);
+      setPull(m * (1 - Math.exp(-raw / (m * 2.2))));   // resistência: quanto mais puxa, mais duro fica
     };
+    // Volta animada quadro a quadro, em vez de transição CSS: no iPhone (Safari e Chrome, ambos WebKit)
+    // a transição de uma variável dentro de calc() às vezes não roda e a faixa voltava seca.
     const release = () => {
       acc = 0; startY = null;
       window.clearTimeout(idle);
-      if (!el.style.getPropertyValue('--pull')) return;
-      el.classList.add('snap');
-      el.style.setProperty('--pull', '0px');
-      window.clearTimeout(snapTimer);
-      snapTimer = window.setTimeout(() => { el.classList.remove('snap'); el.style.removeProperty('--pull'); }, 460);
+      if (!cur) return;
+      cancelAnimationFrame(raf);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { cur = 0; el.style.removeProperty('--pull'); return; }
+      const from = cur, t0 = performance.now(), dur = 420;
+      // Sai rápido e assenta com um leve passar do ponto, como a curva .2, .9, .25, 1.15 que já usávamos.
+      const ease = (t: number) => { const c = 1.15, k = t - 1; return 1 + (c + 1) * k * k * k + c * k * k; };
+      const step = (now: number) => {
+        const t = Math.min(1, (now - t0) / dur);
+        setPull(from * (1 - ease(t)));   // passa um pouco do zero e volta, igual à curva antiga
+        if (t < 1) raf = requestAnimationFrame(step); else { cur = 0; el.style.removeProperty('--pull'); }
+      };
+      raf = requestAnimationFrame(step);
     };
     const blocked = (t: EventTarget | null) => document.body.classList.contains('locked') || !!(t as HTMLElement | null)?.closest?.(SKIP);
 
@@ -60,7 +70,7 @@ export function usePullReveal(ref: RefObject<HTMLElement | null>) {
       window.removeEventListener('touchend', release);
       window.removeEventListener('touchcancel', release);
       window.removeEventListener('wheel', onWheel);
-      window.clearTimeout(idle); window.clearTimeout(snapTimer);
+      window.clearTimeout(idle); cancelAnimationFrame(raf);
     };
   }, [ref]);
 }
