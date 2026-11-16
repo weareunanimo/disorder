@@ -355,10 +355,21 @@ export function acceptClip() {
   set({ clip: null });
   capture(c.url);
 }
+async function clipboardGranted(): Promise<boolean> {
+  try {
+    const st = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName });
+    return st.state === 'granted';
+  } catch { return false; }
+}
+
 export async function checkClipboard() {
   const s = get();
   if (clipBusy || !s.loaded || s.modal || s.view === 'archived' || s.view === 'settings') return;
   if (!navigator.clipboard || !navigator.clipboard.readText) return;
+  // Só lê sozinho quando o navegador já deu permissão e lê em silêncio (Chrome e Edge).
+  // No iPhone e no Android, ler sem um toque da pessoa abre o balão "Colar" no próximo toque na tela,
+  // que engolia o toque no cartão. Lá o link copiado só é lido pelo botão Colar.
+  if (!(await clipboardGranted())) return;
   clipBusy = true;
   try {
     const c = clipCandidate(await navigator.clipboard.readText());

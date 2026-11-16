@@ -100,7 +100,6 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
 function FirstRun() {
   return (
     <div className="first">
-      <b className="first-logo" aria-hidden="true">disorder</b>
       <h2>Cole um link para começar</h2>
       <p>Qualquer site, post ou vídeo. A IA lê, resume e organiza em tags para você.</p>
       <button type="button" className="btn primary first-cta" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>

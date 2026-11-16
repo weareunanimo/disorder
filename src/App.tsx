@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
 import { useGlobalEvents } from './hooks/useGlobalEvents';
-import { LoadError, Toast } from './components/Bits';
+import { Brand, LoadError, Toast } from './components/Bits';
 import { Header } from './components/Header';
 import { SubBar } from './components/Toolbar';
 import { TagsGrid } from './components/TagsGrid';
@@ -43,6 +43,7 @@ export function App() {
   if (phase === 'login') return <Login />;
   return (
     <>
+      <Brand />
       <Header />
       <main className="main">
         <LoadError />
