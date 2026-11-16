@@ -6,7 +6,7 @@ import { dismissToast } from '../actions';
 export function Brand() {
   const ref = useRef<HTMLDivElement>(null);
   usePullReveal(ref);
-  return <div className="brand" ref={ref} role="img" aria-label="disorder"><b aria-hidden="true">disorder</b></div>;
+  return <div className="brand" ref={ref} aria-hidden="true"><b>disorder</b></div>;
 }
 
 export function Toast() {

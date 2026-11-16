@@ -1377,12 +1377,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 
 /* Toque: todo alvo com pelo menos 44px. Controles do cabeçalho crescem, os pequenos ganham área invisível em volta, sem mudar o desenho. */
 @media (pointer: coarse) {
-  .tabs button, .omni-btn, .sb-back { height: 44px; }
-  .omni-btn { min-width: 44px; justify-content: center; }
+  .tabs button, .sb-back { height: 44px; }
+  .omni-btn { position: relative; }
   .appbtn, .avatar, .lv-x { width: 44px; height: 44px; }
   .sb-r select, .thit { min-height: 44px; }
   .building .bd-x, .lv-tagbtn, .sb-edit { position: relative; }
-  .building .bd-x::before, .tgl::before, .lv-tagbtn::before, .pick::before, .sb-edit::before, .gcard .g-pick::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); translate: -50% -50%; }
+  .omni-btn::before, .building .bd-x::before, .tgl::before, .lv-tagbtn::before, .pick::before, .sb-edit::before, .gcard .g-pick::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); translate: -50% -50%; }
 }
 
 /* Consistência (auditoria v9.1) */
@@ -1404,3 +1404,4 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 /* Botão padrão com 40px de altura, como no DS. */
 .btn:not(.sm) { padding-top: 7px; padding-bottom: 7px; line-height: 1.4; }
 .bd-btns { justify-content: flex-end; }
+@media (pointer: coarse) { .btn:not(.sm) { min-height: 44px; } .btn.sm.icon { min-width: 44px; } .sw-btn { width: 44px; height: 44px; } }
