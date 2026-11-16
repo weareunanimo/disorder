@@ -22,6 +22,9 @@ export interface Draft { id: string; titulo: string; nota: string; tags: string[
 export interface ToastState { id: number; text: string; label?: string; fn?: () => void }
 export type Theme = 'light' | 'dark' | 'system';
 
+/** Grade (cartões com texto), Lista (só em telas largas) e Galeria (imagem de ponta a ponta, densa). */
+export type Layout = 'cards' | 'list' | 'gallery';
+
 export interface State extends FilterState {
   phase: 'boot' | 'login' | 'ready';
   mode: 'local' | 'cloud';
@@ -35,7 +38,7 @@ export interface State extends FilterState {
   view: View;
   prevView: View | null;
   filtersOpen: boolean;
-  layout: 'cards' | 'list';
+  layout: Layout;
   /** Tags escolhidas no diálogo de salvar. */
   dest: string[];
   pal: string | null;
@@ -68,6 +71,8 @@ export interface State extends FilterState {
   swipeId: string | null;
   /** Cartão com o menu de três pontos aberto. */
   cardMenu: string | null;
+  /** O menu abriu direto na lista de tags. */
+  cardMenuTags: boolean;
   /** Ordem da lista: data, nome ou origem. */
   sort: Sort;
 }
@@ -86,7 +91,7 @@ export const useStore = create<State>(() => ({
   view: 'all',
   prevView: null,
   filtersOpen: false,
-  layout: read('brica.layout') === 'list' ? 'list' : 'cards',
+  layout: (['list', 'gallery'] as const).find(v => v === read('brica.layout')) || 'cards',
   dest: [],
   pal: null,
 
@@ -111,6 +116,7 @@ export const useStore = create<State>(() => ({
   ai: read('disorder.ai') === '1',
   swipeId: null,
   cardMenu: null,
+  cardMenuTags: false,
   sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',
 

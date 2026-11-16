@@ -1,4 +1,5 @@
-import { backend, get, set, type ModalState, type Then, type Theme } from './store';
+import { flushSync } from 'react-dom';
+import { backend, get, set, type Layout, type ModalState, type Then, type Theme } from './store';
 import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
 import { isParsed, parseLink } from './lib/platforms';
@@ -80,8 +81,23 @@ export function go(view: View) {
   void checkClipboard();
 }
 
-export const setLayout = (layout: 'cards' | 'list') => {
-  set({ layout });
+/** Troca a visualização. Mantém na tela o cartão que estava no topo e, onde o navegador permite, anima cada cartão até o novo lugar. */
+export const setLayout = (layout: Layout) => {
+  if (get().layout === layout) return;
+  const top = Array.from(document.querySelectorAll<HTMLElement>('#list .link, #list .gcard')).find(el => el.getBoundingClientRect().bottom > 80);
+  const id = top?.dataset.id, y = top ? top.getBoundingClientRect().top : 0;
+  const apply = () => {
+    flushSync(() => set({ layout, swipeId: null, cardMenu: null }));
+    const el = id ? document.querySelector<HTMLElement>('#list [data-id="' + id + '"]') : null;
+    if (el) window.scrollBy(0, el.getBoundingClientRect().top - y);
+  };
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (doc.startViewTransition && !calm) {
+    document.documentElement.classList.add('vt-layout');
+    const t = doc.startViewTransition(apply) as { finished?: Promise<void> };
+    void t.finished?.finally(() => document.documentElement.classList.remove('vt-layout'));
+  } else apply();
   try { localStorage.setItem('brica.layout', layout); } catch { /* sem armazenamento */ }
 };
 
@@ -160,7 +176,16 @@ export function setArchived(items: Link[], on: boolean) {
 export const archiveSelected = (on: boolean) => setArchived(selItems(), on);
 
 /** Abre a gaveta de ações de um cartão, ou fecha todas com null. Só uma fica aberta por vez. */
-export const setCardMenu = (id: string | null) => { if (get().cardMenu !== id) set({ cardMenu: id }); };
+export const setCardMenu = (id: string | null, tags = false) => { set({ cardMenu: id, cardMenuTags: !!id && tags }); };
+
+/** Liga ou desliga uma tag em um link só, com Desfazer. */
+export function toggleLinkTag(id: string, tagId: string) {
+  const l = get().links.find(x => x.id === id), f = folderById(tagId);
+  if (!l || !f) return;
+  const before = tagsOf(l), on = before.includes(tagId);
+  void save('links', { ...l, pastaIds: on ? withoutTag(before, tagId) : withTag(before, tagId) });
+  toast((on ? 'Tag ' + f.nome + ' removida.' : 'Tag ' + f.nome + ' adicionada.'), 'Desfazer', () => undoPatch([{ id, pastaIds: before }]));
+}
 export const setSwipe = (id: string | null) => { if (get().swipeId !== id) set({ swipeId: id }); };
 
 /** Exclui um link na hora, sem passar para Arquivados. O aviso permite desfazer. */

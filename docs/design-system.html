@@ -811,6 +811,144 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .pv .pks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .pv .pks .pk { margin-top: 0; }
 .meta .kd { font-weight: 700; color: var(--fg); }
+/* ===== Galeria: grade visual compacta =====
+   Celular: 3 colunas 3:4, gap 6px. Tablet: 3 colunas, gap 10px. Desktop: 4 colunas 5:7, gap 14px.
+   Sem sombra dura e com raio pequeno: em grade densa a sombra de cada cartão vira ruído. */
+.list.gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; --g-r: 6px; --g-pad: 6px; --g-t: 11.5px; --g-b: 18px; }
+@media (min-width: 641px) { .list.gallery { gap: 10px; --g-pad: 8px; --g-t: 13px; --g-b: 20px; } }
+@media (min-width: 901px) { .list.gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; --g-r: 8px; --g-pad: 12px; --g-t: 15px; --g-b: 24px; } }
+
+.gcard { position: relative; aspect-ratio: 3 / 4; min-width: 0; border: 2px solid var(--ink); border-radius: var(--g-r); overflow: hidden; background: var(--surface); color: var(--fg); isolation: isolate; contain: layout paint; }
+@media (min-width: 901px) { .gcard { aspect-ratio: 5 / 7; } }
+.gcard .g-hit { position: absolute; inset: 0; display: block; color: inherit; text-decoration: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.gcard .g-hit:focus-visible { outline: none; }
+.gcard:has(.g-hit:focus-visible) { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+.gcard .g-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .32s cubic-bezier(.2, .7, .2, 1); }
+
+/* Legibilidade: scrim só na base, em três paradas, mais sombra curta no texto.
+   Funciona sobre foto clara e poluída sem escurecer a imagem inteira. Sem desfoque de vidro: custa caro em grade e lava o contraste. */
+.gcard:not(.fb) .g-hit::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to top, rgb(10 10 10 / .86) 0%, rgb(10 10 10 / .6) 22%, rgb(10 10 10 / .18) 44%, rgb(10 10 10 / 0) 58%); }
+.gcard .g-ttl { position: absolute; z-index: 2; left: var(--g-pad); right: var(--g-pad); bottom: var(--g-pad);
+  font: 700 var(--g-t)/1.22 var(--f-body); letter-spacing: -.005em; color: #FFFDF7; text-shadow: 0 1px 2px rgb(0 0 0 / .55);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+
+/* Origem: selo chapado (fundo surface, borda ink). Lê sobre qualquer imagem sem depender do scrim. */
+.gcard .g-badge { position: absolute; z-index: 2; top: var(--g-pad); left: var(--g-pad); max-width: calc(100% - var(--g-pad) * 2);
+  height: var(--g-b); display: inline-flex; align-items: center; gap: 4px; padding: 0 5px; border: 1.5px solid var(--ink); border-radius: 4px;
+  background: var(--surface); color: var(--fg); font: 700 9.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .03em; }
+@media (min-width: 901px) { .gcard .g-badge { font-size: 10.5px; padding: 0 7px; gap: 5px; } }
+.gcard .g-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.gcard .g-badge img { width: calc(var(--g-b) - 7px); height: calc(var(--g-b) - 7px); flex: none; object-fit: contain; }
+.gcard .g-dur { position: absolute; z-index: 2; top: var(--g-pad); right: var(--g-pad); height: var(--g-b); display: inline-flex; align-items: center; padding: 0 5px; border-radius: 4px; background: rgb(10 10 10 / .82); color: #FFFDF7; font: 700 9.5px/1 var(--f-mono); }
+@media (max-width: 640px) { .gcard .g-dur { display: none; } }
+
+/* ----- Capas sem imagem ----- */
+.gcard.fb .g-ttl { color: #121212; text-shadow: none; }
+/* 1. Tipográfica: cor chapada estável por site (paleta das tags), título grande ancorado na base. */
+.gcard.fb-type { background: var(--tag0-bg); }
+.gcard.fb-type[data-c="1"], .gcard.fb-icon[data-c="1"] { background: var(--tag1-bg); }
+.gcard.fb-type[data-c="2"], .gcard.fb-icon[data-c="2"] { background: var(--tag2-bg); }
+.gcard.fb-type[data-c="3"], .gcard.fb-icon[data-c="3"] { background: var(--tag3-bg); }
+.gcard.fb-type[data-c="4"], .gcard.fb-icon[data-c="4"] { background: var(--tag4-bg); }
+.gcard.fb-type[data-c="5"], .gcard.fb-icon[data-c="5"] { background: var(--tag5-bg); }
+.gcard.fb-type[data-c="6"], .gcard.fb-icon[data-c="6"] { background: var(--tag6-bg); }
+.gcard.fb-type[data-c="7"], .gcard.fb-icon[data-c="7"] { background: var(--tag7-bg); }
+.gcard.fb-type .g-ttl { font: 800 calc(var(--g-t) * 1.22)/1.08 var(--f-display); letter-spacing: -.02em; -webkit-line-clamp: 5; }
+/* 2. Citação: para posts de texto e artigos com resumo. A citação ocupa o lugar do título. */
+.gcard.fb-quote { background: var(--surface); }
+.gcard .g-quote { position: absolute; z-index: 2; inset: calc(var(--g-pad) + var(--g-b) + 4px) var(--g-pad) var(--g-pad); margin: 0; display: flex; flex-direction: column; min-height: 0;
+  font: 500 calc(var(--g-t) * .95)/1.32 var(--f-body); color: var(--fg); }
+.gcard .g-qt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; overflow-wrap: anywhere; }
+@media (min-width: 901px) { .gcard .g-qt { -webkit-line-clamp: 9; } }
+.gcard .g-qm { display: block; flex: none; height: .55em; font: 800 calc(var(--g-t) * 3)/1 var(--f-display); color: var(--ink); margin-bottom: 2px; }
+/* 3. Ícone: favicon grande num quadrado ink, centralizado, título embaixo. Para ferramentas, lojas e sites sem capa. */
+.gcard.fb-icon { background: var(--tag0-bg); }
+.gcard .g-icon { position: absolute; z-index: 2; left: 50%; top: 42%; translate: -50% -50%; width: 38%; aspect-ratio: 1; display: grid; place-items: center;
+  border: 2px solid var(--ink); border-radius: 6px; background: var(--surface); font: 800 calc(var(--g-t) * 1.1)/1 var(--f-display); color: var(--fg); }
+.gcard .g-icon img { width: 58%; height: 58%; object-fit: contain; }
+
+/* ----- Hover e foco (mouse e teclado). No toque nada disso aparece: lá é segurar. ----- */
+.gcard .g-over { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;
+  padding: var(--g-pad); pointer-events: none; opacity: 0; translate: 0 -4px; transition: opacity .16s ease, translate .16s ease; }
+.gcard .g-over > * { pointer-events: auto; }
+.gcard .g-date { align-self: center; height: var(--g-b); display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; background: rgb(10 10 10 / .82); color: #FFFDF7; font: 700 10px/1 var(--f-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.gcard .g-acts { display: inline-flex; gap: 4px; flex: none; }
+.gcard .g-btn, .gcard .g-acts .btn.icon { width: 32px; height: 32px; min-height: 32px; padding: 0; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface); color: var(--fg); box-shadow: none; }
+.gcard .g-btn:hover, .gcard .g-acts .btn.icon:hover { background: var(--accent); color: var(--on-accent); }
+.gcard .g-acts .btn.icon::before, .gcard .g-acts .btn.icon::after { display: none; }
+.gcard .g-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) {
+  .gcard:hover .g-img { transform: scale(1.03); }
+  .gcard:hover .g-over, .gcard:focus-within .g-over { opacity: 1; translate: 0 0; }
+  .gcard:hover .g-badge, .gcard:focus-within .g-badge, .gcard:hover .g-dur, .gcard:focus-within .g-dur { opacity: 0; }
+}
+@media (hover: none) { .gcard .g-over { display: none; } }
+.gcard .g-badge, .gcard .g-dur { transition: opacity .12s ease; }
+.cm-hidden { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0; pointer-events: none; }
+
+/* ----- Seleção ----- */
+.gcard .g-pick { position: absolute; z-index: 4; right: var(--g-pad); bottom: var(--g-pad); width: 24px; height: 24px; padding: 0; display: none; place-items: center;
+  border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); color: transparent; }
+.gcard .g-pick svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.6; }
+.has-sel .gcard .g-pick, .gcard[aria-selected="true"] .g-pick { display: grid; }
+@media (hover: hover) { .gcard:hover .g-pick { display: grid; } }
+.gcard[aria-selected="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+.gcard[aria-selected="true"] .g-pick { background: var(--accent); color: var(--on-accent); }
+.has-sel .gcard .g-ttl { right: calc(var(--g-pad) + 30px); }
+
+.gcard.flash { animation: gflash 1.6s ease-out; }
+@keyframes gflash { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.gcard.loading .g-badge span::after { content: " lendo"; }
+@media (prefers-reduced-motion: reduce) {
+  .gcard .g-img, .gcard .g-over, .gcard .g-badge { transition: none; }
+  .gcard:hover .g-img { transform: none; }
+  .gcard.flash { animation: none; outline: 3px solid var(--accent); }
+}
+
+/* ----- Menu do cartão: tela de tags e folha no toque ----- */
+.cmenu .cm-h { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); cursor: default; }
+.cmenu .cm-h span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmenu .cm-back { width: 28px; min-height: 28px; padding: 0; justify-content: center; font: 800 18px/1 var(--f-body); color: var(--fg); }
+.cmenu .cm-ck { width: 16px; height: 16px; flex: none; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 3px; }
+.cmenu [aria-checked="true"] .cm-ck { background: var(--ink); color: var(--bg); }
+.cmenu .cm-ck svg { width: 11px; height: 11px; stroke-width: 3; }
+.cmenu .cm-n { margin-left: auto; font: 700 11px/1 var(--f-mono); color: var(--muted-fg); }
+.cmenu .cm-empty { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--muted-fg); }
+.cmenu .tag { font-size: 12px; }
+.cmenu.sheet { position: fixed; left: 0; right: 0; bottom: 0; top: auto; max-height: 75dvh; overflow: auto; min-width: 0; max-width: none;
+  padding: 6px 6px calc(10px + env(safe-area-inset-bottom)); border-width: 2px 0 0; border-radius: 16px 16px 0 0; box-shadow: 0 -6px 0 var(--sh); animation: sheet-up .2s cubic-bezier(.2, .7, .2, 1); }
+.cmenu.sheet > * { min-height: 48px; font-size: 15px; }
+.cmenu.sheet .cm-h { min-height: 40px; }
+.cmenu-bd { position: fixed; inset: 0; z-index: 59; background: rgb(10 10 10 / .35); animation: bd-in .2s ease; }
+@keyframes sheet-up { from { translate: 0 100%; } to { translate: 0 0; } }
+@keyframes bd-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cmenu.sheet, .cmenu-bd { animation: none; } }
+
+/* ----- Seletor de visualização: Grade | Lista | Galeria ----- */
+.seg.view button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 1180px) {
+  .seg.view button { width: auto; padding: 0 12px; gap: 6px; display: inline-flex; align-items: center; font: 700 13px/1 var(--f-body); }
+  .seg.view button span { position: static; width: auto; height: auto; clip-path: none; }
+}
+.seg.view button + button { border-left: 2px solid var(--ink); }
+@media (max-width: 900px) { .tools .seg.view { display: inline-flex; } }
+
+/* Transição entre visualizações (View Transitions): cada cartão desliza até o novo lugar. */
+.vt-layout #list .link, .vt-layout #list .gcard { view-transition-class: card; }
+::view-transition-group(*.card) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+::view-transition-old(*.card), ::view-transition-new(*.card) { height: 100%; object-fit: cover; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; }
+/* Celular: Salvar link ocupa a primeira linha, Filtros, Ordenar e visualização dividem a segunda. */
+@media (max-width: 640px) {
+  .tools .add-row { flex: 1 1 100%; }
+  .tools .sortw { flex: 1 1 0; min-width: 0; }
+  .tools .seg.view { flex: none; }
+}
+.gcard .g-acts .btn.icon { border: 2px solid var(--ink) !important; border-radius: 6px !important; background: var(--surface) !important; --r: 0; --d: 0; --s: 0; transform: none !important; }
+.gcard .g-acts .btn.icon svg { width: 15px; height: 15px; }
+@media (hover: hover) { .gcard:hover .g-ttl, .gcard:focus-within .g-ttl { right: calc(var(--g-pad) + 30px); } }
+
 .swipe.demo { --sx: -144px; clip-path: none; width: min(100%, 420px); margin-right: 144px; } .swipe.demo .tray { visibility: visible; } .swipe.demo > .link { transition: none; }
 
 .lm-meta { font: 400 12px/1.4 var(--f-mono); color: var(--muted-fg); }
@@ -838,7 +976,7 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 }
 .spec-list { margin: 8px 0 8px 18px; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v7.0</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v7.1</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -995,7 +1133,11 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 <div class="spec"><header><h3>Gaveta de ações do cartão</h3><p>Arrastar o cartão para a esquerda, com toque ou mouse, revela duas ações atrás dele: Arquivar (accent) e Excluir (danger), cada uma com ícone e rótulo mono em caixa alta, 144px no total. Abre se o arrasto passa da metade ou for rápido, senão volta. Só o arrasto horizontal é capturado, a rolagem vertical segue normal, e soltar o arrasto não seleciona o cartão. Em Arquivados, a primeira ação vira Restaurar. Tocar fora, arrastar de volta ou Esc fecha. Excluir remove na hora, sem confirmação, e o aviso traz Desfazer. A gaveta fica desligada enquanto há cartões selecionados. É um atalho: Arquivar e Excluir também estão no menu de três pontos do cartão e na barra de seleção, para teclado e leitores de tela. Classes <code>.swipe</code>, <code>.tray</code>, <code>.t-arq</code>, <code>.t-del</code>.</p></header><div class="stage" style="display:block"><div class="swipe demo"><div class="tray"><button type="button" class="t-arq"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><path d="M3 6v6.5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V6M6.5 9h3"/></svg><span>Arquivar</span></button><button type="button" class="t-del"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.6c0 .5.5.9 1 .9h4.6c.5 0 1-.4 1-.9l.7-8.6"/></svg><span>Excluir</span></button></div><article class="link"><div class="preview" aria-hidden="true">TT</div><div class="ltext"><h3 class="ttl">Bolo de cenoura sem glúten</h3><p class="meta"><span>TikTok</span><span>hoje</span></p><p class="url">tiktok.com/@chef.ana/video/7312345678901234567</p></div></article></div></div></div>
 
-<div class="spec"><header><h3>Menu de ações do cartão</h3><p>Botão de ícone com três pontos (<code>aria-label="Mais ações"</code>, <code>aria-haspopup="menu"</code>), depois de Abrir, no fim da linha de ações do cartão. Substitui os botões soltos de copiar, compartilhar e editar, e reúne também Arquivar (Restaurar em Arquivados) e Excluir. Itens: Copiar link, Compartilhar no WhatsApp, Editar, Arquivar e Excluir, este em danger e separado por divisor de 2px, sem confirmação e com Desfazer no aviso. O menu abre solto na página, não preso ao cartão, alinhado à direita do botão: abaixo, ou acima se não couber. Só um aberto por vez. Fecha ao tocar fora, rolar, redimensionar, escolher um item ou Esc, que devolve o foco ao botão. Abre com foco no primeiro item, setas, Home e End navegam. Classe <code>.cmenu</code>.</p></header><div class="stage" style="justify-content:flex-start"><div class="cmenu" style="position:static" role="menu"><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2"/></svg>Copiar link</button><button type="button" role="menuitem"><svg class="fill" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>Compartilhar no WhatsApp</button><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg>Editar</button><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><path d="M3 6v6.5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V6M6.5 9h3"/></svg>Arquivar</button><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.6c0 .5.5.9 1 .9h4.6c.5 0 1-.4 1-.9l.7-8.6"/></svg>Excluir</button></div></div></div>
+<div class="spec"><header><h3>Galeria</h3><p>Terceira visualização, densa e visual. Celular: 3 colunas, cartão 3:4, gap 6px, raio 6px. Tablet (641 a 900px): 3 colunas, gap 10px. Desktop: 4 colunas, cartão 5:7, gap 14px, raio 8px. Borda ink de 2px, sem sombra dura, porque em grade densa a sombra de cada cartão vira ruído.</p><ul class="spec-list"><li><b>Dois elementos à vista.</b> Selo de origem no topo esquerdo (favicon e domínio, ou a rede) e título na base, 2 linhas no máximo com reticências. Data, endereço, resumo, tipo e tags ficam fora. Vídeo ganha a duração no topo direito, só a partir do tablet.</li><li><b>Escala.</b> Título 11,5px no celular, 13px no tablet e 15px no desktop, em Space Grotesk 700, entrelinha 1,22. Selo 18, 20 e 24px de altura, em Space Mono 700 caixa alta de 9,5 a 10,5px. Respiro interno de 6, 8 e 12px.</li><li><b>Legibilidade.</b> Scrim só na base: preto a 86% na borda, 60% em 22%, 18% em 44% e zero em 58% da altura, mais uma sombra curta no texto. O selo é chapado (fundo surface, borda ink), então lê sobre qualquer foto sem depender do scrim. Sem vidro fosco: custa caro em grade e lava o contraste.</li><li><b>Sem imagem, três capas.</b> Citação: posts de texto e artigos com resumo, com aspas grandes e o texto no lugar do título. Ícone: favicon grande num quadrado ink, para ferramentas, lojas e sites que têm ícone. Tipográfica: título grande em Archivo 800, até 5 linhas. As duas últimas usam uma cor da paleta das tags escolhida pelo domínio, então o mesmo site tem sempre a mesma cor.</li><li><b>Mouse.</b> Clique em qualquer ponto abre o link original. Passar por cima aproxima a imagem a 1,03 em 320ms e revela, no topo, a data e três botões de 32px: abrir, tags (marca e desmarca com um clique) e o menu de ações. O selo some enquanto isso. O foco do teclado revela o mesmo.</li><li><b>Toque.</b> Tocar abre o link. Segurar por 450ms (com vibração curta onde o aparelho permite) abre uma folha na base da tela, com alvos de 48px: copiar, compartilhar, tags, editar, selecionar, arquivar e excluir. Mexer o dedo mais de 8px cancela, para não brigar com a rolagem. Sem botões pequenos no cartão. Com seleção ativa, tocar marca e desmarca.</li></ul></header><div class="stage" style="display:block"><div class="list gallery" style="max-width:720px"><article class="gcard "><a class="g-hit" href="#"><img class="g-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 70'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f5f3ee'/%3E%3Cstop offset='1' stop-color='%23d9b07a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='50' height='70' fill='url(%23g)'/%3E%3Ccircle cx='25' cy='30' r='14' fill='%23c46a2b'/%3E%3C/svg%3E" alt=""><span class="g-badge"><span>panelinha.com.br</span></span><span class="g-ttl">Bolo de cenoura com cobertura de chocolate que nunca falha</span></a><button type="button" class="g-pick" aria-label="Selecionar"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button></article><article class="gcard fb fb-quote"><a class="g-hit" href="#"><blockquote class="g-quote"><span class="g-qm">“</span><span class="g-qt">Design bom é aquele que some. Você só percebe quando falta, e aí percebe muito.</span></blockquote><span class="g-badge"><span>X</span></span></a><button type="button" class="g-pick" aria-label="Selecionar"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button></article><article class="gcard fb fb-icon" data-c="4"><a class="g-hit" href="#"><span class="g-icon">L</span><span class="g-badge"><span>linear.app</span></span><span class="g-ttl">Linear, a ferramenta de planejamento de produto</span></a><button type="button" class="g-pick" aria-label="Selecionar"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button></article><article class="gcard fb fb-type" data-c="7" aria-selected="true"><a class="g-hit" href="#"><span class="g-badge"><span>loja.exemplo.com.br</span></span><span class="g-ttl">Tênis de corrida leve para treino diário</span></a><button type="button" class="g-pick" aria-label="Selecionar"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button></article></div></div></div>
+
+<div class="spec"><header><h3>Seletor de visualização</h3><p>Grade, Lista e Galeria, no fim da barra de ferramentas. Ícone com rótulo a partir de 1180px, só ícone abaixo disso (o rótulo continua para leitores de tela). Lista só aparece em telas largas, porque no celular ela era igual à Grade. No celular o seletor fica na segunda linha da barra, ao lado de Filtros e Ordenar. A escolha fica salva no aparelho. Ao trocar, o cartão que estava no topo continua no topo e, nos navegadores com View Transitions (Chrome, Edge e Safari recentes), cada cartão desliza do lugar antigo para o novo em 320ms. Nos outros, a troca é imediata, e também quando o sistema pede menos movimento. Classe <code>.seg.view</code>.</p></header><div class="stage"><div class="seg view" role="group"><button type="button" aria-pressed="false"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg><span>Grade</span></button><button type="button" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg><span>Lista</span></button><button type="button" aria-pressed="true"><svg viewBox="0 0 16 16"><rect x="1.8" y="2" width="3.4" height="5" rx=".8"/><rect x="6.3" y="2" width="3.4" height="5" rx=".8"/><rect x="10.8" y="2" width="3.4" height="5" rx=".8"/><rect x="1.8" y="9" width="3.4" height="5" rx=".8"/><rect x="6.3" y="9" width="3.4" height="5" rx=".8"/><rect x="10.8" y="9" width="3.4" height="5" rx=".8"/></svg><span>Galeria</span></button></div></div></div>
+
+<div class="spec"><header><h3>Menu de ações do cartão</h3><p>Botão de ícone com três pontos (<code>aria-label="Mais ações"</code>, <code>aria-haspopup="menu"</code>), depois de Abrir, no fim da linha de ações do cartão. Substitui os botões soltos de copiar, compartilhar e editar, e reúne também Arquivar (Restaurar em Arquivados) e Excluir. Itens: Copiar link, Compartilhar no WhatsApp, Tags (abre a lista de tags no próprio menu, com voltar), Editar, Arquivar e Excluir, este em danger e separado por divisor de 2px, sem confirmação e com Desfazer no aviso. O menu abre solto na página, não preso ao cartão, alinhado à direita do botão: abaixo, ou acima se não couber. Só um aberto por vez. Fecha ao tocar fora, rolar, redimensionar, escolher um item ou Esc, que devolve o foco ao botão. Abre com foco no primeiro item, setas, Home e End navegam. Em tela de toque vira folha na base da tela, com fundo escurecido, alvos de 48px e o item Selecionar a mais (<code>.cmenu.sheet</code>). Classe <code>.cmenu</code>.</p></header><div class="stage" style="justify-content:flex-start"><div class="cmenu" style="position:static" role="menu"><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 3.5v-.2a1.8 1.8 0 0 0-1.8-1.8H3.8a1.8 1.8 0 0 0-1.8 1.8v4.9a1.8 1.8 0 0 0 1.8 1.8h.2"/></svg>Copiar link</button><button type="button" role="menuitem"><svg class="fill" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>Compartilhar no WhatsApp</button><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.6 2.9a1.6 1.6 0 0 1 2.5 2.5L5.4 13.1 2 14l.9-3.4z"/><path d="m9.5 4 2.5 2.5"/></svg>Editar</button><button type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><path d="M3 6v6.5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V6M6.5 9h3"/></svg>Arquivar</button><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.6c0 .5.5.9 1 .9h4.6c.5 0 1-.4 1-.9l.7-8.6"/></svg>Excluir</button></div></div></div>
 
 <div class="spec"><header><h3>Seletor de tags</h3><p>Grupo de botões que ligam e desligam, um por tag, para escolher várias de uma vez no diálogo de salvar e no de editar. A tag ligada ganha a cor dela, borda ink de 2px e um ✓ antes do nome, para não depender só da cor, e usa <code>aria-pressed</code>. No fim, "+ Nova tag" com borda tracejada abre a criação e volta para o diálogo. O rótulo "Tags" segue o estilo dos outros rótulos de campo. Classes <code>.tagpick</code>, <code>.chip.tp</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="f tagpick" role="group" aria-label="Tags"><span class="fl">Tags</span><div class="chips"><button type="button" class="chip tp" data-c="3" aria-pressed="true"><span class="ck" aria-hidden="true">✓</span>Receitas</button><button type="button" class="chip tp" data-c="2" aria-pressed="true"><span class="ck" aria-hidden="true">✓</span>Pet</button><button type="button" class="chip tp" data-c="5" aria-pressed="false">Viagem</button><button type="button" class="chip tp-new">+ Nova tag</button></div></div></div></div>
 

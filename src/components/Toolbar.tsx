@@ -1,3 +1,4 @@
+import { useWide } from '../hooks/useMedia';
 import { useEffect, useMemo, useRef } from 'react';
 import { set, useStore } from '../store';
 import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, toggleKind, togglePlat } from '../actions';
@@ -8,7 +9,7 @@ import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
 import { useBase, useSortedFolders } from '../hooks/useVisible';
 import { canHover } from '../hooks/useMedia';
-import { IcoCards, IcoFilter, IcoList, IcoPlus, IcoSearch } from './icons';
+import { IcoCards, IcoGallery, IcoFilter, IcoList, IcoPlus, IcoSearch } from './icons';
 
 function Chip({ label, count, on, onClick }: { label: string; count?: number; on: boolean; onClick: () => void }) {
   return (
@@ -105,7 +106,7 @@ function FiltersPanel({ n }: { n: number }) {
 
 export function Toolbar() {
   const hasLinks = useStore(s => s.links.length > 0), view = useStore(s => s.view);
-  const open = useStore(s => s.filtersOpen), layout = useStore(s => s.layout);
+  const open = useStore(s => s.filtersOpen), layout = useStore(s => s.layout), wide = useWide();
   const n = useStore(s => filterCount(s, s.view)), sort = useStore(s => s.sort);
   if (!hasLinks || view === 'settings') return <div className="tools" id="tools" style={{ marginTop: 24 }} />;
   return (
@@ -121,9 +122,10 @@ export function Toolbar() {
           {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
         </select>
       </label>
-      <div className="seg" role="group" aria-label="Visualização">
-        <button type="button" aria-pressed={layout !== 'list'} aria-label="Ver em cartões" title="Ver em cartões" onClick={() => setLayout('cards')}><IcoCards /></button>
-        <button type="button" aria-pressed={layout === 'list'} aria-label="Ver em lista" title="Ver em lista" onClick={() => setLayout('list')}><IcoList /></button>
+      <div className="seg view" role="group" aria-label="Visualização">
+        <button type="button" aria-pressed={layout === 'cards' || (layout === 'list' && !wide)} aria-label="Grade" title="Grade: cartões com resumo" onClick={() => setLayout('cards')}><IcoCards /><span>Grade</span></button>
+        {wide && <button type="button" aria-pressed={layout === 'list'} aria-label="Lista" title="Lista: uma linha por link" onClick={() => setLayout('list')}><IcoList /><span>Lista</span></button>}
+        <button type="button" aria-pressed={layout === 'gallery'} aria-label="Galeria" title="Galeria: só as imagens, mais links por tela" onClick={() => setLayout('gallery')}><IcoGallery /><span>Galeria</span></button>
       </div>
       {open && <FiltersPanel n={n} />}
     </div>

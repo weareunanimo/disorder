@@ -11,9 +11,11 @@ import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
 import { CardMenu } from './CardMenu';
+import { GalleryCard, vtName } from './GalleryCard';
 import { IcoArchive, IcoCheck, IcoPlus, IcoRestore, IcoTrash } from './icons';
 
 const PAGE = 60;
+
 
 type PreviewLink = Pick<Link, 'plataforma'> & Partial<Pick<Link, 'thumb' | 'duracao' | 'icone'>>;
 
@@ -65,7 +67,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <button type="button" className="t-arq" tabIndex={open ? 0 : -1} onClick={() => setArchived([l], !arq)}>{arq ? <IcoRestore /> : <IcoArchive />}<span>{arq ? 'Restaurar' : 'Arquivar'}</span></button>
       <button type="button" className="t-del" tabIndex={open ? 0 : -1} onClick={() => deleteLink(l.id)}><IcoTrash /><span>Excluir</span></button>
     </div>
-    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} aria-selected={selected} aria-busy={loading || undefined}>
+    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} style={vtName(l.id)} aria-selected={selected} aria-busy={loading || undefined}>
       <button type="button" className="pick" role="checkbox" aria-checked={selected} aria-label={'Selecionar ' + titulo}
         onClick={e => { e.preventDefault(); toggleSel(l.id, e.shiftKey); }}>
         <span className="box"><IcoCheck /></span>
@@ -147,7 +149,8 @@ export function LinkList() {
     return () => io.disconnect();
   }, [more, limit]);
 
-  const cls = 'list ' + (layout === 'list' && wide ? 'compact' : 'grid') + (sel.length ? ' has-sel' : '');
+  const gallery = layout === 'gallery';
+  const cls = 'list ' + (gallery ? 'gallery' : layout === 'list' && wide ? 'compact' : 'grid') + (sel.length ? ' has-sel' : '');
   const style = { marginTop: 14 };
   if (!loaded && !loadError) return <div className={cls} id="list" style={style}><div className="empty"><b>Carregando seus links</b></div></div>;
   if (loadError) return <div className={cls} id="list" style={style} />;
@@ -156,13 +159,15 @@ export function LinkList() {
   // Com seleção ativa (ou em tela de toque), tocar no cartão seleciona.
   const onClick = (e: MouseEvent) => {
     const t = e.target as HTMLElement, card = t.closest<HTMLElement>('.link');
-    if (!card || t.closest('a,button,select,input,textarea,label')) return;
+    if (!card || gallery || t.closest('a,button,select,input,textarea,label')) return;
     if (get().sel.length || isTouch()) toggleSel(card.dataset.id!, e.shiftKey);
   };
   const picked = new Set(sel), busy = new Set(loadingIds);
   return (
     <div className={cls} id="list" style={style} onClick={onClick}>
-      {visible.slice(0, limit).map(l => (
+      {gallery ? visible.slice(0, limit).map(l => (
+        <GalleryCard key={l.id} link={l} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} selecting={sel.length > 0} />
+      )) : visible.slice(0, limit).map(l => (
         <LinkCard key={l.id} link={l} folders={folders} selected={picked.has(l.id)} flash={flash === l.id} loading={busy.has(l.id)} open={swipeId === l.id} swipeOn={!sel.length} />
       ))}
       {more && <div ref={sentinel} className="more" aria-hidden="true" />}
