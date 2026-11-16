@@ -152,21 +152,36 @@ async function pageMeta(url) {
   return parseMeta((await readLimited(res, MAX_HTML)).toString('utf8'), finalUrl);
 }
 
+/**
+ * TikTok. Desde nov/2026 o oEmbed de muitos vídeos volta sem título, autor e capa, e o de posts de fotos
+ * (/photo/) dá erro. A página pública ainda traz a capa e o nome da conta (og:title "TikTok · Nome").
+ * Junta os dois: o que o oEmbed tiver vale, o que faltar vem da página.
+ */
+function tiktokMeta(url, d, pg) {
+  const photo = /\/photo\//.test(url);
+  const conta = (pg.title || '').replace(/^TikTok\s*[·|-]\s*/i, '').replace(/\s*[|·-]\s*TikTok$/i, '').trim();
+  const autor = d && d.author_name ? '@' + d.author_name : conta;
+  const legenda = decode(d && d.title);
+  const title = legenda || (autor ? (photo ? 'Fotos de ' : 'Vídeo de ') + autor : '');
+  const image = (d && d.thumbnail_url) || pg.image || '';
+  return { ...pg, title, image, site: 'TikTok', leitura: 0, pista: photo ? 'post' : 'video', descricao: pg.descricao || legenda };
+}
+
 async function getMeta(url) {
   const host = new URL(url).hostname.replace(/^www\.|^m\./, '');
   const id = youtubeId(url);
   try {
     if (id || host.endsWith('tiktok.com')) {
       const [d, pg] = await Promise.all([
-        oembed(id ? 'https://www.youtube.com/oembed' : 'https://www.tiktok.com/oembed', url).catch(() => null),
+        // oEmbed de post de fotos do TikTok sempre falha: nem tenta.
+        !id && /\/photo\//.test(url) ? null : oembed(id ? 'https://www.youtube.com/oembed' : 'https://www.tiktok.com/oembed', url).catch(() => null),
         // A página do vídeo traz duração, descrição e data de publicação. Se falhar, o oEmbed basta.
         pageMeta(id ? 'https://www.youtube.com/watch?v=' + id : url).catch(() => ({ ...EMPTY })),
       ]);
-      if (d) {
-        const title = decode(d.title) || (d.author_name && !id ? 'Vídeo de @' + d.author_name : '');
-        const image = id ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : d.thumbnail_url || '';
-        return { ...pg, title, image, site: id ? 'YouTube' : 'TikTok', leitura: 0 };
+      if (id && d) {
+        return { ...pg, title: decode(d.title), image: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', site: 'YouTube', leitura: 0 };
       }
+      if (!id) return tiktokMeta(url, d, pg);
     }
   } catch (e) { /* cai para as tags da página */ }
   return pageMeta(url);
@@ -219,4 +234,4 @@ module.exports = async function handler(req, res) {
     res.statusCode = 422; res.end(JSON.stringify({ error: 'não consegui ler esse link' }));
   }
 };
-module.exports.parseMeta = parseMeta; module.exports.isPrivateIp = isPrivateIp; module.exports.parseDuration = parseDuration;
+module.exports.parseMeta = parseMeta; module.exports.isPrivateIp = isPrivateIp; module.exports.parseDuration = parseDuration; module.exports.tiktokMeta = tiktokMeta; module.exports.getMeta = getMeta;

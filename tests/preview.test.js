@@ -56,3 +56,17 @@ srv.listen(0, async () => {
   assert.strictEqual(P('<title>Oi</title>'), '');
   console.log('ok pista');
 }
+
+// TikTok: oEmbed sem capa e título (ou com erro em post de fotos) completa com a página.
+{
+  const { tiktokMeta } = require('../api/preview.js');
+  const assert = require('node:assert');
+  const pg = { title: 'TikTok · Marla Receitas', image: 'https://cdn.tt/capa.jpg', descricao: '' };
+  const v = tiktokMeta('https://www.tiktok.com/@marla.receitas/video/1', { version: '1.0', type: 'video' }, pg);
+  assert.strictEqual(v.title, 'Vídeo de Marla Receitas'); assert.strictEqual(v.image, 'https://cdn.tt/capa.jpg'); assert.strictEqual(v.pista, 'video');
+  const f = tiktokMeta('https://www.tiktok.com/@x/photo/2', null, { title: 'TikTok · Cozinha prática', image: 'https://cdn.tt/f.jpg' });
+  assert.strictEqual(f.title, 'Fotos de Cozinha prática'); assert.strictEqual(f.pista, 'post');
+  const o = tiktokMeta('https://www.tiktok.com/@a/video/3', { title: 'Bolo de caneca', author_name: 'a', thumbnail_url: 'https://o/t.jpg' }, pg);
+  assert.strictEqual(o.title, 'Bolo de caneca'); assert.strictEqual(o.image, 'https://o/t.jpg');
+  console.log('ok tiktok');
+}

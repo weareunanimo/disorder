@@ -693,7 +693,19 @@ export function enrichPending() {
     void refreshPreviews(true);
     return;
   }
+  refreshTikTok();
   void pool(links.filter(l => !l.enriquecido).slice(0, 40).map(l => l.id), false);
+}
+
+/**
+ * Uma vez: links do TikTok que ficaram sem capa ou com o título genérico "TikTok · Nome" (o oEmbed do TikTok
+ * parou de mandar esses dados em nov/2026). Busca de novo e deixa a IA reler, agora com a pista de vídeo ou fotos.
+ */
+function refreshTikTok() {
+  try { if (localStorage.getItem('disorder.refresh.tt1') === '1') return; localStorage.setItem('disorder.refresh.tt1', '1'); } catch { return; }
+  const bad = get().links.filter(l => !isArch(l) && l.plataforma === 'tiktok' && (!l.thumb || /^TikTok\s*·/.test(l.tituloAuto || '')));
+  if (!bad.length) return;
+  void saveMany('links', bad.map(l => ({ ...l, iaEm: undefined, categoria: undefined }))).then(() => pool(bad.map(l => l.id), true));
 }
 
 /** Se a tela atual é uma tag que não existe mais, volta para Todos. */
