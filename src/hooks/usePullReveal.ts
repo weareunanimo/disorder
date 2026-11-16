@@ -1,7 +1,9 @@
 import { useEffect, type RefObject } from 'react';
 
 const MAX = 0.36;            // quanto a faixa pode crescer, em múltiplos do corpo do logo (--fs)
-const SKIP = '.overlay, .modal, .menu, .bar, .toast';
+const SKIP = '.overlay, .modal, .menu, .bar, .toast, .cmenu, .prof, .omni-pop';
+/** "No topo" com folga: no iPhone o scroll às vezes para em 0,5px ou 1px, e aí o puxar não começava. */
+const atTop = () => window.scrollY <= 2;
 
 /**
  * Puxar a página para baixo, já no topo, abre a faixa da marca e mostra o resto do logo.
@@ -31,15 +33,15 @@ export function usePullReveal(ref: RefObject<HTMLElement | null>) {
     };
     const blocked = (t: EventTarget | null) => document.body.classList.contains('locked') || !!(t as HTMLElement | null)?.closest?.(SKIP);
 
-    const onTouchStart = (e: TouchEvent) => { startY = window.scrollY <= 0 && !blocked(e.target) ? e.touches[0].clientY : null; };
+    const onTouchStart = (e: TouchEvent) => { startY = atTop() && !blocked(e.target) ? e.touches[0].clientY : null; };
     const onTouchMove = (e: TouchEvent) => {
       if (startY === null) return;
       const dy = e.touches[0].clientY - startY;
-      if (dy > 0 && window.scrollY <= 0) show(dy); else if (dy <= 0) release();
+      if (dy > 0 && atTop()) show(dy); else if (dy <= 0) release();
     };
     const onWheel = (e: WheelEvent) => {
       if (blocked(e.target)) return;
-      if (e.deltaY < 0 && window.scrollY <= 0) {
+      if (e.deltaY < 0 && atTop()) {
         acc += -e.deltaY;
         show(acc);
         window.clearTimeout(idle);
