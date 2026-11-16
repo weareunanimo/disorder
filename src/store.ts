@@ -75,8 +75,8 @@ export interface State extends FilterState {
   aiBusy: string[];
   /** Último link colado na omni-bar, para mostrar os passos da montagem. */
   building: string | null;
-  /** Link colado que ficou sem tag: o painel de passos pede para escolher. */
-  needTag: string | null;
+  /** Links colados esperando a confirmação de título e tags, em ordem. */
+  buildQueue: string[];
   /** Menu de perfil aberto. */
   profileOpen: boolean;
   /** Ordem da lista: data, nome ou origem. */
@@ -123,7 +123,7 @@ export const useStore = create<State>(() => ({
   cardMenuTags: false,
   aiBusy: [],
   building: null,
-  needTag: null,
+  buildQueue: [],
   profileOpen: false,
   sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',

@@ -3,7 +3,7 @@ import { backend, get, set, type Layout, type ModalState, type Then, type Theme 
 import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
 import { isParsed, parseLink } from './lib/platforms';
-import { planAutoFolders, temaKey } from './lib/auto';
+import { planAutoFolders } from './lib/auto';
 import type { Sort } from './lib/sort';
 import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
@@ -263,13 +263,15 @@ function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome
   return r;
 }
 
-function reportSaved(r: SaveOutcome) {
+function reportSaved(r: SaveOutcome, quiet = false) {
   const n = r.saved.length, last = r.saved[n - 1], names = tagNames(r.dest);
   const { view } = get();
   set({ flash: last.id, ...(view !== 'all' && !(r.dest.length ? r.dest.includes(view) : view === 'none') ? { view: r.dest[0] || 'none' } : {}), ...EMPTY_FILTERS, clip: null });
   setTimeout(() => { if (get().flash === last.id) set({ flash: null }); }, 1800);
   scrollToLink(last.id, 'nearest');
   const skipped = r.total - n - (r.bad ? 1 : 0);
+  // Na captura pela barra, o painel de confirmação já é o retorno. Só avisa o que ele não mostra.
+  if (quiet) { if (skipped > 0) toast(skipped === 1 ? '1 link já estava salvo.' : skipped + ' links já estavam salvos.'); return; }
   toast(
     (n === 1 ? 'Salvo' : n + ' links salvos') + (names ? ' com ' + (r.dest.length === 1 ? 'a tag ' : 'as tags ') + names : ' sem tag') + '.' + (skipped > 0 ? ' ' + (skipped === 1 ? '1 já estava salvo.' : skipped + ' já estavam salvos.') : ''),
     'Desfazer', () => void removeMany('links', r.saved.map(l => l.id)),
@@ -326,9 +328,10 @@ export function capture(raw: string): boolean {
   const r = saveLinks(raw, dest);
   if (r.saved.length) {
     if (s.view === 'tags' || s.view === 'archived' || s.view === 'settings') set({ view: 'all' });
-    r.saved.forEach(l => mustTag.add(l.id));
-    set({ building: r.saved.length === 1 ? r.saved[0].id : null, q: '' });
-    reportSaved(r);
+    // Cada link colado passa pela confirmação, um de cada vez.
+    const queue = [...get().buildQueue, ...r.saved.map(l => l.id)];
+    set({ buildQueue: queue, building: get().building || queue[0] || null, q: '' });
+    reportSaved(r, true);
     return true;
   }
   quickSave(raw, dest);
@@ -664,33 +667,28 @@ export async function summarizeExisting() {
 /* ===== Preview automático ===== */
 const enriching = new Set<string>();
 /** Busca título e imagem de um link já salvo. force refaz mesmo que já tenha sido feito. */
-/** Links colados nesta sessão que ainda precisam ganhar tag. Toda captura sai com tag. */
-const mustTag = new Set<string>();
+/** Próximo link da fila de confirmação. */
+function nextBuild(done: string) {
+  const queue = get().buildQueue.filter(x => x !== done && get().links.some(l => l.id === x));
+  set({ buildQueue: queue, building: queue[0] || null });
+}
+export const skipBuild = () => { const b = get().building; if (b) nextBuild(b); else set({ building: null }); };
 
 /**
- * Garante uma tag para o link colado: usa a tag cujo nome bate com o tema que a IA identificou,
- * ou cria uma com esse tema. Sem tema (IA desligada, sem resposta, ou tema que a pessoa recusou antes),
- * o painel de passos pede para escolher.
+ * A pessoa confirmou o que a IA montou: título e tags (as escolhidas e as novas, que são criadas agora).
+ * Título igual ao da página fica vazio, para continuar acompanhando o título automático.
  */
-export async function ensureTag(id: string) {
+export async function confirmCapture(id: string, titulo: string, tagIds: string[], novas: string[]) {
   const l = get().links.find(x => x.id === id);
-  if (!l) { mustTag.delete(id); return; }
-  const folders = get().folders;
-  if (tagsOf(l).some(t => folderExists(folders, t))) { mustTag.delete(id); return; }
-  const tema = (l.tema || '').trim();
-  if (!tema || ignoredThemes().some(x => temaKey(x) === temaKey(tema))) { set({ needTag: id }); return; }
-  const match = folders.find(f => !f.arquivadaEm && temaKey(f.nome) === temaKey(tema));
-  let fid = match?.id;
-  if (!fid) {
-    const rec = { ...newFolderRec(tema.charAt(0).toUpperCase() + tema.slice(1)), auto: true };
-    fid = rec.id;
-    await save('folders', rec);
-  }
-  mustTag.delete(id);
-  const cur = get().links.find(x => x.id === id);
-  if (!cur) return;
-  autoWriting = true;
-  try { await saveMany('links', [{ ...cur, pastaIds: withTag(tagsOf(cur), fid) }]); } finally { autoWriting = false; }
+  if (!l) { nextBuild(id); return; }
+  const made = novas.map(n => newFolderRec(n));
+  if (made.length) await saveMany('folders', made);
+  const pastaIds = [...new Set([...tagIds, ...made.map(f => f.id)])];
+  const names = pastaIds.map(t => folderById(t)?.nome || made.find(f => f.id === t)?.nome).filter(Boolean);
+  await save('links', { ...l, titulo: titulo === (l.tituloAuto || '').trim() ? '' : titulo, pastaIds, pastaManual: true });
+  set({ flash: id });
+  nextBuild(id);
+  toast('Salvo com ' + (names.length === 1 ? 'a tag ' : 'as tags ') + names.join(', ') + '.');
 }
 
 export async function enrich(id: string, force = false): Promise<boolean> {
@@ -709,7 +707,6 @@ export async function enrich(id: string, force = false): Promise<boolean> {
   } finally {
     enriching.delete(id);
     if (showLoading) set({ loading: get().loading.filter(x => x !== id) });
-    if (mustTag.has(id)) void ensureTag(id);
   }
 }
 

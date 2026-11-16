@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useStore } from '../store';
+import { set, useStore } from '../store';
+import { useVisible } from '../hooks/useVisible';
 import { closeModal, deleteLink, openModal, setArchived, toast } from '../actions';
 import type { Link } from '../types';
 import { PLAT, ago, autoTitle, originOf, summaryOf, thumbOf } from '../lib/platforms';
@@ -7,7 +8,7 @@ import { kindLabel } from '../lib/kinds';
 import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { isArch } from '../lib/filters';
-import { IcoArchive, IcoCopy, IcoEdit, IcoOpen, IcoRestore, IcoTrash, IcoX } from '../components/icons';
+import { IcoArchive, IcoBack, IcoCopy, IcoEdit, IcoOpen, IcoRestore, IcoTrash, IcoX } from '../components/icons';
 
 export type Ratio = '9:16' | '1:1' | '16:9';
 interface Media { ratio: Ratio; embed?: string; image?: string }
@@ -45,6 +46,21 @@ export function LinkView({ id }: { id: string }) {
   const folders = useStore(s => s.folders);
   const root = useRef<HTMLDivElement>(null), close = useRef<HTMLButtonElement>(null);
   const [play, setPlay] = useState(false);
+  // Anterior e próximo seguem a lista da tela, com a ordem e os filtros aplicados.
+  const list = useVisible();
+  const idx = list.findIndex(x => x.id === id);
+  const prev = idx > 0 ? list[idx - 1].id : null, next = idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null;
+  const goTo = (to: string | null) => { if (to) set({ modal: { kind: 'view', id: to } }); };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest?.('input,textarea,select')) return;
+      if (e.key === 'ArrowLeft' && prev) { e.preventDefault(); goTo(prev); }
+      else if (e.key === 'ArrowRight' && next) { e.preventDefault(); goTo(next); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [prev, next]);
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
     close.current?.focus({ preventScroll: true });
@@ -71,7 +87,14 @@ export function LinkView({ id }: { id: string }) {
       <div ref={root} className={'lv r' + media.ratio.replace(':', 'x')} role="dialog" aria-modal="true" aria-labelledby="lv-t" onKeyDown={trap}>
         <div className="lv-top">
           <button ref={close} type="button" className="lv-x" aria-label="Fechar" onClick={closeModal}><IcoX /></button>
-          <a className="btn primary sm lv-open" href={l.url} target="_blank" rel="noopener noreferrer"><IcoOpen />Abrir {where}</a>
+          {list.length > 1 && idx >= 0 && (
+            <span className="lv-nav" role="group" aria-label="Navegar entre os links">
+              <button type="button" aria-label="Link anterior" title="Anterior (←)" disabled={!prev} onClick={() => goTo(prev)}><IcoBack /></button>
+              <span className="lv-pos" aria-live="polite">{idx + 1} de {list.length}</span>
+              <button type="button" aria-label="Próximo link" title="Próximo (→)" disabled={!next} onClick={() => goTo(next)}><IcoBack /></button>
+            </span>
+          )}
+          <a className="btn primary sm lv-open" href={l.url} target="_blank" rel="noopener noreferrer"><IcoOpen /><span className="lv-open-l">Abrir {where}</span><span className="lv-open-s">Abrir</span></a>
         </div>
         <div className="lv-media">
           {media.embed && (play || !media.image)
@@ -93,10 +116,10 @@ export function LinkView({ id }: { id: string }) {
             <button type="button" className="lv-tagbtn" onClick={() => openModal({ kind: 'link', id: l.id })}>{tags.length ? 'Mudar tags' : '+ Tag'}</button>
           </div>
           <div className="lv-acts">
-            <button type="button" className="btn outline sm" onClick={copy}><IcoCopy />Copiar link</button>
-            <button type="button" className="btn outline sm" onClick={() => openModal({ kind: 'link', id: l.id })}><IcoEdit />Editar</button>
-            <button type="button" className="btn outline sm" onClick={() => { closeModal(); setArchived([l], arq); }}>{arq ? <IcoRestore /> : <IcoArchive />}{arq ? 'Restaurar' : 'Arquivar'}</button>
-            <button type="button" className="btn outline sm danger" onClick={() => { closeModal(); deleteLink(l.id); }}><IcoTrash />Excluir</button>
+            <button type="button" className="btn outline sm icon" aria-label="Copiar link" title="Copiar link" onClick={copy}><IcoCopy /></button>
+            <button type="button" className="btn outline sm icon" aria-label="Editar" title="Editar" onClick={() => openModal({ kind: 'link', id: l.id })}><IcoEdit /></button>
+            <button type="button" className="btn outline sm icon" aria-label={arq ? 'Restaurar' : 'Arquivar'} title={arq ? 'Restaurar' : 'Arquivar'} onClick={() => { const to = next || prev; setArchived([l], arq); if (to) goTo(to); else closeModal(); }}>{arq ? <IcoRestore /> : <IcoArchive />}</button>
+            <button type="button" className="btn outline sm icon danger" aria-label="Excluir" title="Excluir" onClick={() => { const to = next || prev; deleteLink(l.id); if (to) goTo(to); else closeModal(); }}><IcoTrash /></button>
           </div>
         </div>
       </div>

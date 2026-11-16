@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { capture, go, openModal, toggleLinkTag, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
-import { autoTitle } from '../lib/platforms';
-import { liveTags } from '../lib/tags';
+import { tagsOf } from '../lib/tags';
+import { temaKey } from '../lib/auto';
+import { sameName } from '../lib/folders';
 import { colorOf, shapeOf } from '../lib/folders';
 import { FilterGroups } from './Toolbar';
 import { IcoArchive, IcoGear, IcoPaste, IcoSearch, IcoUser, IcoX } from './icons';
@@ -20,46 +21,99 @@ function Step({ state, text }: { state: StepState; text: string }) {
   return <li data-s={state}><span className="sb" aria-hidden="true" /><span>{text}</span></li>;
 }
 
-/** Passos da montagem do último link colado. Some sozinho alguns segundos depois de pronto. */
+/**
+ * Passos da montagem do último link colado e, no fim, a confirmação.
+ * A IA lê a página, resume, identifica o tipo e o tema e sugere título e tag. A pessoa sempre confirma:
+ * o título vem preenchido (ou em branco, se a página não deixou ler) e a tag sugerida vem marcada
+ * (ou nenhuma, se a IA não achou tema). Só fecha com título e pelo menos uma tag.
+ */
 function Building() {
-  const id = useStore(s => s.needTag || s.building);
-  const need = useStore(s => !!s.needTag && s.needTag === (s.needTag || s.building));
-  const l = useStore(s => s.links.find(x => x.id === (s.needTag || s.building)));
+  const id = useStore(s => s.building);
+  const l = useStore(s => s.links.find(x => x.id === s.building));
   const reading = useStore(s => !!s.building && s.loading.includes(s.building));
   const aiRun = useStore(s => !!s.building && s.aiBusy.includes(s.building));
   const aiOn = useStore(s => s.ai) && !!CFG.summarizeApi;
   const folders = useStore(s => s.folders);
-  const tags = l ? liveTags(l, folders) : [];
+  const live = folders.filter(f => !f.arquivadaEm);
   const read = !!l && (!!l.tituloAuto || !!l.thumb || !!l.descricao);
   const aiDone = !!l && (!!l.iaEm || !!l.resumoIA);
-  const done = !!l && !reading && (!aiOn || !read || (!aiRun && aiDone) || (!aiRun && !!l.enriquecido && !read));
+  // Só conta como pronto depois que a leitura da página começou e terminou (ou não há leitura configurada).
+  const sawRead = useRef<string | null>(null);
+  if (reading && id) sawRead.current = id;
+  const attempted = !!l && (!!l.enriquecido || sawRead.current === l.id || !CFG.previewApi);
+  const sawAi = useRef<string | null>(null);
+  if (aiRun && id) sawAi.current = id;
+  const done = !!l && attempted && !reading && (!aiOn || !read || (!aiRun && (aiDone || sawAi.current === l.id)));
+
+  // Formulário de confirmação: preenchido uma vez, quando a IA termina.
+  const [titulo, setTitulo] = useState(''), [sel, setSel] = useState<string[]>([]), [novas, setNovas] = useState<string[]>([]);
+  const [nova, setNova] = useState(''), [filled, setFilled] = useState(''), [tried, setTried] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!id) return;
-    if (!l) { set({ building: null, needTag: null }); return; }
-    if (!done || need) return;
-    const t = setTimeout(() => { if (get().building === id) set({ building: null }); }, 4500);
-    return () => clearTimeout(t);
-  }, [id, l, done]);
+    if (!l || !done || filled === l.id) return;
+    setFilled(l.id); setTried(false); setNova('');
+    setTitulo((l.titulo || l.tituloAuto || '').trim());
+    const tema = (l.tema || '').trim();
+    const mine = tagsOf(l).filter(t => live.some(f => f.id === t));
+    const match = tema ? live.find(f => temaKey(f.nome) === temaKey(tema)) : undefined;
+    setSel(mine.length ? mine : match ? [match.id] : []);
+    setNovas(!mine.length && !match && tema ? [tema.charAt(0).toUpperCase() + tema.slice(1)] : []);
+    setTimeout(() => { if (!(l.titulo || l.tituloAuto)) titleRef.current?.focus(); }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [l, done, filled]);
+  useEffect(() => { if (id && !l) skipBuild(); }, [id, l]);
+  const queued = useStore(s => s.buildQueue.length);
   if (!l) return null;
-  const ai: StepState = !aiOn ? 'skip' : reading ? 'wait' : !read ? 'skip' : aiRun || !aiDone ? 'run' : 'done';
+
+  const ai: StepState = !aiOn ? 'skip' : reading ? 'wait' : !read ? 'skip' : aiRun || (!aiDone && !done) ? 'run' : 'done';
   const kt = [kindLabel(l.categoria), l.tema ? 'tema ' + l.tema : ''].filter(Boolean).join(', ');
+  const nTags = sel.length + novas.length;
+  const addNova = () => {
+    const n = nova.trim();
+    if (!n) return;
+    const ex = live.find(f => sameName(f.nome, n));
+    if (ex) setSel(v => v.includes(ex.id) ? v : [...v, ex.id]);
+    else if (!novas.some(x => sameName(x, n))) setNovas(v => [...v, n]);
+    setNova('');
+  };
+  const confirm = () => {
+    setTried(true);
+    if (!titulo.trim() || !nTags) { (!titulo.trim() ? titleRef.current : document.getElementById('bd-nova'))?.focus(); return; }
+    void confirmCapture(l.id, titulo.trim(), sel, novas);
+  };
   return (
-    <div className="building" role="status" aria-live="polite">
-      <div className="bd-h"><b title={l.titulo || l.tituloAuto || autoTitle(l)}>{l.titulo || l.tituloAuto || autoTitle(l)}</b>
-        <button type="button" className="bd-x" aria-label="Fechar" onClick={() => set({ building: null, needTag: null })}><IcoX /></button></div>
-      <ol className="steps">
-        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : 'A página não deixou ler'} />
+    <div className="building" role="region" aria-label="Novo link">
+      <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
+        <button type="button" className="bd-x" aria-label="Fechar sem confirmar" title="Fechar sem confirmar" onClick={skipBuild}><IcoX /></button></div>
+      <ol className="steps" aria-live="polite">
+        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : 'A página não deixou ler, preencha você'} />
         {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
-        {aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo não identificado') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
-        <Step state={tags.length ? 'done' : need ? 'run' : 'wait'} text={tags.length ? 'Tag: ' + tags.map(t => t.nome).join(', ') : need ? 'Escolha uma tag para este link' : 'Organizar em tags'} />
+        {aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
+        <Step state={done ? 'run' : 'wait'} text={done ? 'Confirme o título e as tags' : 'Sugerir título e tags'} />
       </ol>
-      {need && !tags.length && (
-        <div className="bd-pick" role="group" aria-label="Escolha uma tag">
-          {folders.filter(f => !f.arquivadaEm).map(f => (
-            <button key={f.id} type="button" className="chip tp" data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => { toggleLinkTag(l.id, f.id); set({ needTag: null }); }}>{f.nome}</button>
-          ))}
-          <button type="button" className="chip tp-new" onClick={() => { set({ needTag: null }); openModal({ kind: 'new', then: { type: 'tag-link', linkId: l.id } }); }}>+ Nova tag</button>
-        </div>
+      {done && (
+        <form className="bd-form" onSubmit={e => { e.preventDefault(); confirm(); }} noValidate>
+          {l.resumoIA && <p className="bd-sum">{l.resumoIA}</p>}
+          <label className="f" htmlFor="bd-t">Título{!titulo.trim() && <span className="bd-req"> obrigatório</span>}
+            <span className="inw"><input ref={titleRef} id="bd-t" type="text" value={titulo} placeholder="Escreva um título" aria-invalid={tried && !titulo.trim() || undefined} onChange={e => setTitulo(e.target.value)} /></span>
+          </label>
+          <div className="f" role="group" aria-labelledby="bd-tl">
+            <span id="bd-tl">Tags{!nTags && <span className="bd-req"> escolha ao menos uma</span>}</span>
+            <div className="bd-pick">
+              {novas.map(n => <button key={'n' + n} type="button" className="chip tp" aria-pressed="true" data-c="0" onClick={() => setNovas(v => v.filter(x => x !== n))}><span className="ck" aria-hidden="true">✓</span>{n}<span className="bd-new"> nova</span></button>)}
+              {live.map(f => {
+                const on = sel.includes(f.id);
+                return <button key={f.id} type="button" className="chip tp" aria-pressed={on} data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => setSel(v => on ? v.filter(x => x !== f.id) : [...v, f.id])}>{on && <span className="ck" aria-hidden="true">✓</span>}{f.nome}</button>;
+              })}
+            </div>
+            <span className="bd-add">
+              <span className="inw"><input id="bd-nova" type="text" value={nova} placeholder="Nova tag" aria-label="Nova tag" onChange={e => setNova(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNova(); } }} /></span>
+              <button type="button" className="btn outline sm" onClick={addNova} disabled={!nova.trim()}>Adicionar</button>
+            </span>
+          </div>
+          {tried && (!titulo.trim() || !nTags) && <p className="msg err" role="alert">{!titulo.trim() ? 'Escreva um título.' : 'Escolha ou crie uma tag.'}</p>}
+          <button type="submit" className="btn primary">Salvar</button>
+        </form>
       )}
     </div>
   );

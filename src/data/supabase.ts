@@ -21,6 +21,13 @@ export async function sendLoginLink(email: string): Promise<boolean> {
   return !error;
 }
 
+/** Entrar com o código de 6 dígitos do e-mail (útil no app instalado no iPhone, que não recebe o clique do link). */
+export async function verifyLoginCode(email: string, token: string): Promise<boolean> {
+  if (!client) return false;
+  const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
+  return !error;
+}
+
 export function onSignedIn(fn: () => void) {
   client?.auth.onAuthStateChange((_ev, s) => { if (s) fn(); });
 }
