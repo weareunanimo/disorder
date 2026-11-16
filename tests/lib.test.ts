@@ -6,6 +6,7 @@ import { planImport } from '../src/lib/dataio';
 import { planAutoFolders } from '../src/lib/auto';
 import { sortLinks } from '../src/lib/sort';
 import { normLink, tagsOf } from '../src/lib/tags';
+import { storeOf } from '../src/lib/stores';
 import type { Folder, Link } from '../src/types';
 
 const link = (o: Partial<Link>): Link => ({ id: 'x', url: 'https://a.com', chave: 'k', plataforma: 'web', tipo: 'Link', autor: null, titulo: '', nota: '', pastaIds: [], criadoEm: 0, enriquecido: true, ...o });
@@ -187,5 +188,15 @@ describe('tipo do link', () => {
     const ls = [link({ id: '1', categoria: 'loja' }), link({ id: '2', categoria: 'artigo' }), link({ id: '3' })];
     const ids = (k: string[]) => visibleLinks(ls, [], 'all', { ...EMPTY_FILTERS, kinds: k }).map(l => l.id).sort();
     expect(ids(['loja'])).toEqual(['1']); expect(ids(['artigo', 'none'])).toEqual(['2', '3']); expect(ids([]).length).toBe(3);
+  });
+});
+
+describe('lojas', () => {
+  it('reconhece a loja e tira o nome do endereço quando há', () => {
+    expect(storeOf('https://shopee.com.br/product/1676569134/43786565419')).toEqual({ name: 'Shopee', title: '' });
+    expect(storeOf('https://shopee.com.br/Fone-Bluetooth-sem-fio-i.123.456?x=1')?.title).toBe('Fone Bluetooth sem fio');
+    expect(storeOf('https://www.amazon.com.br/Echo-Dot-5a-gera%C3%A7%C3%A3o/dp/B09B8V1LZ3')?.title).toBe('Echo Dot 5a geração');
+    expect(storeOf('https://produto.mercadolivre.com.br/MLB-123456-tenis-de-corrida-_JM')?.title).toBe('Tenis de corrida');
+    expect(storeOf('https://site.com/a')).toBeNull();
   });
 });

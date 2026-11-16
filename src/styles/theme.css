@@ -1241,8 +1241,9 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .bd-add { display: flex; gap: 8px; align-items: center; text-transform: none; letter-spacing: 0; }
 .bd-add .inw { flex: 1 1 auto; }
 .bd-sum { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted-fg); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.bd-form > .btn.primary { align-self: flex-start; min-width: 140px; }
-@media (max-width: 640px) { .bd-form > .btn.primary { align-self: stretch; } }
+.bd-btns { display: flex; gap: 10px; }
+.bd-btns .btn.primary { min-width: 140px; }
+@media (max-width: 640px) { .bd-btns .btn { flex: 1 1 0; } }
 /* Navegação entre links no modal: anterior, posição e próximo. Setas do teclado também. */
 .lv-nav { display: inline-flex; align-items: center; gap: 2px; margin-right: auto; margin-left: 8px; padding: 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--surface); }
 .lv-nav button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--fg); cursor: pointer; }

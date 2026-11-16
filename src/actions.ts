@@ -674,18 +674,30 @@ function nextBuild(done: string) {
 }
 export const skipBuild = () => { const b = get().building; if (b) nextBuild(b); else set({ building: null }); };
 
+/** Cancelar a confirmação: o link colado não fica salvo. O aviso traz Desfazer, que devolve o link como estava. */
+export function cancelBuild() {
+  const id = get().building;
+  if (!id) return;
+  const l = get().links.find(x => x.id === id);
+  nextBuild(id);
+  if (!l) return;
+  const copy = { ...l };
+  void removeMany('links', [id]);
+  toast('Link descartado.', 'Desfazer', () => { void save('links', copy); });
+}
+
 /**
  * A pessoa confirmou o que a IA montou: título e tags (as escolhidas e as novas, que são criadas agora).
  * Título igual ao da página fica vazio, para continuar acompanhando o título automático.
  */
-export async function confirmCapture(id: string, titulo: string, tagIds: string[], novas: string[]) {
+export async function confirmCapture(id: string, titulo: string, tagIds: string[], novas: string[], extra?: Partial<Link>) {
   const l = get().links.find(x => x.id === id);
   if (!l) { nextBuild(id); return; }
   const made = novas.map(n => newFolderRec(n));
   if (made.length) await saveMany('folders', made);
   const pastaIds = [...new Set([...tagIds, ...made.map(f => f.id)])];
   const names = pastaIds.map(t => folderById(t)?.nome || made.find(f => f.id === t)?.nome).filter(Boolean);
-  await save('links', { ...l, titulo: titulo === (l.tituloAuto || '').trim() ? '' : titulo, pastaIds, pastaManual: true });
+  await save('links', { ...l, ...extra, titulo: titulo === (l.tituloAuto || '').trim() ? '' : titulo, pastaIds, pastaManual: true });
   set({ flash: id });
   nextBuild(id);
   toast('Salvo com ' + (names.length === 1 ? 'a tag ' : 'as tags ') + names.join(', ') + '.');

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { cancelBuild, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
 import { tagsOf } from '../lib/tags';
+import { storeOf } from '../lib/stores';
 import { thumbOf } from '../lib/platforms';
 import { flyToCard } from '../lib/fly';
 import { temaKey } from '../lib/auto';
@@ -54,10 +55,12 @@ function Building() {
   useEffect(() => {
     if (!l || !done || filled === l.id) return;
     setFilled(l.id); setTried(false); setNova('');
-    setTitulo((l.titulo || l.tituloAuto || '').trim());
-    const tema = (l.tema || '').trim();
+    const loja = storeOf(l.url);
+    setTitulo((l.titulo || l.tituloAuto || loja?.title || '').trim());
+    // Loja que não deixa ler a página: sem tema da IA, sugere a tag de compras.
+    const tema = (l.tema || '').trim() || (loja ? 'Compras' : '');
     const mine = tagsOf(l).filter(t => live.some(f => f.id === t));
-    const match = tema ? live.find(f => temaKey(f.nome) === temaKey(tema)) : undefined;
+    const match = tema ? live.find(f => temaKey(f.nome) === temaKey(tema)) || (loja ? live.find(f => /^(compras?|lojas?|comprinhas)$/i.test(f.nome.trim())) : undefined) : undefined;
     setSel(mine.length ? mine : match ? [match.id] : []);
     setNovas(!mine.length && !match && tema ? [tema.charAt(0).toUpperCase() + tema.slice(1)] : []);
     setTimeout(() => { if (!(l.titulo || l.tituloAuto)) titleRef.current?.focus(); }, 50);
@@ -67,6 +70,7 @@ function Building() {
   const queued = useStore(s => s.buildQueue.length);
   if (!l) return null;
 
+  const loja = storeOf(l.url);
   const ai: StepState = !aiOn ? 'skip' : reading ? 'wait' : !read ? 'skip' : aiRun || (!aiDone && !done) ? 'run' : 'done';
   const kt = [kindLabel(l.categoria), l.tema ? 'tema ' + l.tema : ''].filter(Boolean).join(', ');
   const nTags = sel.length + novas.length;
@@ -83,16 +87,16 @@ function Building() {
     if (!titulo.trim() || !nTags) { (!titulo.trim() ? titleRef.current : document.getElementById('bd-nova'))?.focus(); return; }
     const from = panel.current?.getBoundingClientRect() || null;
     const names = [...novas, ...sel.map(t => live.find(f => f.id === t)?.nome || '')].filter(Boolean);
-    void confirmCapture(l.id, titulo.trim(), sel, novas).then(() => flyToCard(l.id, from, titulo.trim(), names, thumbOf(l)));
+    void confirmCapture(l.id, titulo.trim(), sel, novas, loja && !l.categoria ? { categoria: 'loja' } : undefined).then(() => flyToCard(l.id, from, titulo.trim(), names, thumbOf(l)));
   };
   return (
     <div className="building" ref={panel} role="region" aria-label="Novo link">
       <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
-        <button type="button" className="bd-x" aria-label="Fechar sem confirmar" title="Fechar sem confirmar" onClick={skipBuild}><IcoX /></button></div>
+        <button type="button" className="bd-x" aria-label="Cancelar e descartar o link" title="Cancelar" onClick={cancelBuild}><IcoX /></button></div>
       <ol className="steps" aria-live="polite">
-        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : 'A página não deixou ler, preencha você'} />
+        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : loja ? loja.name + ' não deixa ler a página' + (loja.title ? ', o nome veio do endereço' : '. Escreva o nome do produto') : 'A página não deixou ler, preencha você'} />
         {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
-        {aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
+        {loja && !read ? <Step state="done" text="Loja, reconhecida pelo endereço" /> : aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
         <Step state={done ? 'run' : 'wait'} text={done ? 'Confirme o título e as tags' : 'Sugerir título e tags'} />
       </ol>
       {done && (
@@ -116,7 +120,10 @@ function Building() {
             </span>
           </div>
           {tried && (!titulo.trim() || !nTags) && <p className="msg err" role="alert">{!titulo.trim() ? 'Escreva um título.' : 'Escolha ou crie uma tag.'}</p>}
-          <button type="submit" className="btn primary">Salvar</button>
+          <div className="bd-btns">
+            <button type="submit" className="btn primary">Salvar</button>
+            <button type="button" className="btn outline" onClick={cancelBuild}>Cancelar</button>
+          </div>
         </form>
       )}
     </div>
