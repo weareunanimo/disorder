@@ -6,7 +6,7 @@ export const PLAT: Record<Plat, { label: string; short: string }> = {
   instagram: { label: 'Instagram', short: 'IG' },
   tiktok: { label: 'TikTok', short: 'TT' },
   youtube: { label: 'YouTube', short: 'YT' },
-  web: { label: 'Outros', short: 'Web' },
+  web: { label: 'Sites', short: 'Web' },
 };
 export const PLAT_KEYS = Object.keys(PLAT) as Plat[];
 export const SOCIAL: Plat[] = ['x', 'threads', 'instagram', 'tiktok', 'youtube'];

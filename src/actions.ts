@@ -1,7 +1,7 @@
 import { backend, get, set, type ModalState, type Then, type Theme } from './store';
 import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
-import { isParsed, parseLink, SOCIAL } from './lib/platforms';
+import { isParsed, parseLink } from './lib/platforms';
 import { planAutoFolders } from './lib/auto';
 import type { Sort } from './lib/sort';
 import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
@@ -301,7 +301,8 @@ export function clipCandidate(txt: string) {
   const m = (txt || '').match(/https?:\/\/[^\s]+/i);
   if (!m) return null;
   const p = parseLink(m[0]);
-  if (!isParsed(p) || !SOCIAL.includes(p.plataforma)) return null;
+  // Qualquer site serve, menos o próprio app (copiar o endereço daqui não é um link para guardar).
+  if (!isParsed(p) || p.host === location.hostname.replace(/^www\./, '')) return null;
   if (get().links.some(l => l.chave === p.key)) return null;
   return { url: m[0], key: p.key };
 }

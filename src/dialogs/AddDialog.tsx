@@ -46,7 +46,7 @@ export function AddDialog() {
     // Um link com texto junto: o link é salvo e o texto vira a nota.
     const withText = !!urls && v.replace(urls[0], '').trim().length > 0;
     const p = parseLink(urls ? urls[0] : v);
-    return isParsed(p) ? { label: PLAT[p.plataforma].label + (withText ? ' + nota' : ''), one: p } : null;
+    return isParsed(p) ? { label: (p.plataforma === 'web' ? p.host : PLAT[p.plataforma].label) + (withText ? ' + nota' : ''), one: p } : null;
   }, [url]);
   const one = det?.one ?? null, key = one?.key ?? null;
 
@@ -144,13 +144,13 @@ export function AddDialog() {
           value={url} onChange={e => { setUrl(e.target.value); if (!e.target.value) setMsg(null); }} onPaste={onPaste} />
         {!det && <button className="btn outline sm" type="button" onClick={() => void paste()}>Colar</button>}
       </div>
-      {!one && <p className="hint" id="add-hint">X, Threads, Instagram, TikTok e YouTube. Pode colar vários de uma vez.</p>}
+      {!one && <p className="hint" id="add-hint">Qualquer site: redes, artigos, vídeos, lojas, receitas. Pode colar vários de uma vez.</p>}
       {one && (
         <div className="pv" role="status" aria-live="polite">
           <Preview link={{ plataforma: one.plataforma, duracao: pv?.data?.duracao, icone: pv?.data?.icone }} src={img} />
           <div className="pt">
             <b className="t">{title}</b>
-            <span className="m">{PLAT[one.plataforma].label}{pv?.data?.duracao ? ' · ' + fmtDuration(pv.data.duracao) : ''}</span>
+            <span className="m">{one.plataforma === 'web' ? (pv?.data?.site || one.host) : PLAT[one.plataforma].label}{pv?.data?.duracao ? ', ' + fmtDuration(pv.data.duracao) : ''}</span>
             {resumo && <p className="ps">{resumo}</p>}
             {aiMine?.r?.tema && <span className="pk">Tema: {aiMine.r.tema}</span>}
           </div>

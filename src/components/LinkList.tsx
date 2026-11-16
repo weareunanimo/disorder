@@ -96,7 +96,7 @@ function Empty({ base }: { base: number }) {
   const total = useStore(s => s.links.length), view = useStore(s => s.view), folders = useStore(s => s.folders);
   const filtered = useStore(s => filterCount(s, s.view)) > 0 && base > 0;
   let t: string, p: string;
-  if (!total) { t = 'Nada salvo ainda'; p = 'Guarde aqui o que você encontra no X, Threads, Instagram, TikTok e YouTube.'; }
+  if (!total) { t = 'Nada salvo ainda'; p = 'Guarde aqui qualquer link: posts, vídeos, artigos, produtos, o que for.'; }
   else if (filtered) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
   else if (view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das tags e ficam guardados aqui. Você pode restaurar quando quiser.'; }
   else if (view === 'none') { t = 'Tudo o que você salvou está em alguma tag'; p = 'Links sem tag aparecem aqui.'; }
