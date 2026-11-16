@@ -380,7 +380,7 @@ html { overscroll-behavior-y: none; }
 /* Cartões e lista */
 .list.grid { gap: 22px; grid-template-columns: repeat(auto-fill, minmax(max(300px, calc((100% - 44px) / 3)), 1fr)); }
 .link { border: 2px solid var(--ink); border-radius: 0; background: var(--surface); box-shadow: 5px 5px 0 var(--sh); }
-.link:hover { border-color: var(--ink); transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--sh); }
+.link:hover { border-color: var(--ink); transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--sh); }
 .link[data-selected] { border-color: var(--ink); box-shadow: 6px 6px 0 var(--primary); transform: translate(-1px, -1px); }
 @keyframes flash { 0% { outline: 3px solid var(--primary); outline-offset: 4px; } 100% { outline: 3px solid transparent; outline-offset: 4px; } }
 .preview { border: 2px solid var(--gray-line); border-radius: 0; color: var(--gray-line); font: 900 14px/1 var(--f-display); }
@@ -914,7 +914,7 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .cmenu .cm-h { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; font: 700 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); cursor: default; }
 .cmenu .cm-h span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmenu .cm-back { width: 28px; min-height: 28px; padding: 0; justify-content: center; font: 800 18px/1 var(--f-body); color: var(--fg); }
-.cmenu .cm-ck { width: 16px; height: 16px; flex: none; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 3px; }
+.cmenu .cm-ck { width: 16px; height: 16px; flex: none; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 4px; }
 .cmenu [aria-checked="true"] .cm-ck { background: var(--ink); color: var(--bg); }
 .cmenu .cm-ck svg { width: 11px; height: 11px; stroke-width: 3; }
 .cmenu .cm-n { margin-left: auto; font: 700 11px/1 var(--f-mono); color: var(--muted-fg); }
@@ -1128,7 +1128,7 @@ button.pf-row:hover, button.pf-row:focus-visible { background: var(--hover); out
 .first-cta { margin-top: 10px; min-height: 52px; padding: 0 26px; font-size: 17px; gap: 8px; }
 .first-cta svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
 .first .first-k { font: 400 13px/1.4 var(--f-mono); }
-kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 5px; background: var(--surface); color: var(--fg); font: 700 12px/1.4 var(--f-mono); }
+kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; background: var(--surface); color: var(--fg); font: 700 12px/1.4 var(--f-mono); }
 .empty .btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
 .list > .first, .list > .empty { grid-column: 1 / -1; }
 .first-logo { white-space: nowrap; max-width: 100%; }
@@ -1149,7 +1149,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
    Até 1024px: tela cheia, mídia no topo e informações rolando embaixo.
    Desktop: janela no tamanho da mídia. 9:16 e 1:1 com as informações ao lado, 16:9 com as informações embaixo. */
 .lv-ov { align-items: center; justify-content: center; }
-.lv { position: relative; display: grid; background: var(--surface); color: var(--fg); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 6px 6px 0 var(--sh); overflow: hidden; }
+.lv { position: relative; display: grid; background: var(--surface); color: var(--fg); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 8px 8px 0 var(--sh); overflow: hidden; }
 .lv-top { position: absolute; z-index: 3; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
 .lv-top > * { pointer-events: auto; }
 .lv-x { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); color: var(--fg); cursor: pointer; }
@@ -1260,11 +1260,11 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 
 /* Painel de confirmação por cima do conteúdo, sem empurrar a lista. */
 .hdr { position: sticky; }
-.hdr .building { position: absolute; z-index: 44; top: calc(100% - 6px); left: 50%; translate: -50% 0; width: min(640px, calc(100vw - 24px)); margin: 0; box-shadow: 6px 6px 0 var(--sh); max-height: calc(100dvh - 170px); }
+.hdr .building { position: absolute; z-index: 44; top: calc(100% - 6px); left: 50%; translate: -50% 0; width: min(640px, calc(100vw - 24px)); margin: 0; box-shadow: 5px 5px 0 var(--sh); max-height: calc(100dvh - 170px); }
 @media (max-width: 640px) { .hdr .building { width: calc(100vw - 24px); } }
 /* Fantasma que voa do painel até o cartão, e o pulo do cartão ao chegar. */
 .fly-ghost { position: fixed; z-index: 70; transform-origin: 50% 50%; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 14px; overflow: hidden; pointer-events: none;
-  background: var(--accent); color: var(--on-accent); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 6px 6px 0 var(--sh); }
+  background: var(--accent); color: var(--on-accent); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 5px 5px 0 var(--sh); }
 .fly-ghost img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
 .fly-ghost b { position: relative; font: 800 20px/1.15 var(--f-display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fly-ghost span { position: relative; font: 700 11px/1.2 var(--f-mono); text-transform: uppercase; }
@@ -1274,7 +1274,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 /* Cartão inteiro clicável: abre o link no app. O título é o botão para teclado e leitor de tela. */
 .list .link { cursor: pointer; }
 .ttl-btn { all: unset; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font: inherit; color: inherit; }
-.ttl-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.ttl-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .list .link:hover .ttl-btn { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; }
 /* Abrir no original, junto das outras ações do modal: rótulo curto (a rede ou o domínio) e ícone de nova aba. */
 .lv-acts .lv-open { gap: 6px; height: 40px; padding: 0 14px; max-width: 220px; }
@@ -1313,7 +1313,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .pf-todo.done .pf-t b { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted-fg); }
 
 /* Tela Leve o disorder para o celular */
-.overlay:has(.guide) .modal { width: min(680px, 100%); padding: 0; gap: 0; border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--sh); }
+.overlay:has(.guide) .modal { width: min(680px, 100%); padding: 0; gap: 0;  }
 .guide { display: flex; flex-direction: column; }
 .gd-head { position: relative; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 22px 22px 18px; border-bottom: 2px solid var(--ink); }
 .gd-head h2 { padding-right: 52px; font-size: 24px; }
@@ -1350,13 +1350,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 /* Ilustrações: mini celular desenhado com o passo em destaque */
 .il { margin: 0; width: 100%; aspect-ratio: 9 / 16; border: 2px solid var(--ink); border-radius: 18px; padding: 6px; background: var(--ink); }
 .il-scr { position: relative; height: 100%; border-radius: 12px; overflow: hidden; background: var(--bg); display: flex; flex-direction: column; gap: 6px; padding: 8px; font: 600 9px/1.25 var(--f-body); color: var(--fg); }
-.il .hl { background: var(--accent); color: var(--on-accent); outline: 2px solid var(--ink); outline-offset: 0; border-radius: 5px; animation: il-pulse 1.6s ease-in-out infinite; }
+.il .hl { background: var(--accent); color: var(--on-accent); outline: 2px solid var(--ink); outline-offset: 0; border-radius: 6px; animation: il-pulse 1.6s ease-in-out infinite; }
 @keyframes il-pulse { 50% { box-shadow: 0 0 0 4px var(--primary); } }
 @media (prefers-reduced-motion: reduce) { .il .hl { animation: none; } }
 .il-bar { display: flex; align-items: center; gap: 6px; }
-.il-url { flex: 1; height: 14px; border-radius: 7px; background: var(--muted); }
+.il-url { flex: 1; height: 14px; border-radius: 8px; background: var(--muted); }
 .il-dots { width: 16px; height: 16px; display: grid; place-items: center; font-size: 12px; }
-.il-menu, .il-sheet { display: flex; flex-direction: column; border: 1.5px solid var(--ink); border-radius: 7px; background: var(--surface); overflow: hidden; }
+.il-menu, .il-sheet { display: flex; flex-direction: column; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--surface); overflow: hidden; }
 .il-menu { margin-left: 22%; }
 .il-menu span, .il-sheet span { padding: 6px 7px; border-top: 1px solid var(--border); }
 .il-menu span:first-child, .il-sheet span:first-child { border-top: 0; }
@@ -1364,13 +1364,43 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .il-sheet { margin-top: auto; }
 .il-bottom { display: flex; justify-content: center; padding-top: 2px; }
 .il-share { width: 22px; height: 22px; display: grid; place-items: center; font-size: 11px; }
-.il-post { flex: 1; border-radius: 7px; background: var(--muted); }
+.il-post { flex: 1; border-radius: 8px; background: var(--muted); }
 .il-apps { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 8px 6px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--surface); }
 .il-dot { width: 20px; height: 20px; border-radius: 6px; margin-top: 4px; background: var(--tag0-bg); }
 .il-dot[data-c="1"] { background: var(--tag1-bg); } .il-dot[data-c="4"] { background: var(--tag4-bg); } .il-dot[data-c="6"] { background: var(--tag6-bg); }
 .il-pick { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; }
 .il-pick b { font-size: 7.5px; font-weight: 700; }
 .il-app { width: 22px; height: 22px; border-radius: 6px; display: block; }
-.il-blk { padding: 7px; border: 1.5px solid var(--ink); border-radius: 7px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
-.il-blk i, .il-code i { font-style: normal; padding: 0 3px; border-radius: 3px; background: var(--primary); color: var(--primary-fg); }
+.il-blk { padding: 7px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+.il-blk i, .il-code i { font-style: normal; padding: 0 3px; border-radius: 4px; background: var(--primary); color: var(--primary-fg); }
 .il-code { font: 400 7.5px/1.3 var(--f-mono); overflow-wrap: anywhere; }
+
+/* Toque: todo alvo com pelo menos 44px. Controles do cabeçalho crescem, os pequenos ganham área invisível em volta, sem mudar o desenho. */
+@media (pointer: coarse) {
+  .tabs button, .omni-btn, .sb-back { height: 44px; }
+  .omni-btn { min-width: 44px; justify-content: center; }
+  .appbtn, .avatar, .lv-x { width: 44px; height: 44px; }
+  .sb-r select, .thit { min-height: 44px; }
+  .building .bd-x, .lv-tagbtn, .sb-edit { position: relative; }
+  .building .bd-x::before, .tgl::before, .lv-tagbtn::before, .pick::before, .sb-edit::before, .gcard .g-pick::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); translate: -50% -50%; }
+}
+
+/* Consistência (auditoria v9.1) */
+/* Título do painel de salvar igual ao de modal. */
+.building .bd-h b { font: 900 24px/1 var(--f-display); text-transform: uppercase; letter-spacing: -0.02em; }
+@media (max-width: 640px) { .building .bd-h b { font-size: 21px; } .modal h2 { font-size: 21px; } }
+/* Campos de texto: sempre Space Grotesk 500, sem herdar o mono do rótulo. 16px no celular evita o zoom do iOS. */
+.modal input[type=text], .modal textarea, .building input[type=text], .login input { font: 500 15px/1.4 var(--f-body); text-transform: none; letter-spacing: 0; }
+@media (max-width: 640px) { .modal input[type=text], .modal textarea, .building input[type=text], .login input, .settings input[type=text] { font-size: 16px; } }
+/* Menu de tags da seleção fica acima do aviso. */
+.bar:has(.menu) { z-index: 71; }
+
+/* Botão de fechar: um só desenho (redondo, borda ink, 40px) em modal, link aberto e painel de salvar. */
+.building .bd-x { width: 40px; height: 40px; border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); }
+.building .bd-x:hover, .lv-x:hover { background: var(--accent); color: var(--on-accent); }
+@media (pointer: coarse) { .building .bd-x { width: 44px; height: 44px; } }
+/* Controles pequenos do cabeçalho com o mesmo raio. */
+.appbtn { border-radius: 8px; }
+/* Botão padrão com 40px de altura, como no DS. */
+.btn:not(.sm) { padding-top: 7px; padding-bottom: 7px; line-height: 1.4; }
+.bd-btns { justify-content: flex-end; }

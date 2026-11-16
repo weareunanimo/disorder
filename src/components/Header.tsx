@@ -122,8 +122,8 @@ function Building() {
           </div>
           {tried && (!titulo.trim() || !nTags) && <p className="msg err" role="alert">{!titulo.trim() ? 'Escreva um título.' : 'Escolha ou crie uma tag.'}</p>}
           <div className="bd-btns">
-            <button type="submit" className="btn primary">Salvar</button>
             <button type="button" className="btn outline" onClick={cancelBuild}>Cancelar</button>
+            <button type="submit" className="btn primary">Salvar</button>
           </div>
         </form>
       )}
