@@ -1,15 +1,16 @@
 import { useWide } from '../hooks/useMedia';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { set, useStore } from '../store';
-import { openAdd, resetFilters, setLayout, setSort, toggleFolderFilter, toggleKind, togglePlat } from '../actions';
+import { go, openModal, resetFilters, setLayout, setSort, toggleFolderFilter, toggleKind, togglePlat } from '../actions';
 import { SORTS, isSort } from '../lib/sort';
 import { KINDS } from '../lib/kinds';
-import { datePreset, filterCount } from '../lib/filters';
+import { datePreset, filterCount, viewTitle } from '../lib/filters';
 import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
 import { useBase, useSortedFolders } from '../hooks/useVisible';
-import { canHover } from '../hooks/useMedia';
-import { IcoCards, IcoGallery, IcoFilter, IcoList, IcoPlus, IcoSearch } from './icons';
+import { plural } from '../lib/text';
+import { kindLabel } from '../lib/kinds';
+import { IcoBack, IcoCards, IcoEdit, IcoGallery, IcoList, IcoX } from './icons';
 
 function Chip({ label, count, on, onClick }: { label: string; count?: number; on: boolean; onClick: () => void }) {
   return (
@@ -19,11 +20,11 @@ function Chip({ label, count, on, onClick }: { label: string; count?: number; on
   );
 }
 
-function FiltersPanel({ n }: { n: number }) {
-  const view = useStore(s => s.view), q = useStore(s => s.q), plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp);
+/** Grupos de filtro rápido (tags, tipo, origem, data). Ficam no popover da omni-bar. Só aparecem os que existem nos links. */
+export function FilterGroups() {
+  const view = useStore(s => s.view), plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp);
   const from = useStore(s => s.from), to = useStore(s => s.to);
   const folders = useSortedFolders(), base = useBase();
-  const search = useRef<HTMLInputElement>(null);
 
   const stats = useMemo(() => {
     const kind = new Map<string, number>(), plat = new Map<string, number>(), folder = new Map<string, number>(), known = new Set(folders.map(f => f.id));
@@ -40,7 +41,6 @@ function FiltersPanel({ n }: { n: number }) {
   const present = PLAT_KEYS.filter(k => stats.plat.get(k));
   const presentKinds = KINDS.filter(k => stats.kind.get(k.key));
 
-  useEffect(() => { if (canHover()) search.current?.focus(); }, []);
   // Filtro que deixou de existir (plataforma sem links, tag excluída) sai da seleção.
   useEffect(() => {
     const okP = plats.filter(k => stats.plat.get(k)), okK = kinds.filter(k => stats.kind.get(k));
@@ -53,16 +53,7 @@ function FiltersPanel({ n }: { n: number }) {
   const preset = (d: number) => set(isPreset(d) ? { from: '', to: '' } : datePreset(d));
 
   return (
-    <div className="fpanel" id="fpanel" role="group" aria-label="Filtros">
-      <div className="fp-head">
-        <b>Filtros</b>
-        <label className="inw quiet">
-          <IcoSearch />
-          <input ref={search} className="search" id="q" type="search" placeholder="Buscar" aria-label="Buscar nos links" autoComplete="off" value={q} onChange={e => set({ q: e.target.value })} />
-        </label>
-        <button type="button" className="btn sm" disabled={!n} onClick={resetFilters}>Limpar</button>
-      </div>
-      <div className="fp-body">
+    <div className="fp-body">
         {view === 'all' && folders.length > 0 && (
           <div className="fgrp" role="group" aria-label="Filtrar por tag">
             <span className="fl">Tags</span>
@@ -100,34 +91,74 @@ function FiltersPanel({ n }: { n: number }) {
           </div>
         </div>
       </div>
+  );
+}
+
+
+/** Grade, Lista (só em tela larga) e Galeria. Discreto, só ícones, na linha de contexto. */
+export function ViewSwitch() {
+  const layout = useStore(s => s.layout), wide = useWide();
+  return (
+    <div className="seg view" role="group" aria-label="Visualização">
+      <button type="button" aria-pressed={layout === 'cards' || (layout === 'list' && !wide)} aria-label="Grade" title="Grade: cartões com resumo" onClick={() => setLayout('cards')}><IcoCards /></button>
+      {wide && <button type="button" aria-pressed={layout === 'list'} aria-label="Lista" title="Lista: uma linha por link" onClick={() => setLayout('list')}><IcoList /></button>}
+      <button type="button" aria-pressed={layout === 'gallery'} aria-label="Galeria" title="Galeria: só as imagens, mais links por tela" onClick={() => setLayout('gallery')}><IcoGallery /></button>
     </div>
   );
 }
 
-export function Toolbar() {
-  const hasLinks = useStore(s => s.links.length > 0), view = useStore(s => s.view);
-  const open = useStore(s => s.filtersOpen), layout = useStore(s => s.layout), wide = useWide();
-  const n = useStore(s => filterCount(s, s.view)), sort = useStore(s => s.sort);
-  if (!hasLinks || view === 'settings') return <div className="tools" id="tools" style={{ marginTop: 24 }} />;
+/** Filtros ativos como fichas removíveis, para a pessoa ver o que está escondendo links. */
+function ActiveFilters() {
+  const q = useStore(s => s.q), plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp), from = useStore(s => s.from), to = useStore(s => s.to);
+  const folders = useStore(s => s.folders);
+  const items: { k: string; label: string; off: () => void }[] = [];
+  if (q.trim()) items.push({ k: 'q', label: '"' + q.trim() + '"', off: () => set({ q: '' }) });
+  fp.forEach(id => items.push({ k: 'f' + id, label: id === 'none' ? 'Sem tag' : folders.find(f => f.id === id)?.nome || '', off: () => toggleFolderFilter(id) }));
+  kinds.forEach(k => items.push({ k: 'k' + k, label: k === 'none' ? 'Tipo não identificado' : kindLabel(k), off: () => toggleKind(k) }));
+  plats.forEach(k => items.push({ k: 'p' + k, label: PLAT[k as keyof typeof PLAT]?.label || k, off: () => togglePlat(k) }));
+  if (from || to) items.push({ k: 'd', label: from && to ? from.split('-').reverse().slice(0, 2).join('/') + ' a ' + to.split('-').reverse().slice(0, 2).join('/') : from ? 'Desde ' + from.split('-').reverse().slice(0, 2).join('/') : 'Até ' + to.split('-').reverse().slice(0, 2).join('/'), off: () => set({ from: '', to: '' }) });
+  if (!items.length) return null;
   return (
-    <div className="tools" id="tools" style={{ marginTop: 24 }}>
-      {view !== 'archived'
-        ? <button type="button" className="btn primary add-row" onClick={() => openAdd()}><IcoPlus />Salvar link</button>
-        : <span className="tools-sp" />}
-      <button type="button" className="btn filt" aria-expanded={open} aria-controls="fpanel" onClick={() => set({ filtersOpen: !open })}>
-        <IcoFilter />Filtros{n > 0 && <span className="cnt" aria-label={n + (n === 1 ? ' filtro ativo' : ' filtros ativos')}>{n}</span>}
-      </button>
-      <label className="inw sortw">
-        <select className="sel" aria-label="Ordenar por" value={sort} onChange={e => { if (isSort(e.target.value)) setSort(e.target.value); }}>
-          {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-        </select>
-      </label>
-      <div className="seg view" role="group" aria-label="Visualização">
-        <button type="button" aria-pressed={layout === 'cards' || (layout === 'list' && !wide)} aria-label="Grade" title="Grade: cartões com resumo" onClick={() => setLayout('cards')}><IcoCards /><span>Grade</span></button>
-        {wide && <button type="button" aria-pressed={layout === 'list'} aria-label="Lista" title="Lista: uma linha por link" onClick={() => setLayout('list')}><IcoList /><span>Lista</span></button>}
-        <button type="button" aria-pressed={layout === 'gallery'} aria-label="Galeria" title="Galeria: só as imagens, mais links por tela" onClick={() => setLayout('gallery')}><IcoGallery /><span>Galeria</span></button>
+    <div className="afil" role="group" aria-label="Filtros ativos">
+      {items.map(i => <button key={i.k} type="button" className="chip on" onClick={i.off} aria-label={'Tirar filtro ' + i.label}>{i.label}<IcoX /></button>)}
+      {items.length > 1 && <button type="button" className="afil-clear" onClick={resetFilters}>Limpar tudo</button>}
+    </div>
+  );
+}
+
+/**
+ * Linha de contexto, logo abaixo do cabeçalho: onde estou (com Voltar dentro de uma tag),
+ * quantos links, ordem e visualização. Não conta como elemento do cabeçalho.
+ */
+export function SubBar({ count }: { count: number }) {
+  const view = useStore(s => s.view), folders = useStore(s => s.folders), sort = useStore(s => s.sort);
+  const hasLinks = useStore(s => s.links.length > 0);
+  const n = useStore(s => filterCount(s, s.view));
+  const folder = folders.find(f => f.id === view) || null;
+  const inside = !!folder || view === 'none';
+  const back = inside ? 'tags' : 'all';
+  const showBack = inside || view === 'archived' || view === 'settings';
+  if (!hasLinks && view !== 'settings') return <h1 className="sr" id="view-title">{viewTitle(view, folders)}</h1>;
+  return (
+    <div className="subbar">
+      <div className="sb-l">
+        {showBack && <button type="button" className="sb-back" onClick={() => go(back)}><IcoBack />{back === 'tags' ? 'Tags' : 'Tudo'}</button>}
+        <h1 id="view-title" className={showBack || view === 'tags' ? '' : 'sr'}>{viewTitle(view, folders)}</h1>
+        {folder && <button type="button" className="sb-edit" aria-label={'Editar tag ' + folder.nome} title="Editar tag" onClick={() => openModal({ kind: 'edit', id: folder.id })}><IcoEdit /></button>}
+        {view !== 'settings' && <span className="sb-n">{view === 'tags' ? plural(folders.length, '1 tag', 'tags') : plural(count, '1 link', 'links') + (n ? ' com filtro' : '')}</span>}
       </div>
-      {open && <FiltersPanel n={n} />}
+      {view !== 'settings' && view !== 'tags' && (
+        <div className="sb-r">
+          <label className="sortq">
+            <span className="sr">Ordenar por</span>
+            <select aria-label="Ordenar por" value={sort} onChange={e => { if (isSort(e.target.value)) setSort(e.target.value); }}>
+              {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
+          </label>
+          <ViewSwitch />
+        </div>
+      )}
+      {view !== 'settings' && view !== 'tags' && <ActiveFilters />}
     </div>
   );
 }

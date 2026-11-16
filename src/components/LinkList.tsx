@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { get, useStore } from '../store';
-import { deleteLink, openAdd, setArchived, setSwipe, toggleSel } from '../actions';
+import { deleteLink, pasteFromClipboard, setArchived, setSwipe, toggleSel } from '../actions';
+import { PASTE_KEY } from './Header';
 import type { Folder, Link } from '../types';
 import { filterCount, isArch, viewTitle } from '../lib/filters';
 import { colorOf } from '../lib/folders';
@@ -12,7 +13,7 @@ import { isTouch, useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
 import { CardMenu } from './CardMenu';
 import { GalleryCard, vtName } from './GalleryCard';
-import { IcoArchive, IcoCheck, IcoPlus, IcoRestore, IcoTrash } from './icons';
+import { IcoArchive, IcoCheck, IcoPaste, IcoRestore, IcoTrash } from './icons';
 
 const PAGE = 60;
 
@@ -95,12 +96,25 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
   );
 });
 
+/** Primeira vez, nenhum link: a tela inteira é um convite a colar. */
+function FirstRun() {
+  return (
+    <div className="first">
+      <b className="first-logo" aria-hidden="true">disorder</b>
+      <h2>Cole um link para começar</h2>
+      <p>Qualquer site, post ou vídeo. A IA lê, resume e organiza em tags para você.</p>
+      <button type="button" className="btn primary first-cta" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>
+      <p className="first-k">ou aperte <kbd>{PASTE_KEY}</kbd> em qualquer lugar desta tela</p>
+    </div>
+  );
+}
+
 function Empty({ base }: { base: number }) {
   const total = useStore(s => s.links.length), view = useStore(s => s.view), folders = useStore(s => s.folders);
   const filtered = useStore(s => filterCount(s, s.view)) > 0 && base > 0;
   let t: string, p: string;
-  if (!total) { t = 'Nada salvo ainda'; p = 'Guarde aqui qualquer link: posts, vídeos, artigos, produtos, o que for.'; }
-  else if (filtered) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
+  if (!total) return <FirstRun />;
+  if (filtered) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
   else if (view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das tags e ficam guardados aqui. Você pode restaurar quando quiser.'; }
   else if (view === 'none') { t = 'Tudo o que você salvou está em alguma tag'; p = 'Links sem tag aparecem aqui.'; }
   else { t = 'Esta tag está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle(view, folders) + '.'; }
@@ -109,8 +123,8 @@ function Empty({ base }: { base: number }) {
       <b>{t}</b><p>{p}</p>
       {view !== 'archived' && !filtered && (
         <>
-          <button className="btn primary" onClick={() => openAdd()}><IcoPlus />Salvar link</button>
-          <p className="hint">ou cole um link em qualquer lugar desta página</p>
+          <button className="btn primary" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>
+          <p className="hint">ou aperte <kbd>{PASTE_KEY}</kbd> em qualquer lugar desta tela</p>
         </>
       )}
     </div>

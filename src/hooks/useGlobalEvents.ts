@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { get, set } from '../store';
-import { cancelModal, checkClipboard, clearSel, closeAdd, currentDest, openAdd, quickSave, selectAll, setCardMenu, setSwipe } from '../actions';
+import { capture, cancelModal, checkClipboard, clearSel, selectAll, setCardMenu, setSwipe } from '../actions';
 
 const FIELD = 'input,textarea,select,[contenteditable]';
 
@@ -9,18 +9,18 @@ export function useGlobalEvents() {
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const s = get();
-      if (s.modal || s.adding || !s.loaded || s.view === 'archived' || s.view === 'settings') return;
+      if (s.modal || !s.loaded) return;
       if ((e.target as HTMLElement).closest?.(FIELD)) return;
       const txt = e.clipboardData?.getData('text') || '';
       if (!/https?:\/\/\S|^\s*www\./i.test(txt)) return;
       e.preventDefault();
-      if (s.view === 'all' && !s.dest.length) openAdd(txt.trim()); else quickSave(txt, currentDest());
+      capture(txt);
     };
     const onKey = (e: KeyboardEvent) => {
       const s = get();
       if (e.key === 'Escape') {
         if (s.modal) cancelModal();
-        else if (s.adding) closeAdd();
+        else if (s.profileOpen) set({ profileOpen: false });
         else if (s.menu) { set({ menu: false }); document.querySelector<HTMLElement>('#bar [data-move]')?.focus(); }
         else if (s.cardMenu) setCardMenu(null);
         else if (s.swipeId) setSwipe(null);

@@ -32,3 +32,5 @@ export const IcoWhats = () => (
 export const IcoTag = () => <I><path d="M2.5 2.5h5.2l5.8 5.8-5.2 5.2-5.8-5.8z" /><path d="M5.3 5.3h.01" /></I>;
 export const IcoGallery = () => <I><rect x="1.8" y="2" width="3.4" height="5" rx=".8" /><rect x="6.3" y="2" width="3.4" height="5" rx=".8" /><rect x="10.8" y="2" width="3.4" height="5" rx=".8" /><rect x="1.8" y="9" width="3.4" height="5" rx=".8" /><rect x="6.3" y="9" width="3.4" height="5" rx=".8" /><rect x="10.8" y="9" width="3.4" height="5" rx=".8" /></I>;
 export const IcoOpen = () => <I><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v3c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1v-7c0-.6.4-1 1-1h3" /></I>;
+export const IcoUser = () => <I><circle cx="8" cy="5.5" r="2.8" /><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3" /></I>;
+export const IcoPaste = () => <I><rect x="3.5" y="3" width="9" height="11" rx="1.5" /><path d="M6 3V2h4v1M6 7.5h4M6 10h3" /></I>;

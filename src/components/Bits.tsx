@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useStore } from '../store';
-import { acceptClip, currentDest, dismissClip, dismissToast, folderById, openAdd } from '../actions';
 import { usePullReveal } from '../hooks/usePullReveal';
-import { IcoPlus } from './icons';
+import { useStore } from '../store';
+import { dismissToast } from '../actions';
 
 export function Brand() {
   const ref = useRef<HTMLDivElement>(null);
@@ -24,25 +23,6 @@ export function Toast() {
     </div>
   );
 }
-
-/** Faixa "encontrei um link copiado". */
-export function ClipBanner() {
-  const clip = useStore(s => s.clip), view = useStore(s => s.view);
-  useStore(s => s.folders);
-  if (!clip) return null;
-  const names = currentDest().map(id => folderById(id)?.nome).filter(Boolean).join(', ');
-  return (
-    <div className="banner inline clip" id="clip" role="status">
-      <span>Encontrei um link copiado.</span>
-      <span className="acts">
-        <button type="button" className="btn outline sm" onClick={dismissClip}>Agora não</button>
-        <button type="button" className="btn primary sm" onClick={acceptClip}>{view === 'all' ? 'Salvar' : 'Salvar com ' + (names || 'nenhuma tag')}</button>
-      </span>
-    </div>
-  );
-}
-
-export const Fab = () => <button type="button" className="fab" aria-label="Salvar link" onClick={() => openAdd()}><IcoPlus /></button>;
 
 export function LoadError() {
   const err = useStore(s => s.loadError);

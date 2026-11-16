@@ -3,7 +3,8 @@ import { autoTitle } from './platforms';
 import { sortLinks, type Sort } from './sort';
 import { tagsOf } from './tags';
 
-export const FIXED_VIEWS = ['all', 'none', 'archived', 'settings'];
+/** 'tags' é a grade de tags (aba Tags). */
+export const FIXED_VIEWS = ['all', 'tags', 'none', 'archived', 'settings'];
 export const isArch = (l: Link) => !!l.arquivadoEm;
 
 export interface FilterState {
@@ -72,7 +73,8 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
 }
 
 export function viewTitle(view: View, folders: Folder[]): string {
-  if (view === 'all') return 'Todos os links';
+  if (view === 'all') return 'Tudo';
+  if (view === 'tags') return 'Tags';
   if (view === 'none') return 'Sem tag';
   if (view === 'archived') return 'Arquivados';
   if (view === 'settings') return 'Ajustes';

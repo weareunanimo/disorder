@@ -1,5 +1,5 @@
 import { backend, get, set, setBackend } from './store';
-import { applyTheme, busy, checkClipboard, enrichPending, fixView, openAdd } from './actions';
+import { applyTheme, busy, checkClipboard, enrichPending, fixView, capture } from './actions';
 import { localBackend, type Snapshot } from './data/backend';
 import { normLink } from './lib/tags';
 import { connect, getClient, onSignedIn, supabaseBackend } from './data/supabase';
@@ -24,7 +24,7 @@ function applyShare(): boolean {
     const s = JSON.parse(raw) as { url?: string; at?: number } | null;
     if (!s?.url || Date.now() - (s.at || 0) > 30 * 60 * 1000) return false;
     set({ view: 'all' });
-    openAdd(s.url);
+    capture(s.url);
     return true;
   } catch { return false; }
 }

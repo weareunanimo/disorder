@@ -217,17 +217,8 @@ export function cancelModal() {
   set({ modal: null, draft: null });
 }
 
-export function openAdd(prefill = '') {
-  set({ adding: true, addPrefill: prefill, addNote: '', clip: null, dest: currentDest() });
-}
-export function closeAdd() { set({ adding: false, addPrefill: '', addNote: '' }); }
 
 /* ===== Salvar links ===== */
-export type AddResult =
-  | { kind: 'saved' }
-  | { kind: 'archived'; link: Link }
-  | { kind: 'dup'; link: Link }
-  | { kind: 'bad'; code: string };
 
 interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string[] }
 export interface PvSnap { key: string; data: PreviewData | null; ai?: { resumo: string; tema: string; categoria: string } | null }
@@ -294,14 +285,6 @@ export function restoreLink(l: Link) {
   if (cur) void save('links', { ...cur, arquivadoEm: null });
 }
 
-/** Salvar pelo diálogo. Devolve o resultado para o diálogo mostrar a mensagem certa. */
-export function submitAdd(raw: string, pv: PvSnap | null): AddResult {
-  const r = saveLinks(raw, get().dest, pv);
-  if (r.saved.length) { closeAdd(); reportSaved(r); return { kind: 'saved' }; }
-  if (r.dup && isArch(r.dup)) return { kind: 'archived', link: r.dup };
-  if (r.dup) return { kind: 'dup', link: r.dup };
-  return { kind: 'bad', code: r.bad || 'invalido' };
-}
 
 export function describeError(code: string) {
   if (code === 'espaco') return 'Cole um link por vez, sem espaços no meio. Para vários, cole um por linha.';
@@ -321,6 +304,39 @@ export function quickSave(raw: string, dest: string[]) {
   toast(describeError(r.bad || 'invalido'));
 }
 
+/**
+ * Captura pela omni-bar (colar, botão Colar, Ctrl+V em qualquer lugar): salva na hora, sem diálogo.
+ * O cartão aparece no topo e o painel de passos mostra o que a IA vai entregando.
+ * Devolve true se salvou algo.
+ */
+export function capture(raw: string): boolean {
+  const s = get();
+  const dest = s.view === 'tags' || s.view === 'archived' || s.view === 'settings' ? [] : currentDest();
+  const r = saveLinks(raw, dest);
+  if (r.saved.length) {
+    if (s.view === 'tags' || s.view === 'archived' || s.view === 'settings') set({ view: 'all' });
+    set({ building: r.saved.length === 1 ? r.saved[0].id : null, q: '' });
+    reportSaved(r);
+    return true;
+  }
+  quickSave(raw, dest);
+  return false;
+}
+export const looksLikeLink = (txt: string) => /^\s*(https?:\/\/\S+|www\.\S+|[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}\/\S*)/i.test(txt) && !/\s\S+\s\S+/.test(txt.trim().replace(/https?:\/\/\S+/g, ''));
+export function setProfileOpen(v: boolean) { set({ profileOpen: v }); }
+
+/** Botão Colar: usa o link já detectado ou lê a área de transferência. Sem permissão ou sem link, pede para colar na barra. */
+export async function pasteFromClipboard(pasteKey: string): Promise<boolean> {
+  if (get().clip) { acceptClip(); return true; }
+  try {
+    const txt = await navigator.clipboard.readText();
+    if (looksLikeLink(txt)) return capture(txt);
+    toast('Não achei um link copiado. Copie um link e tente de novo, ou cole na barra.');
+  } catch { toast('Cole o link na barra do topo com ' + pasteKey + '.'); }
+  document.getElementById('q')?.focus();
+  return false;
+}
+
 /* ===== Link copiado ===== */
 let clipDismissed: string | null = null, clipBusy = false;
 export function clipCandidate(txt: string) {
@@ -337,11 +353,11 @@ export function acceptClip() {
   const c = get().clip;
   if (!c) return;
   set({ clip: null });
-  if (get().view === 'all') openAdd(c.url); else quickSave(c.url, currentDest());
+  capture(c.url);
 }
 export async function checkClipboard() {
   const s = get();
-  if (clipBusy || !s.loaded || s.modal || s.adding || s.view === 'archived' || s.view === 'settings') return;
+  if (clipBusy || !s.loaded || s.modal || s.view === 'archived' || s.view === 'settings') return;
   if (!navigator.clipboard || !navigator.clipboard.readText) return;
   clipBusy = true;
   try {
@@ -365,7 +381,7 @@ export function submitFolder(nome: string, editId: string | null, then?: Then): 
   set({ modal: null });
   void save('folders', rec);
   if (editId) return { ok: true };
-  if (then?.type === 'dest') set({ dest: withTag(get().dest, rec.id), addNote: 'Tag ' + rec.nome + ' criada.' });
+  if (then?.type === 'dest') set({ dest: withTag(get().dest, rec.id) });
   else if (then?.type === 'edit-pasta') {
     const d = get().draft;
     set({ draft: d && d.id === then.linkId ? { ...d, tags: withTag(d.tags, rec.id) } : d, modal: { kind: 'link', id: then.linkId } });
@@ -583,12 +599,13 @@ async function addSummary(id: string) {
   const l = get().links.find(x => x.id === id);
   if (!get().ai || !l || !needsAi(l) || summarizing.has(id)) return;
   summarizing.add(id);
+  set({ aiBusy: [...get().aiBusy, id] });
   try {
     const s = await summarize(l);
     const now = get().links.find(x => x.id === id);
     if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}), ...(s.categoria ? { categoria: s.categoria } : {}), iaEm: Date.now() });
     if (s && s.tema && !bulkAi) void organize();
-  } finally { summarizing.delete(id); }
+  } finally { summarizing.delete(id); set({ aiBusy: get().aiBusy.filter(x => x !== id) }); }
 }
 
 /** Roda o resumo e a organização nos links que já existem. No máximo 150 por vez, para respeitar o limite diário. */
@@ -675,4 +692,4 @@ export function fixView() {
   if (dest.some(id => !folderExists(folders, id))) set({ dest: dest.filter(id => folderExists(folders, id)) });
 }
 
-export const busy = () => { const s = get(); return !!s.modal || s.adding; };
+export const busy = () => !!get().modal;
