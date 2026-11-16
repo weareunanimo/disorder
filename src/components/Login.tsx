@@ -69,7 +69,7 @@ export function Login() {
                   aria-invalid={!!err || undefined} aria-describedby={err ? 'login-err' : undefined} onChange={e => { setEmail(e.target.value); setErr(''); }} /></span>
               </label>
               {err && <p className="msg err" id="login-err" role="alert">{err}</p>}
-              <button className="btn primary" type="submit" disabled={busy || !email.trim()}>{busy ? 'Enviando…' : 'Enviar link de acesso'}</button>
+              <button className="btn primary" type="submit" disabled={busy || !email.trim()}>{busy ? 'Enviando' : 'Enviar link de acesso'}</button>
             </form>
           </>
         ) : (

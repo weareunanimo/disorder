@@ -68,14 +68,14 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <button type="button" className="t-arq" tabIndex={open ? 0 : -1} onClick={() => setArchived([l], !arq)}>{arq ? <IcoRestore /> : <IcoArchive />}<span>{arq ? 'Restaurar' : 'Arquivar'}</span></button>
       <button type="button" className="t-del" tabIndex={open ? 0 : -1} onClick={() => deleteLink(l.id)}><IcoTrash /><span>Excluir</span></button>
     </div>
-    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} style={vtName(l.id)} aria-selected={selected} aria-busy={loading || undefined}>
+    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} style={vtName(l.id)} data-selected={selected || undefined} aria-busy={loading || undefined}>
       <button type="button" className="pick" role="checkbox" aria-checked={selected} aria-label={'Selecionar ' + titulo}
         onClick={e => { e.preventDefault(); toggleSel(l.id, e.shiftKey); }}>
         <span className="box"><IcoCheck /></span>
       </button>
       <Preview link={l} loading={loading} />
       <div className="ltext">
-        <h3 className="ttl" title={titulo}><button type="button" className="ttl-btn" onClick={() => { if (!get().sel.length) openLink(l.id); else toggleSel(l.id, false); }}>{titulo}</button></h3>
+        <h2 className="ttl" title={titulo}><button type="button" className="ttl-btn" onClick={() => { if (!get().sel.length) openLink(l.id); else toggleSel(l.id, false); }}>{titulo}</button></h2>
         <p className="meta"><span>{originOf(l)}</span>{kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <Summary text={summary} />}
         {loading && <p className="url"><span className="rd">Lendo a página</span></p>}

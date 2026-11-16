@@ -101,7 +101,7 @@ export function FilterGroups() {
           <span className="inw sel-w">
             <select id="fd-sel" className="sel" value={custom ? 'custom' : presetKey} onChange={e => pickDate(e.target.value)}>
               {DATE_OPTS.map(o => <option key={o.k} value={o.k}>{o.label}</option>)}
-              <option value="custom">Escolher datas…</option>
+              <option value="custom">Escolher datas</option>
             </select>
           </span>
           {custom && (

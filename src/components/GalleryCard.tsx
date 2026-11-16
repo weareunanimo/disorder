@@ -123,7 +123,7 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
   const quote = fb === 'quote' ? quoteOf(l) : '';
   return (
     <article className={'gcard' + (fb ? ' fb fb-' + fb : '') + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id}
-      data-c={fb && fb !== 'quote' ? hue(origin) : undefined} style={vtName(l.id)} aria-selected={selected} aria-busy={loading || undefined}>
+      data-c={fb && fb !== 'quote' ? hue(origin) : undefined} style={vtName(l.id)} data-selected={selected || undefined} aria-busy={loading || undefined}>
       <a className="g-hit" href={l.url} target="_blank" rel="noopener noreferrer" aria-label={titulo + ', ' + origin + (kind ? ', ' + kind : '') + (tags.length ? ', tags: ' + tags.map(t => t.nome).join(', ') : '')}
         onClick={onClick} onPointerDown={onPointerDown} onPointerUp={cancel} onPointerCancel={cancel} onPointerMove={onPointerMove}
         onContextMenu={e => { if (isTouch()) e.preventDefault(); }} draggable={false}>

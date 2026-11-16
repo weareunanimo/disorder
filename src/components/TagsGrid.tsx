@@ -82,7 +82,7 @@ export function TagsGrid() {
           <Mosaic links={by.none} c={-1}><TagName nome="Sem tag" count={plural(c.none, '1 link', 'links')} /></Mosaic>
         </button>
       )}
-      <button type="button" className="tcard new" onClick={() => openModal({ kind: 'new', then: { type: 'stay' } })}>
+      <button type="button" className="tcard new" aria-label="Criar tag" onClick={() => openModal({ kind: 'new', then: { type: 'stay' } })}>
         <span className="mosaic" aria-hidden="true"><span className="mz-plus">+</span><span className="tc-new">Criar tag</span></span>
       </button>
     </div>

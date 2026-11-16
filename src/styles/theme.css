@@ -205,11 +205,11 @@ button { cursor: pointer; }
 .pick[aria-checked="true"] svg { opacity: 1; }
 .grid .ltext { padding-right: 22px; }
 .has-sel .link { cursor: pointer; }
-.link[aria-selected="true"] { border-color: var(--fg); }
+.link[data-selected] { border-color: var(--fg); }
 .compact .link { grid-template-columns: 28px 44px minmax(0, 1fr) auto; column-gap: 14px; padding-left: 0; }
 .compact .pick { position: static; width: 28px; }
 .compact .link > .acts { grid-column: 4; }
-.compact .link[aria-selected="true"] { background: var(--hover); border-color: var(--border); }
+.compact .link[data-selected] { background: var(--hover); border-color: var(--border); }
 .nav-btn.arch { margin-top: 12px; }
 @media (max-width: 640px) { .compact .link > .acts { grid-column: 1 / -1; } }
 
@@ -381,7 +381,7 @@ html { overscroll-behavior-y: none; }
 .list.grid { gap: 22px; grid-template-columns: repeat(auto-fill, minmax(max(300px, calc((100% - 44px) / 3)), 1fr)); }
 .link { border: 2px solid var(--ink); border-radius: 0; background: var(--surface); box-shadow: 5px 5px 0 var(--sh); }
 .link:hover { border-color: var(--ink); transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--sh); }
-.link[aria-selected="true"] { border-color: var(--ink); box-shadow: 6px 6px 0 var(--primary); transform: translate(-1px, -1px); }
+.link[data-selected] { border-color: var(--ink); box-shadow: 6px 6px 0 var(--primary); transform: translate(-1px, -1px); }
 @keyframes flash { 0% { outline: 3px solid var(--primary); outline-offset: 4px; } 100% { outline: 3px solid transparent; outline-offset: 4px; } }
 .preview { border: 2px solid var(--gray-line); border-radius: 0; color: var(--gray-line); font: 900 14px/1 var(--f-display); }
 .ttl { font: 800 17px/1.25 var(--f-display); letter-spacing: -0.01em; }
@@ -391,7 +391,7 @@ html { overscroll-behavior-y: none; }
 .compact .link { background: transparent; border: 0; border-bottom: 2px solid var(--ink); box-shadow: none; transform: none; }
 .list.compact { border-top: 2px solid var(--ink); }
 .compact .link:hover { background: var(--accent); color: var(--on-accent); --muted-fg: #2A2A2A; box-shadow: none; transform: none; }
-.compact .link[aria-selected="true"] { background: var(--muted); box-shadow: inset 6px 0 0 var(--primary); transform: none; }
+.compact .link[data-selected] { background: var(--muted); box-shadow: inset 6px 0 0 var(--primary); transform: none; }
 .compact .preview { border-radius: 0; }
 .preview.sm { border-radius: 0; }
 
@@ -600,7 +600,7 @@ html { overscroll-behavior-y: none; }
 .list.grid .link:nth-child(3n+1) { --r2: 4px; --r3: 10px; }
 .list.grid .link:nth-child(3n+2) { --r2: 9px; --r4: 3px; }
 .list.grid .link:hover { --s: 7px; }
-.list.grid .link[aria-selected="true"] { --s: 6px; --shc: var(--primary); }
+.list.grid .link[data-selected] { --s: 6px; --shc: var(--primary); }
 .list.grid .pick { top: 14px; right: 14px; }
 @keyframes flash { 0%, 99% { --shc: var(--primary); } 100% { --shc: var(--ink); } }
 .btn:not(.ghost) { --rk: 5px; --r: 16px; --d: 3px; --s: 3px; }
@@ -895,10 +895,10 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .gcard .g-pick { position: absolute; z-index: 4; right: var(--g-pad); bottom: var(--g-pad); width: 24px; height: 24px; padding: 0; display: none; place-items: center;
   border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); color: transparent; }
 .gcard .g-pick svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.6; }
-.has-sel .gcard .g-pick, .gcard[aria-selected="true"] .g-pick { display: grid; }
+.has-sel .gcard .g-pick, .gcard[data-selected] .g-pick { display: grid; }
 @media (hover: hover) { .gcard:hover .g-pick { display: grid; } }
-.gcard[aria-selected="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
-.gcard[aria-selected="true"] .g-pick { background: var(--accent); color: var(--on-accent); }
+.gcard[data-selected] { outline: 3px solid var(--ink); outline-offset: 2px; }
+.gcard[data-selected] .g-pick { background: var(--accent); color: var(--on-accent); }
 .has-sel .gcard .g-foot { right: calc(var(--g-pad) + 30px); }
 
 .gcard.flash { animation: gflash 1.6s ease-out; }

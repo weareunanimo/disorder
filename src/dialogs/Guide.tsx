@@ -42,7 +42,7 @@ const IllShareSheet = ({ name }: { name: string }) => (
 const IllShortcut = () => (
   <Phone label="Editor do Atalhos com a ação Abrir URLs">
     <div className="il-blk"><span>Receber <i>URLs</i> do Compartilhar</span></div>
-    <div className="il-blk hl">Abrir URLs<span className="il-code">…{SHARE_HASH}<i>Entrada do Atalho</i></span></div>
+    <div className="il-blk hl">Abrir URLs<span className="il-code">{SHARE_HASH}<i>Entrada do Atalho</i></span></div>
   </Phone>
 );
 
@@ -86,7 +86,7 @@ export function Guide({ part }: { part?: 'app' | 'share' }) {
   return (
     <Modal labelledBy="gd-title" onClose={closeModal}>
       <div className="guide" ref={root}>
-        <header className="gd-head">
+        <div className="gd-head">
           <h2 id="gd-title">Leve o disorder para o celular</h2>
           <button type="button" className="lv-x gd-x" aria-label="Fechar" onClick={closeModal}><IcoX /></button>
           <p>Instale o app e salve links direto do Compartilhar, sem copiar e colar.</p>
@@ -94,7 +94,7 @@ export function Guide({ part }: { part?: 'app' | 'share' }) {
             <button type="button" aria-pressed={plat === 'ios'} onClick={() => setPlat('ios')}>iPhone</button>
             <button type="button" aria-pressed={plat === 'android'} onClick={() => setPlat('android')}>Android</button>
           </div>
-        </header>
+        </div>
 
         {here === 'desktop' && canInstall && (
           <div className="gd-pc">

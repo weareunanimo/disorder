@@ -70,7 +70,7 @@ export function SelectionBar() {
                 );
               })}
               <button type="button" className="mi" role="menuitem" aria-disabled={noTags || undefined} onClick={() => { if (!noTags) bulkClearTags(); }}>Tirar todas as tags{noTags && <span className="cur">nenhuma</span>}</button>
-              <button type="button" className="mi" role="menuitem" onClick={() => { set({ menu: false }); openModal({ kind: 'new', then: { type: 'move-many' } }); }}>+ Nova tag…</button>
+              <button type="button" className="mi" role="menuitem" onClick={() => { set({ menu: false }); openModal({ kind: 'new', then: { type: 'move-many' } }); }}>+ Nova tag</button>
             </div>
           )}
         </>
