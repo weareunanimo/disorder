@@ -1256,3 +1256,17 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .lv-acts .btn.icon { width: 40px; height: 40px; padding: 0; justify-content: center; }
 .lv-acts .btn.icon svg { width: 17px; height: 17px; }
 @media (min-width: 1025px) { .lv.r9x16 .lv-top, .lv.r1x1 .lv-top { left: auto; } .lv.r9x16 .lv-nav, .lv.r1x1 .lv-nav { margin-right: 0; } }
+
+/* Painel de confirmação por cima do conteúdo, sem empurrar a lista. */
+.hdr { position: sticky; }
+.hdr .building { position: absolute; z-index: 44; top: calc(100% - 6px); left: 50%; translate: -50% 0; width: min(640px, calc(100vw - 24px)); margin: 0; box-shadow: 6px 6px 0 var(--sh); max-height: calc(100dvh - 170px); }
+@media (max-width: 640px) { .hdr .building { width: calc(100vw - 24px); } }
+/* Fantasma que voa do painel até o cartão, e o pulo do cartão ao chegar. */
+.fly-ghost { position: fixed; z-index: 70; transform-origin: 50% 50%; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 14px; overflow: hidden; pointer-events: none;
+  background: var(--accent); color: var(--on-accent); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 6px 6px 0 var(--sh); }
+.fly-ghost img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+.fly-ghost b { position: relative; font: 800 20px/1.15 var(--f-display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fly-ghost span { position: relative; font: 700 11px/1.2 var(--f-mono); text-transform: uppercase; }
+.landed { animation: landed .6s cubic-bezier(.2, .9, .25, 1.2); }
+@keyframes landed { 0% { transform: scale(.94); box-shadow: 0 0 0 0 var(--accent); } 45% { transform: scale(1.04); box-shadow: 0 0 0 6px var(--accent); } 100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .landed { animation: none; outline: 3px solid var(--accent); } }

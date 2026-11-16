@@ -7,6 +7,8 @@ import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
 import { tagsOf } from '../lib/tags';
+import { thumbOf } from '../lib/platforms';
+import { flyToCard } from '../lib/fly';
 import { temaKey } from '../lib/auto';
 import { sameName } from '../lib/folders';
 import { colorOf, shapeOf } from '../lib/folders';
@@ -48,7 +50,7 @@ function Building() {
   // Formulário de confirmação: preenchido uma vez, quando a IA termina.
   const [titulo, setTitulo] = useState(''), [sel, setSel] = useState<string[]>([]), [novas, setNovas] = useState<string[]>([]);
   const [nova, setNova] = useState(''), [filled, setFilled] = useState(''), [tried, setTried] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null), panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!l || !done || filled === l.id) return;
     setFilled(l.id); setTried(false); setNova('');
@@ -79,10 +81,12 @@ function Building() {
   const confirm = () => {
     setTried(true);
     if (!titulo.trim() || !nTags) { (!titulo.trim() ? titleRef.current : document.getElementById('bd-nova'))?.focus(); return; }
-    void confirmCapture(l.id, titulo.trim(), sel, novas);
+    const from = panel.current?.getBoundingClientRect() || null;
+    const names = [...novas, ...sel.map(t => live.find(f => f.id === t)?.nome || '')].filter(Boolean);
+    void confirmCapture(l.id, titulo.trim(), sel, novas).then(() => flyToCard(l.id, from, titulo.trim(), names, thumbOf(l)));
   };
   return (
-    <div className="building" role="region" aria-label="Novo link">
+    <div className="building" ref={panel} role="region" aria-label="Novo link">
       <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
         <button type="button" className="bd-x" aria-label="Fechar sem confirmar" title="Fechar sem confirmar" onClick={skipBuild}><IcoX /></button></div>
       <ol className="steps" aria-live="polite">
@@ -166,6 +170,11 @@ function OmniBar() {
     else if (e.key === 'Escape') { if (q) set({ q: '' }); else { setOpen(false); input.current?.blur(); } }
   };
   const isLink = looksLikeLink(q);
+  // Começou a montar um link (colar aqui, botão Colar ou Ctrl+V em qualquer lugar): o painel de filtros sai da frente.
+  const building = useStore(s => s.building);
+  useEffect(() => { if (building) { setOpen(false); input.current?.blur(); } }, [building]);
+  const modal = useStore(s => !!s.modal);
+  useEffect(() => { if (modal) setOpen(false); }, [modal]);
 
   return (
     <div className={'omni' + (open ? ' open' : '')} ref={wrap}>
@@ -181,7 +190,7 @@ function OmniBar() {
           ? (isLink
             ? <button type="button" className="omni-btn pri" onClick={() => { if (capture(q)) set({ q: '' }); }}>Salvar</button>
             : <button type="button" className="omni-btn" aria-label="Limpar busca" onClick={() => { set({ q: '' }); input.current?.focus(); }}><IcoX /></button>)
-          : <button type="button" className={'omni-btn' + (clip ? ' pri' : '')} onClick={() => void pasteFromClipboard(PASTE_KEY)} title={clip ? 'Salvar o link copiado' : 'Colar o link copiado'}><IcoPaste /><span>{clip ? 'Colar link' : 'Colar'}</span></button>}
+          : <button type="button" className={'omni-btn' + (clip ? ' pri' : '')} onClick={() => { setOpen(false); void pasteFromClipboard(PASTE_KEY); }} title={clip ? 'Salvar o link copiado' : 'Colar o link copiado'}><IcoPaste /><span>{clip ? 'Colar link' : 'Colar'}</span></button>}
       </label>
       <span id="omni-hint" className="sr">Colar um link salva na hora. Digitar busca nos seus links. Atalho: barra.</span>
       {open && !q && canSearch && (
