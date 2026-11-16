@@ -191,7 +191,7 @@ function OmniBar() {
         <IcoSearch />
         <span className="sr">Colar um link ou buscar</span>
         <input ref={input} id="q" type="search" enterKeyHint={isLink ? 'done' : 'search'} autoComplete="off" autoCapitalize="off" spellCheck={false}
-          placeholder={canSearch ? 'Cole um link ou busque' : 'Cole um link'} value={q}
+          placeholder="Cole um link ou busque" value={q}
           onChange={e => { const v = e.target.value; if (!canSearch && v && !looksLikeLink(v)) go('all'); set({ q: v }); }}
           onFocus={() => setOpen(true)} onPaste={onPaste} onKeyDown={onKeyDown}
           aria-describedby="omni-hint" />
