@@ -1,9 +1,9 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import type { Folder, Link } from '../types';
-import { colorOf } from '../lib/folders';
+import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { get } from '../store';
-import { setCardMenu, toggleSel } from '../actions';
+import { openLink, setCardMenu, toggleSel } from '../actions';
 import { PLAT, ago, autoTitle, fmtDuration, originOf, thumbOf } from '../lib/platforms';
 import { kindLabel } from '../lib/kinds';
 import { isArch } from '../lib/filters';
@@ -66,7 +66,7 @@ function GTags({ tags }: { tags: Folder[] }) {
   const names = tags.map(t => t.nome).join(', ');
   return (
     <span ref={ref} className={'g-tags' + (fit ? '' : ' short')} title={names}>
-      {tags.map((t, i) => <span key={t.id} className="tag" data-c={colorOf(t)} data-rest={i > 0 || undefined}>{t.nome}</span>)}
+      {tags.map((t, i) => <span key={t.id} className="tag" data-c={colorOf(t)} data-s={shapeOf(t)} data-rest={i > 0 || undefined}>{t.nome}</span>)}
       {tags.length > 1 && <span className="tag more" aria-hidden={fit || undefined}>+{tags.length - 1}</span>}
     </span>
   );
@@ -89,7 +89,7 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
   const menuAnchor = useRef<HTMLDivElement>(null);
   const tags = useMemo(() => liveTags(l, folders), [l, folders]);
   // Com foto, as tags tomam o lugar do título. Sem foto (capas de ícone e tipográfica), o título é o conteúdo e fica, com as tags embaixo.
-  const showTitle = fb === 'type' || fb === 'icon' || (!fb && !tags.length);
+  const showTitle = fb !== 'quote';
 
   // Segurar: abre o menu e engole o clique que viria ao soltar.
   const press = useRef<{ t: number; x: number; y: number; fired: boolean } | null>(null);
@@ -112,7 +112,12 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
     if (press.current?.fired) { e.preventDefault(); press.current = null; return; }
     press.current = null;
     // Selecionando: o toque marca e desmarca em vez de abrir.
-    if (selecting || get().sel.length || e.shiftKey) { e.preventDefault(); toggleSel(l.id, e.shiftKey); }
+    // Cmd ou Ctrl + clique abre o original em outra aba, como qualquer link.
+    if ((e.metaKey || e.ctrlKey) && !selecting && !get().sel.length) return;
+    e.preventDefault();
+    if (selecting || get().sel.length || e.shiftKey) { toggleSel(l.id, e.shiftKey); return; }
+    // Abre o link no próprio app (mídia, resumo e tags). O original fica a um toque, dentro do modal.
+    openLink(l.id);
   };
 
   const quote = fb === 'quote' ? quoteOf(l) : '';

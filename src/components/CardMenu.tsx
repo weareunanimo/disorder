@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { deleteLink, openModal, setArchived, setCardMenu, toast, toggleLinkTag, toggleSel } from '../actions';
 import type { Link } from '../types';
 import { useSortedFolders } from '../hooks/useVisible';
-import { colorOf } from '../lib/folders';
+import { colorOf, shapeOf } from '../lib/folders';
 import { tagsOf } from '../lib/tags';
 import { isTouch } from '../hooks/useMedia';
 import { IcoArchive, IcoCheck, IcoCopy, IcoEdit, IcoMore, IcoRestore, IcoTag, IcoTrash, IcoWhats } from './icons';
@@ -77,7 +77,7 @@ export function CardMenu({ link: l, titulo, arq, hideTrigger, anchor }: Props) {
         const on = mine.includes(f.id);
         return (
           <button key={f.id} type="button" role="menuitemcheckbox" aria-checked={on} onClick={() => toggleLinkTag(l.id, f.id)}>
-            <span className="cm-ck" aria-hidden="true">{on && <IcoCheck />}</span><span className="tag" data-c={colorOf(f)}>{f.nome}</span>
+            <span className="cm-ck" aria-hidden="true">{on && <IcoCheck />}</span><span className="tag" data-c={colorOf(f)} data-s={shapeOf(f)}>{f.nome}</span>
           </button>
         );
       })}

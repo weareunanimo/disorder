@@ -8,10 +8,12 @@ export type Then =
   | { type: 'stay' }
   | { type: 'dest' }
   | { type: 'edit-pasta'; linkId: string }
-  | { type: 'move-many' };
+  | { type: 'move-many' }
+  | { type: 'tag-link'; linkId: string };
 
 export type ModalState =
   | { kind: 'link'; id: string }
+  | { kind: 'view'; id: string }
   | { kind: 'new'; then?: Then }
   | { kind: 'edit'; id: string }
   | { kind: 'confirm'; id: string }
@@ -73,6 +75,8 @@ export interface State extends FilterState {
   aiBusy: string[];
   /** Último link colado na omni-bar, para mostrar os passos da montagem. */
   building: string | null;
+  /** Link colado que ficou sem tag: o painel de passos pede para escolher. */
+  needTag: string | null;
   /** Menu de perfil aberto. */
   profileOpen: boolean;
   /** Ordem da lista: data, nome ou origem. */
@@ -119,6 +123,7 @@ export const useStore = create<State>(() => ({
   cardMenuTags: false,
   aiBusy: [],
   building: null,
+  needTag: null,
   profileOpen: false,
   sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',

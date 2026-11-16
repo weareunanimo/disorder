@@ -7,6 +7,12 @@ export const STARTERS = ['Receitas', 'Decoração', 'Pet'];
 export const colorOf = (f?: Pick<Folder, 'id' | 'cor'> | null): number =>
   f && Number.isInteger(f.cor) ? (f.cor as number) % 8 : hashN((f && f.id) || '') % 8;
 
+/**
+ * Forma da tag: 0 reta, 1 cantos arredondados, 2 pílula. Fixa por tag (vem do id), independente da cor,
+ * para que 8 cores vezes 3 formas repitam menos lado a lado.
+ */
+export const shapeOf = (f?: Pick<Folder, 'id'> | null): number => hashN(((f && f.id) || '') + ':forma') % 3;
+
 const ordOf = (f: Folder) => (Number.isFinite(f.ordem) ? (f.ordem as number) : 1e9);
 
 export const sortFolders = (fs: Folder[]): Folder[] =>

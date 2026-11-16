@@ -1,13 +1,13 @@
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { get, useStore } from '../store';
-import { deleteLink, pasteFromClipboard, setArchived, setSwipe, toggleSel } from '../actions';
+import { deleteLink, openLink, pasteFromClipboard, setArchived, setSwipe, toggleSel } from '../actions';
 import { PASTE_KEY } from './Header';
 import type { Folder, Link } from '../types';
 import { filterCount, isArch, viewTitle } from '../lib/filters';
-import { colorOf } from '../lib/folders';
+import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { kindLabel } from '../lib/kinds';
-import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, shortUrl, summaryOf, thumbOf } from '../lib/platforms';
+import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { isTouch, useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
@@ -78,17 +78,17 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
         <h3 className="ttl" title={titulo}>{titulo}</h3>
         <p className="meta"><span>{originOf(l)}</span>{kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <Summary text={summary} />}
-        <p className="url" title={l.url}>{loading && <span className="rd">Lendo a página</span>}<span className="ul">{shortUrl(l.url)}</span></p>
+        {loading && <p className="url"><span className="rd">Lendo a página</span></p>}
         {l.nota && <p className="note">{l.nota}</p>}
       </div>
       <div className="acts">
         {tags.length > 0 && (
           <span className="tags">
-            {tags.slice(0, 2).map(t => <span key={t.id} className="tag" data-c={colorOf(t)} title={t.nome}>{t.nome}</span>)}
+            {tags.slice(0, 2).map(t => <span key={t.id} className="tag" data-c={colorOf(t)} data-s={shapeOf(t)} title={t.nome}>{t.nome}</span>)}
             {tags.length > 2 && <span className="tag more" title={tags.slice(2).map(t => t.nome).join(', ')}>+{tags.length - 2}</span>}
           </span>
         )}
-        <a className="btn outline sm" href={l.url} target="_blank" rel="noopener noreferrer">Abrir</a>
+        <button type="button" className="btn outline sm" onClick={() => openLink(l.id)}>Abrir link</button>
         <CardMenu link={l} titulo={titulo} arq={arq} />
       </div>
     </article>

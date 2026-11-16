@@ -1,5 +1,5 @@
 import { useWide } from '../hooks/useMedia';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { set, useStore } from '../store';
 import { go, openModal, resetFilters, setLayout, setSort, toggleFolderFilter, toggleKind, togglePlat } from '../actions';
 import { SORTS, isSort } from '../lib/sort';
@@ -19,6 +19,11 @@ function Chip({ label, count, on, onClick }: { label: string; count?: number; on
     </button>
   );
 }
+
+const DATE_OPTS: { k: string; label: string; days?: number }[] = [
+  { k: 'any', label: 'Qualquer data' }, { k: 'd1', label: 'Hoje', days: 1 }, { k: 'd7', label: 'Últimos 7 dias', days: 7 },
+  { k: 'd30', label: 'Últimos 30 dias', days: 30 }, { k: 'd90', label: 'Últimos 90 dias', days: 90 }, { k: 'year', label: 'Este ano' },
+];
 
 /** Grupos de filtro rápido (tags, tipo, origem, data). Ficam no popover da omni-bar. Só aparecem os que existem nos links. */
 export function FilterGroups() {
@@ -49,8 +54,18 @@ export function FilterGroups() {
     if (okP.length !== plats.length || okF.length !== fp.length) set({ plats: okP, fp: okF });
   }, [plats, kinds, fp, stats, folders]);
 
-  const isPreset = (d: number) => { const x = datePreset(d); return from === x.from && to === x.to; };
-  const preset = (d: number) => set(isPreset(d) ? { from: '', to: '' } : datePreset(d));
+  // Data de salvamento num select: atalhos comuns e "Escolher datas…" para um intervalo livre.
+  const presetKey = !from && !to ? 'any' : DATE_OPTS.find(o => o.days && datePreset(o.days).from === from && datePreset(o.days).to === to)?.k
+    || (from === new Date().getFullYear() + '-01-01' && !to ? 'year' : '');
+  const [wantCustom, setWantCustom] = useState(false);
+  const custom = wantCustom || !presetKey;
+  const pickDate = (k: string) => {
+    if (k === 'custom') { setWantCustom(true); return; }
+    setWantCustom(false);
+    if (k === 'any') set({ from: '', to: '' });
+    else if (k === 'year') set({ from: new Date().getFullYear() + '-01-01', to: '' });
+    else { const o = DATE_OPTS.find(x => x.k === k); if (o?.days) set(datePreset(o.days)); }
+  };
 
   return (
     <div className="fp-body">
@@ -80,15 +95,20 @@ export function FilterGroups() {
             </div>
           </div>
         )}
-        <div className="fgrp" role="group" aria-label="Filtrar por data">
-          <span className="fl">Data de salvamento</span>
-          <div className="chips">
-            {[7, 30, 90].map(d => <Chip key={d} label={'Últimos ' + d + ' dias'} on={isPreset(d)} onClick={() => preset(d)} />)}
-          </div>
-          <div className="fdates">
-            <label className="f" htmlFor="fd-from">De<span className="inw"><input type="date" id="fd-from" value={from} onChange={e => set({ from: e.target.value })} /></span></label>
-            <label className="f" htmlFor="fd-to">Até<span className="inw"><input type="date" id="fd-to" value={to} onChange={e => set({ to: e.target.value })} /></span></label>
-          </div>
+        <div className="fgrp fg-date" role="group" aria-label="Filtrar por data">
+          <label className="fl" htmlFor="fd-sel">Data de salvamento</label>
+          <span className="inw sel-w">
+            <select id="fd-sel" className="sel" value={custom ? 'custom' : presetKey} onChange={e => pickDate(e.target.value)}>
+              {DATE_OPTS.map(o => <option key={o.k} value={o.k}>{o.label}</option>)}
+              <option value="custom">Escolher datas…</option>
+            </select>
+          </span>
+          {custom && (
+            <div className="fdates">
+              <label className="f" htmlFor="fd-from">De<span className="inw"><input type="date" id="fd-from" value={from} onChange={e => set({ from: e.target.value })} /></span></label>
+              <label className="f" htmlFor="fd-to">Até<span className="inw"><input type="date" id="fd-to" value={to} onChange={e => set({ to: e.target.value })} /></span></label>
+            </div>
+          )}
         </div>
       </div>
   );

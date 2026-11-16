@@ -1,7 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { set, useStore } from '../store';
 import { archiveSelected, bulkClearTags, deleteSelected, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
-import { colorOf } from '../lib/folders';
+import { colorOf, shapeOf } from '../lib/folders';
 import { hasTag, tagsOf } from '../lib/tags';
 import { useSortedFolders, useVisible } from '../hooks/useVisible';
 import { IcoArchive, IcoChevron, IcoMove, IcoRestore, IcoTrash, IcoX } from './icons';
@@ -65,7 +65,7 @@ export function SelectionBar() {
                 return (
                   <button key={f.id} type="button" className="mi" role="menuitemcheckbox" aria-checked={st} onClick={() => bulkTag(f.id)}>
                     <span className="ck" aria-hidden="true" />
-                    <span className="tag" data-c={colorOf(f)}>{f.nome}</span>
+                    <span className="tag" data-c={colorOf(f)} data-s={shapeOf(f)}>{f.nome}</span>
                   </button>
                 );
               })}

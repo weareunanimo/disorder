@@ -8,6 +8,7 @@ import { CFG } from '../config';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
 import { Modal } from './Modal';
+import { LinkView } from './LinkView';
 import { TagPicker } from '../components/TagPicker';
 import { tagsOf, hasTag } from '../lib/tags';
 
@@ -130,6 +131,7 @@ export function ModalHost() {
   const link = useStore(s => (m?.kind === 'link' ? s.links.find(x => x.id === m.id) : undefined));
   if (!m) return null;
   if (m.kind === 'link') return link ? <LinkDialog key={m.id} link={link} /> : null;
+  if (m.kind === 'view') return <LinkView key={m.id} id={m.id} />;
   if (m.kind === 'purge') return <Purge ids={m.ids} />;
   if (m.kind === 'confirm') return <ConfirmFolder id={m.id} />;
   if (m.kind === 'archive-folder') return <ArchiveFolder id={m.id} />;

@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { capture, go, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { capture, go, openModal, toggleLinkTag, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
 import { autoTitle } from '../lib/platforms';
 import { liveTags } from '../lib/tags';
+import { colorOf, shapeOf } from '../lib/folders';
 import { FilterGroups } from './Toolbar';
 import { IcoArchive, IcoGear, IcoPaste, IcoSearch, IcoUser, IcoX } from './icons';
 
@@ -21,8 +22,9 @@ function Step({ state, text }: { state: StepState; text: string }) {
 
 /** Passos da montagem do último link colado. Some sozinho alguns segundos depois de pronto. */
 function Building() {
-  const id = useStore(s => s.building);
-  const l = useStore(s => s.links.find(x => x.id === s.building));
+  const id = useStore(s => s.needTag || s.building);
+  const need = useStore(s => !!s.needTag && s.needTag === (s.needTag || s.building));
+  const l = useStore(s => s.links.find(x => x.id === (s.needTag || s.building)));
   const reading = useStore(s => !!s.building && s.loading.includes(s.building));
   const aiRun = useStore(s => !!s.building && s.aiBusy.includes(s.building));
   const aiOn = useStore(s => s.ai) && !!CFG.summarizeApi;
@@ -33,8 +35,8 @@ function Building() {
   const done = !!l && !reading && (!aiOn || !read || (!aiRun && aiDone) || (!aiRun && !!l.enriquecido && !read));
   useEffect(() => {
     if (!id) return;
-    if (!l) { set({ building: null }); return; }
-    if (!done) return;
+    if (!l) { set({ building: null, needTag: null }); return; }
+    if (!done || need) return;
     const t = setTimeout(() => { if (get().building === id) set({ building: null }); }, 4500);
     return () => clearTimeout(t);
   }, [id, l, done]);
@@ -44,13 +46,21 @@ function Building() {
   return (
     <div className="building" role="status" aria-live="polite">
       <div className="bd-h"><b title={l.titulo || l.tituloAuto || autoTitle(l)}>{l.titulo || l.tituloAuto || autoTitle(l)}</b>
-        <button type="button" className="bd-x" aria-label="Fechar" onClick={() => set({ building: null })}><IcoX /></button></div>
+        <button type="button" className="bd-x" aria-label="Fechar" onClick={() => set({ building: null, needTag: null })}><IcoX /></button></div>
       <ol className="steps">
         <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? 'Título e imagem lidos' : 'A página não deixou ler'} />
         {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
         {aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo não identificado') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
-        <Step state={done ? 'done' : 'wait'} text={tags.length ? 'Tags: ' + tags.map(t => t.nome).join(', ') : done ? 'Cartão pronto' : 'Organizar em tags'} />
+        <Step state={tags.length ? 'done' : need ? 'run' : 'wait'} text={tags.length ? 'Tag: ' + tags.map(t => t.nome).join(', ') : need ? 'Escolha uma tag para este link' : 'Organizar em tags'} />
       </ol>
+      {need && !tags.length && (
+        <div className="bd-pick" role="group" aria-label="Escolha uma tag">
+          {folders.filter(f => !f.arquivadaEm).map(f => (
+            <button key={f.id} type="button" className="chip tp" data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => { toggleLinkTag(l.id, f.id); set({ needTag: null }); }}>{f.nome}</button>
+          ))}
+          <button type="button" className="chip tp-new" onClick={() => { set({ needTag: null }); openModal({ kind: 'new', then: { type: 'tag-link', linkId: l.id } }); }}>+ Nova tag</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -64,6 +74,16 @@ function OmniBar() {
   const q = useStore(s => s.q), clip = useStore(s => s.clip), view = useStore(s => s.view);
   const input = useRef<HTMLInputElement>(null), wrap = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  // O painel de filtros usa quase toda a largura da tela, preso logo abaixo da barra.
+  const [popTop, setPopTop] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    const place = () => { const r = wrap.current?.getBoundingClientRect(); if (r) setPopTop(Math.round(r.bottom + 8)); };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, { passive: true });
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place); };
+  }, [open]);
   const canSearch = view !== 'tags' && view !== 'settings';
 
   useEffect(() => {
@@ -111,7 +131,7 @@ function OmniBar() {
       </label>
       <span id="omni-hint" className="sr">Colar um link salva na hora. Digitar busca nos seus links. Atalho: barra.</span>
       {open && !q && canSearch && (
-        <div className="omni-pop" role="group" aria-label="Filtros rápidos">
+        <div className="omni-pop" role="group" aria-label="Filtros rápidos" style={{ top: popTop }}>
           <FilterGroups />
         </div>
       )}

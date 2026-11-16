@@ -3,7 +3,7 @@ import { backend, get, set, type Layout, type ModalState, type Then, type Theme 
 import type { Col, Folder, Link, PreviewData, View } from './types';
 import { FIXED_VIEWS, EMPTY_FILTERS, isArch, visibleLinks, folderExists } from './lib/filters';
 import { isParsed, parseLink } from './lib/platforms';
-import { planAutoFolders } from './lib/auto';
+import { planAutoFolders, temaKey } from './lib/auto';
 import type { Sort } from './lib/sort';
 import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
@@ -326,6 +326,7 @@ export function capture(raw: string): boolean {
   const r = saveLinks(raw, dest);
   if (r.saved.length) {
     if (s.view === 'tags' || s.view === 'archived' || s.view === 'settings') set({ view: 'all' });
+    r.saved.forEach(l => mustTag.add(l.id));
     set({ building: r.saved.length === 1 ? r.saved[0].id : null, q: '' });
     reportSaved(r);
     return true;
@@ -334,6 +335,9 @@ export function capture(raw: string): boolean {
   return false;
 }
 export const looksLikeLink = (txt: string) => /^\s*(https?:\/\/\S+|www\.\S+|[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}\/\S*)/i.test(txt) && !/\s\S+\s\S+/.test(txt.trim().replace(/https?:\/\/\S+/g, ''));
+/** Abre o link no modal do app. */
+export function openLink(id: string) { set({ cardMenu: null, swipeId: null }); openModal({ kind: 'view', id }); }
+
 export function setProfileOpen(v: boolean) { set({ profileOpen: v }); }
 
 /** Botão Colar: usa o link já detectado ou lê a área de transferência. Sem permissão ou sem link, pede para colar na barra. */
@@ -409,6 +413,7 @@ export function submitFolder(nome: string, editId: string | null, then?: Then): 
     set({ draft: d && d.id === then.linkId ? { ...d, tags: withTag(d.tags, rec.id) } : d, modal: { kind: 'link', id: then.linkId } });
   }
   else if (then?.type === 'move-many') bulkTag(rec.id);
+  else if (then?.type === 'tag-link') { const l = get().links.find(x => x.id === then.linkId); if (l) void save('links', { ...l, pastaIds: withTag(tagsOf(l), rec.id) }); }
   else if (then?.type === 'stay') toast('Tag ' + rec.nome + ' criada.');
   else set({ view: rec.id, dest: [rec.id], sel: [], anchor: null, menu: false });
   return { ok: true };
@@ -659,6 +664,35 @@ export async function summarizeExisting() {
 /* ===== Preview automático ===== */
 const enriching = new Set<string>();
 /** Busca título e imagem de um link já salvo. force refaz mesmo que já tenha sido feito. */
+/** Links colados nesta sessão que ainda precisam ganhar tag. Toda captura sai com tag. */
+const mustTag = new Set<string>();
+
+/**
+ * Garante uma tag para o link colado: usa a tag cujo nome bate com o tema que a IA identificou,
+ * ou cria uma com esse tema. Sem tema (IA desligada, sem resposta, ou tema que a pessoa recusou antes),
+ * o painel de passos pede para escolher.
+ */
+export async function ensureTag(id: string) {
+  const l = get().links.find(x => x.id === id);
+  if (!l) { mustTag.delete(id); return; }
+  const folders = get().folders;
+  if (tagsOf(l).some(t => folderExists(folders, t))) { mustTag.delete(id); return; }
+  const tema = (l.tema || '').trim();
+  if (!tema || ignoredThemes().some(x => temaKey(x) === temaKey(tema))) { set({ needTag: id }); return; }
+  const match = folders.find(f => !f.arquivadaEm && temaKey(f.nome) === temaKey(tema));
+  let fid = match?.id;
+  if (!fid) {
+    const rec = { ...newFolderRec(tema.charAt(0).toUpperCase() + tema.slice(1)), auto: true };
+    fid = rec.id;
+    await save('folders', rec);
+  }
+  mustTag.delete(id);
+  const cur = get().links.find(x => x.id === id);
+  if (!cur) return;
+  autoWriting = true;
+  try { await saveMany('links', [{ ...cur, pastaIds: withTag(tagsOf(cur), fid) }]); } finally { autoWriting = false; }
+}
+
 export async function enrich(id: string, force = false): Promise<boolean> {
   const l = get().links.find(x => x.id === id);
   if (!CFG.previewApi || !l || (l.enriquecido && !force) || enriching.has(id)) return false;
@@ -675,6 +709,7 @@ export async function enrich(id: string, force = false): Promise<boolean> {
   } finally {
     enriching.delete(id);
     if (showLoading) set({ loading: get().loading.filter(x => x !== id) });
+    if (mustTag.has(id)) void ensureTag(id);
   }
 }
 
