@@ -1,6 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { set, useStore } from '../store';
-import { archiveSelected, bulkClearTags, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
+import { archiveSelected, bulkClearTags, deleteSelected, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
 import { colorOf } from '../lib/folders';
 import { hasTag, tagsOf } from '../lib/tags';
 import { useSortedFolders, useVisible } from '../hooks/useVisible';
@@ -54,7 +54,8 @@ export function SelectionBar() {
         </>
       ) : (
         <>
-          <button type="button" data-move ref={trigger} aria-haspopup="menu" aria-expanded={menu} onClick={() => set({ menu: !menu })}><IcoMove />Tags<IcoChevron /></button>
+          <button type="button" data-move ref={trigger} aria-haspopup="menu" aria-expanded={menu} aria-label="Tags" onClick={() => set({ menu: !menu })}><IcoMove /><span className="lbl">Tags</span><IcoChevron /></button>
+          <button type="button" className="warn" aria-label="Excluir" title="Excluir" onClick={deleteSelected}><IcoTrash /><span className="lbl">Excluir</span></button>
           <button type="button" className="strong" onClick={() => archiveSelected(true)}><IcoArchive />Arquivar</button>
           {menu && (
             <div className="menu" role="menu" aria-label="Tags dos links selecionados">

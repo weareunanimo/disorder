@@ -1122,3 +1122,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .first-logo { white-space: nowrap; max-width: 100%; }
 .subbar .seg.view { border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; background: var(--surface); }
 .subbar .seg.view::before, .subbar .seg.view::after { display: none; }
+
+/* Barra de seleção em tela estreita: Tags e Excluir só com ícone, para caber Arquivar inteiro. */
+@media (max-width: 420px) { #bar .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+@media (max-width: 340px) { #bar { gap: 2px; } #bar button { padding-left: 7px; padding-right: 7px; font-size: 13px; } #bar .n { padding: 0 4px 0 2px; } }

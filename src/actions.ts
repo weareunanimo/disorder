@@ -198,6 +198,17 @@ export function deleteLink(id: string) {
   toast('Link excluído.', 'Desfazer', () => { void save('links', copy); });
 }
 
+/** Exclui os selecionados na hora, como o Excluir do cartão. O aviso traz Desfazer, que devolve todos. */
+export function deleteSelected() {
+  const items = selItems();
+  if (!items.length) return;
+  const copies = items.map(l => ({ ...l }));
+  void removeMany('links', items.map(l => l.id));
+  clearSel();
+  set({ swipeId: null, cardMenu: null });
+  toast(plural(items.length, '1 link excluído', 'links excluídos') + '.', 'Desfazer', () => { void saveMany('links', copies); });
+}
+
 export function purge(ids: string[]) {
   closeModal();
   const n = get().links.filter(l => ids.includes(l.id)).length;
