@@ -380,9 +380,9 @@ export async function pasteFromClipboard(pasteKey: string): Promise<boolean> {
   try {
     const txt = await navigator.clipboard.readText();
     if (containsLink(txt)) return capture(txt);
-    toast('Não achei um link copiado. Copie um link e tente de novo, ou cole na barra.');
-  } catch { toast('Cole o link na barra do topo com ' + pasteKey + '.'); }
-  document.getElementById('q')?.focus();
+    toast('Não achei um link copiado. Copie um link e tente de novo, ou cole no campo.');
+  } catch { toast('Cole o link no campo com ' + pasteKey + '.'); }
+  document.getElementById('nm-raw')?.focus();
   return false;
 }
 

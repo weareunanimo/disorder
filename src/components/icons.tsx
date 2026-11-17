@@ -35,3 +35,5 @@ export const IcoOpen = () => <I><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v
 export const IcoUser = () => <I><circle cx="8" cy="5.5" r="2.8" /><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3" /></I>;
 export const IcoPaste = () => <I><rect x="3.5" y="3" width="9" height="11" rx="1.5" /><path d="M6 3V2h4v1M6 7.5h4M6 10h3" /></I>;
 export const IcoApp = () => <I><rect x="4" y="1.5" width="8" height="13" rx="1.8" /><path d="M8 4.5v5M6 7.8 8 9.8l2-2M7 12.3h2" /></I>;
+export const IcoNote = () => <I><path d="M3.5 2h6.5l3 3v9h-9.5z" /><path d="M6 7.5h4.5M6 10.5h3" /></I>;
+export const IcoChecklist = () => <I><rect x="2" y="3" width="3" height="3" rx=".6" /><path d="M7.5 4.5H14M7.5 11.5H14" /><rect x="2" y="10" width="3" height="3" rx=".6" /></I>;

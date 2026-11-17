@@ -12,6 +12,7 @@ import { useBase, useVisible } from '../hooks/useVisible';
 import { useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
 import { ListPeek } from './Checklist';
+import { createNote } from '../actions';
 import { CardMenu } from './CardMenu';
 import { GalleryCard, vtName } from './GalleryCard';
 import { IcoArchive, IcoCheck, IcoPaste, IcoRestore, IcoTrash } from './icons';
@@ -105,6 +106,7 @@ function FirstRun() {
       <p>Qualquer site, post ou vídeo. A IA lê, resume e organiza em tags para você.</p>
       <button type="button" className="btn primary first-cta" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>
       <p className="first-k">ou aperte <kbd>{PASTE_KEY}</kbd> em qualquer lugar desta tela</p>
+      <p className="first-k">ou comece por uma <button type="button" className="lv-tagbtn" onClick={() => createNote(false)}>nota</button> ou <button type="button" className="lv-tagbtn" onClick={() => createNote(true)}>lista</button></p>
     </div>
   );
 }
@@ -114,16 +116,20 @@ function Empty({ base }: { base: number }) {
   const filtered = useStore(s => filterCount(s, s.view)) > 0 && base > 0;
   let t: string, p: string;
   if (!total) return <FirstRun />;
-  if (filtered) { t = 'Nenhum link bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
+  if (filtered) { t = 'Nada bate com o filtro'; p = 'Limpe os filtros ou tente outra combinação.'; }
   else if (view === 'archived') { t = 'Nada arquivado'; p = 'Links arquivados saem das tags e ficam guardados aqui. Você pode restaurar quando quiser.'; }
   else if (view === 'none') { t = 'Tudo o que você salvou está em alguma tag'; p = 'Links sem tag aparecem aqui.'; }
-  else { t = 'Esta tag está vazia'; p = 'O que você salvar aqui entra em ' + viewTitle(view, folders) + '.'; }
+  else { t = 'Esta tag está vazia'; p = 'Links, notas e listas que você criar aqui entram em ' + viewTitle(view, folders) + '.'; }
   return (
     <div className="empty">
       <b>{t}</b><p>{p}</p>
       {view !== 'archived' && !filtered && (
         <>
-          <button className="btn primary" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>
+          <span className="empty-acts">
+            <button className="btn primary" onClick={() => void pasteFromClipboard(PASTE_KEY)}><IcoPaste />Colar link</button>
+            <button className="btn outline" onClick={() => createNote(false)}>Nota</button>
+            <button className="btn outline" onClick={() => createNote(true)}>Lista</button>
+          </span>
           <p className="hint">ou aperte <kbd>{PASTE_KEY}</kbd> em qualquer lugar desta tela</p>
         </>
       )}

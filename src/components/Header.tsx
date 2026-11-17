@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
-import { openGuide, cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
+import { acceptClip, createNote, openModal, openGuide, cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
 import { isTouch } from '../hooks/useMedia';
 import { CFG } from '../config';
@@ -9,13 +9,13 @@ import { kindLabel } from '../lib/kinds';
 import { tagsOf } from '../lib/tags';
 import { platform, setupDone, type Setup } from '../lib/setup';
 import { storeOf } from '../lib/stores';
-import { thumbOf } from '../lib/platforms';
+import { shortUrl, thumbOf } from '../lib/platforms';
 import { flyToCard } from '../lib/fly';
 import { temaKey } from '../lib/auto';
 import { sameName } from '../lib/folders';
 import { colorOf, shapeOf } from '../lib/folders';
 import { FilterGroups } from './Toolbar';
-import { IcoApp, IcoArchive, IcoCheck, IcoGear, IcoPaste, IcoSearch, IcoUser, IcoX } from './icons';
+import { IcoApp, IcoArchive, IcoCheck, IcoGear, IcoChecklist, IcoNote, IcoPaste, IcoPlus, IcoSearch, IcoTag, IcoUser, IcoX } from './icons';
 
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
 export const PASTE_KEY = MAC ? '⌘V' : 'Ctrl+V';
@@ -133,11 +133,11 @@ function Building() {
 
 /**
  * Omni-bar: cola ou busca.
- * Colar um link (ou o botão Colar, ou Enter com um link) salva na hora. Texto comum filtra os cartões enquanto digita.
+ * Só busca: filtra links, notas e tags enquanto digita. Se o texto for um link, oferece Salvar, mas colar aqui não salva sozinho.
  * Focar sem texto abre os filtros rápidos.
  */
 function OmniBar() {
-  const q = useStore(s => s.q), clip = useStore(s => s.clip), view = useStore(s => s.view);
+  const q = useStore(s => s.q), view = useStore(s => s.view);
   const input = useRef<HTMLInputElement>(null), wrap = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   // O painel de filtros usa quase toda a largura da tela, preso logo abaixo da barra.
@@ -169,12 +169,6 @@ function OmniBar() {
     return () => document.removeEventListener('pointerdown', out, true);
   }, [open]);
 
-  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    const txt = e.clipboardData.getData('text');
-    if (!containsLink(txt) || input.current?.value.trim()) return;
-    e.preventDefault();
-    if (capture(txt)) { setOpen(false); input.current?.blur(); }
-  };
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && looksLikeLink(q)) { e.preventDefault(); if (capture(q)) { set({ q: '' }); setOpen(false); input.current?.blur(); } }
     else if (e.key === 'Escape') { if (q) set({ q: '' }); else { setOpen(false); input.current?.blur(); } }
@@ -190,24 +184,76 @@ function OmniBar() {
     <div className={'omni' + (open ? ' open' : '')} ref={wrap}>
       <label className="omni-f">
         <IcoSearch />
-        <span className="sr">Colar um link ou buscar</span>
+        <span className="sr">Buscar</span>
         <input ref={input} id="q" type="search" enterKeyHint={isLink ? 'done' : 'search'} autoComplete="off" autoCapitalize="off" spellCheck={false}
-          placeholder="Cole um link ou busque" value={q}
+          placeholder="Buscar links, notas e tags" value={q}
           onChange={e => { const v = e.target.value; if (!canSearch && v && !looksLikeLink(v)) go('all'); set({ q: v }); }}
-          onFocus={() => setOpen(true)} onPaste={onPaste} onKeyDown={onKeyDown}
+          onFocus={() => setOpen(true)} onKeyDown={onKeyDown}
           aria-describedby="omni-hint" />
-        {q
-          ? (isLink
-            ? <button type="button" className="omni-btn pri" onClick={() => { if (capture(q)) set({ q: '' }); }}>Salvar</button>
-            : <button type="button" className="omni-btn" aria-label="Limpar busca" onClick={() => { set({ q: '' }); input.current?.focus(); }}><IcoX /></button>)
-          : <button type="button" className={'omni-btn' + (clip ? ' pri' : '')} onClick={() => { setOpen(false); void pasteFromClipboard(PASTE_KEY); }} title={clip ? 'Salvar o link copiado' : 'Colar o link copiado'}><IcoPaste /><span>{clip ? 'Colar link' : 'Colar'}</span></button>}
+        {q && (isLink
+          ? <button type="button" className="omni-btn pri" onClick={() => { if (capture(q)) set({ q: '' }); }}>Salvar</button>
+          : <button type="button" className="omni-btn" aria-label="Limpar busca" onClick={() => { set({ q: '' }); input.current?.focus(); }}><IcoX /></button>)}
       </label>
-      <span id="omni-hint" className="sr">Colar um link salva na hora. Digitar busca nos seus links e nas suas tags. Atalho: barra.</span>
+      <span id="omni-hint" className="sr">Busca nos seus links, notas e tags. Para salvar, use o botão Novo. Atalho: barra.</span>
       {open && !q && canFilter && (
         <div className="omni-pop" role="group" aria-label="Filtros rápidos" style={{ top: popTop }}>
           <FilterGroups />
         </div>
       )}
+    </div>
+  );
+}
+
+/** Botão Novo: salvar um link, escrever uma nota ou lista, criar uma tag. Popover no mouse, folha na base no toque. */
+function NewButton() {
+  const open = useStore(s => s.newMenu), clip = useStore(s => s.clip);
+  const btn = useRef<HTMLButtonElement>(null), pop = useRef<HTMLDivElement>(null);
+  const [raw, setRaw] = useState('');
+  const sheet = open && isTouch();
+  const close = (focus = false) => { set({ newMenu: false }); setRaw(''); if (focus) btn.current?.focus(); };
+  // Atalho N abre o menu, fora de campos de texto.
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey && !e.altKey && !t.closest?.('input,textarea,select,[contenteditable]') && !get().modal) { e.preventDefault(); set({ newMenu: true }); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    if (!isTouch()) pop.current?.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    const out = (e: Event) => { const t = e.target as HTMLElement; if (!pop.current?.contains(t) && !btn.current?.contains(t)) close(); };
+    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') close(true); };
+    document.addEventListener('pointerdown', out, true);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', esc); };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const save = (txt: string) => { if (capture(txt)) close(); };
+  const body = (
+    <div ref={pop} className={'prof newm' + (sheet ? ' sheet' : '')} role="dialog" aria-label="Novo">
+      {clip && (
+        <button type="button" className="pf-row nm-clip" onClick={() => { close(); acceptClip(); }}>
+          <IcoPaste /><span className="pf-t"><b>Salvar o link copiado</b><span>{shortUrl(clip.url)}</span></span>
+        </button>
+      )}
+      <form className="bd-add nm-link" onSubmit={e => { e.preventDefault(); if (raw.trim()) save(raw); }}>
+        <span className="inw"><input id="nm-raw" type="text" inputMode="url" autoComplete="off" autoCapitalize="off" spellCheck={false} value={raw} placeholder="Cole um link" aria-label="Link para salvar"
+          onChange={e => setRaw(e.target.value)} onPaste={e => { const t = e.clipboardData.getData('text'); if (containsLink(t)) { e.preventDefault(); save(t); } }} /></span>
+        {raw.trim()
+          ? <button type="submit" className="btn primary sm">Salvar</button>
+          : <button type="button" className="btn outline sm" onClick={() => { void pasteFromClipboard(PASTE_KEY).then(ok => { if (ok) close(); }); }}><IcoPaste />Colar</button>}
+      </form>
+      <button type="button" className="pf-row" onClick={() => createNote(false)}><IcoNote /><span className="pf-t"><b>Nota</b><span>Texto livre</span></span></button>
+      <button type="button" className="pf-row" onClick={() => createNote(true)}><IcoChecklist /><span className="pf-t"><b>Lista</b><span>Coisas a comprar ou a fazer</span></span></button>
+      <button type="button" className="pf-row" onClick={() => { close(); openModal({ kind: 'new', then: { type: 'stay' } }); }}><IcoTag /><span className="pf-t"><b>Tag</b><span>Para juntar links e notas de um assunto</span></span></button>
+    </div>
+  );
+  return (
+    <div className="newwrap">
+      <button ref={btn} type="button" className="btn primary newbtn" aria-haspopup="dialog" aria-expanded={open} aria-label="Novo: link, nota, lista ou tag" title="Novo (N)"
+        onClick={() => { setProfileOpen(false); set({ newMenu: !open }); }}><IcoPlus /><span>Novo</span></button>
+      {open && (sheet ? createPortal(<><div className="cmenu-bd" aria-hidden="true" />{body}</>, document.body) : body)}
     </div>
   );
 }
@@ -335,7 +381,7 @@ export function Header() {
     <header className={'hdr' + (min ? ' min' : '') + (scrolled ? ' scrolled' : '')}>
       <div className="hdr-in">
         <Tabs />
-        <OmniBar />
+        <div className="hdr-mid"><OmniBar /><NewButton /></div>
         <div className="hdr-r"><AppButton /><Profile /></div>
       </div>
       <Building />

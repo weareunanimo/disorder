@@ -1465,3 +1465,23 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .lv-pick .bd-pick .ck { margin-right: 6px; font-weight: 800; }
 @media (max-width: 1024px) { .lv.note { width: auto; } .lv.note .lv-info { max-height: none; } }
 .lv-pick .bd-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Cabeçalho: busca e botão Novo lado a lado */
+.hdr-mid { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.hdr-mid .omni { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .hdr-in .hdr-mid { grid-area: omni; } }
+.newwrap { position: relative; flex: none; }
+.newbtn { gap: 6px; height: 44px; padding-left: 14px; padding-right: 16px; white-space: nowrap; }
+.newbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+@media (max-width: 900px) { .newbtn { width: 44px; padding: 0; justify-content: center; } .newbtn span { display: none; } }
+.prof.newm { right: 0; top: calc(100% + 8px); width: 340px; }
+.prof.newm.sheet { right: 0; }
+.newm .pf-row svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.newm .pf-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.newm .pf-t span { font: 400 12px/1.3 var(--f-body); color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.newm .nm-link { padding: 6px 6px 10px; margin-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.newm .nm-link .btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.newm .nm-link .btn { gap: 6px; }
+.newm .nm-clip { background: var(--accent); color: var(--on-accent); margin-bottom: 6px; }
+.newm .nm-clip .pf-t span { color: inherit; opacity: .8; }
+.empty-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
