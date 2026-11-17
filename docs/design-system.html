@@ -1252,6 +1252,92 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .thit:hover { filter: brightness(.94); }
 .thit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
+/* ===== Notas e listas (v9.2) ===== */
+/* Lista com checkbox: dentro do item aberto. */
+.ck { display: flex; flex-direction: column; gap: 6px; }
+.ck-n { margin: 0; font: 700 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
+.ck-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ck-it { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 2px dashed var(--gray-line); }
+.ck-box { width: 24px; height: 24px; flex: none; display: grid; place-items: center; padding: 0; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface); color: var(--surface); cursor: pointer; position: relative; }
+.ck-box::before { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; translate: -50% -50%; }
+.ck-box svg, .peek-box svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.ck-it.ok .ck-box { background: var(--ink); }
+.ck-t { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--fg); padding: 10px 0; font: 500 16px/1.3 var(--f-body); outline: none; }
+.ck-t::placeholder { color: var(--muted-fg); }
+.ck-it:focus-within { border-bottom-style: solid; border-bottom-color: var(--ink); }
+.ck-it.ok .ck-t { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted-fg); }
+.ck-del { width: 32px; height: 32px; flex: none; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--muted-fg); cursor: pointer; opacity: 0; position: relative; }
+.ck-del::before { content: ""; position: absolute; inset: -6px; }
+.ck-del svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.ck-it:hover .ck-del, .ck-it:focus-within .ck-del { opacity: 1; }
+@media (pointer: coarse) { .ck-del { opacity: 1; } }
+.ck-del:hover { color: var(--danger); }
+.ck-add { align-self: flex-start; }
+
+/* Prévia da lista nos cartões: só leitura. */
+.peek { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.peek-it { display: flex; align-items: center; gap: 6px; min-width: 0; font: 500 13px/1.25 var(--f-body); }
+.peek-box { width: 14px; height: 14px; flex: none; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 4px; }
+.peek-box svg { width: 10px; height: 10px; }
+.peek-it.ok { opacity: .55; }
+.peek-it.ok .peek-t { text-decoration: line-through; }
+.peek-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.peek-n { font: 700 10px/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; opacity: .75; margin-top: 2px; }
+.link .peek { margin-top: 2px; }
+
+/* Cartão de nota na Galeria: papel, sem mídia. Título em cima, texto e lista no meio, tags embaixo. */
+.gcard.fb-note { background: var(--surface); }
+.gcard.fb-note .g-hit { display: flex; flex-direction: column; }
+.gcard.fb-note .g-note { position: absolute; left: var(--g-pad); right: var(--g-pad); top: calc(var(--g-pad) + var(--g-b) + 6px); bottom: calc(var(--g-pad) + var(--g-b) + 4px); display: flex; flex-direction: column; gap: 6px; overflow: hidden; color: var(--fg); }
+.gcard.fb-note .g-nt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font: 400 calc(var(--g-t) * .95)/1.35 var(--f-body); white-space: pre-line; overflow-wrap: anywhere; }
+.gcard.fb-note .peek-it { font-size: calc(var(--g-t) * .95); }
+.gcard.fb-note .g-foot { top: auto; }
+.gcard.fb-note .g-ttl { color: var(--fg); text-shadow: none; -webkit-line-clamp: 2; }
+.gcard.fb-note:has(.g-ttl) .g-note { top: calc(var(--g-pad) + var(--g-b) + 6px); }
+.gcard.fb-note .g-badge { background: var(--accent); color: var(--on-accent); }
+.gcard .g-ls { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .gcard.fb-note .peek-n, .gcard.fb-note .g-nt { display: none; } }
+
+/* Nota aberta: uma coluna só, sem mídia. Título e texto são os próprios campos. */
+.lv.note { width: min(560px, 100%); }
+.lv.note .lv-info { padding-top: 64px; max-height: 92vh; }
+.lv.note .lv-top { left: 10px; right: 10px; }
+.nt-title { width: 100%; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--fg); padding: 2px 0 6px; font: 800 24px/1.2 var(--f-display); letter-spacing: -.01em; outline: none; }
+.nt-title:focus { border-bottom-color: var(--ink); }
+.nt-text { width: 100%; min-height: 48px; border: 0; background: transparent; color: var(--fg); padding: 0; resize: none; overflow: hidden; font: 400 16px/1.5 var(--f-body); outline: none; }
+.nt-title::placeholder, .nt-text::placeholder { color: var(--muted-fg); }
+.nt-add { display: flex; gap: 12px; }
+.lv-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 2px solid var(--ink); border-radius: 12px; background: var(--bg); }
+.lv-pick .bd-pick .ck { margin-right: 6px; font-weight: 800; }
+@media (max-width: 1024px) { .lv.note { width: auto; } .lv.note .lv-info { max-height: none; } }
+.lv-pick .bd-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Cabeçalho: busca e botão Novo lado a lado */
+.hdr-mid { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.hdr-mid .omni { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .hdr-in .hdr-mid { grid-area: omni; } }
+.newwrap { position: relative; flex: none; }
+.newbtn { gap: 6px; height: 44px; padding-left: 14px; padding-right: 16px; white-space: nowrap; }
+.newbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+@media (max-width: 900px) { .newbtn { width: 44px; padding: 0; justify-content: center; } .newbtn span { display: none; } }
+.prof.newm { right: 0; top: calc(100% + 8px); width: 340px; }
+.prof.newm.sheet { right: 0; }
+.newm .pf-row svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.newm .pf-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.newm .pf-t span { font: 400 12px/1.3 var(--f-body); color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.newm .nm-link { padding: 6px 6px 10px; margin-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.newm .nm-link .btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.newm .nm-link .btn { gap: 6px; }
+.newm .nm-clip { background: var(--accent); color: var(--on-accent); margin-bottom: 6px; }
+.newm .nm-clip .pf-t span { color: inherit; opacity: .8; }
+.empty-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.prof.newm.sheet { top: auto; right: 0; left: 0; width: auto; }
+.hdr-mid { width: 100%; }
+.hdr-mid .omni { width: auto; }
+.gcard.fb-note .g-note { top: calc(var(--g-pad) + var(--g-b) + 8px); }
+.gcard.fb-note .g-note .g-ttl { position: static; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font: 800 calc(var(--g-t) * 1.1)/1.15 var(--f-display); letter-spacing: -.01em; color: var(--fg); }
+.bd-add .btn { flex: none; white-space: nowrap; }
+
 .bd-btns { display: flex; gap: 10px; }
 .bd-btns .btn.primary { min-width: 140px; }
 @media (max-width: 640px) { .bd-btns .btn { flex: 1 1 0; } }
@@ -1321,7 +1407,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 }
 .spec-list { margin: 8px 0 8px 18px; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 </style></head><body><main class="ds">
-<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v9.1</p><h1>Design system do disorder</h1>
+<header><p class="meta" style="margin-bottom:8px">disorder · Design System · v9.2</p><h1>Design system do disorder</h1>
 <p class="lead">Fonte única de verdade visual do produto. Tudo que existe no disorder vem daqui, com os mesmos tokens e os mesmos componentes, em tema claro e escuro.</p></header>
 
 <section class="rule"><h2>Regra de uso</h2><ol>
@@ -1408,6 +1494,11 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 
 <div class="spec"><header><h3>Leve o disorder para o celular</h3><p>Tela que explica como instalar o app e salvar links pelo Compartilhar. Abre pelo ícone de app ao lado do perfil (<code>.appbtn</code>, com um ponto laranja enquanto falta algum passo, e some quando está tudo feito) ou pelos itens de "Seu disorder" no perfil. Seletor iPhone ou Android, já marcado conforme o aparelho. Cada parte tem um mini celular desenhado com o passo em destaque pulsando (<code>.il</code>, sem animação com movimento reduzido), passos numerados curtos e o botão Marcar como feito. No Android, quando o Chrome oferece, aparece Instalar agora, que abre o convite nativo. No iPhone, a parte do atalho explica em uma frase por que ele existe e traz o endereço pronto para copiar. Desktop com o Chrome mostra também Instalar aqui. No celular ocupa a tela toda. Classes <code>.guide</code>, <code>.gd-part</code>, <code>.gd-steps</code>, <code>.gd-copy</code>.</p></header></div>
 <div class="spec"><header><h3>Seu disorder 100%</h3><p>Bloco no topo do perfil com a porcentagem, uma barra de progresso e dois passos: Instalar o app e Salvar pelo Compartilhar (no iPhone, Criar o atalho de compartilhar). Passo feito ganha o círculo preenchido com check e o título riscado. Tocar em qualquer passo abre a tela de explicação já na parte dele. App aberto como app instalado ou um link recebido pelo Compartilhar marcam o passo sozinhos. Classes <code>.pf-setup</code>, <code>.pf-bar</code>, <code>.pf-todo</code>.</p></header></div>
+<div class="spec"><header><h3>Botão Novo</h3><p>Ao lado da busca, laranja. Com texto "Novo" a partir de 901px, só o ícone de 44px abaixo disso. Atalho N. Abre um menu (popover no mouse, folha na base no toque) com, nesta ordem: "Salvar o link copiado" em destaque quando há um link conhecido na área de transferência; o campo "Cole um link" com Colar (vira Salvar quando há texto, e colar um link no campo já salva); Nota; Lista; Tag. Dentro de uma tag, o que nasce aqui já vem com ela. Classes <code>.newbtn</code>, <code>.newm</code>.</p></header><div class="stage col" style="align-items:flex-start"><button type="button" class="btn primary newbtn">+ Novo</button></div></div>
+<div class="spec"><header><h3>Busca</h3><p>A omni-bar agora só busca: "Buscar links, notas e tags", em todas as telas. Colar aqui não salva sozinho. Se o texto digitado for um link, aparece Salvar no lugar do limpar, como saída para quem colou por hábito. Ctrl+V fora de campos e o Compartilhar do celular continuam salvando direto.</p></header></div>
+<div class="spec"><header><h3>Nota</h3><p>Item sem link, na mesma coleção dos links. Tem título, texto livre, lista opcional e tags (nenhuma é permitida). Abre na janela do item em uma coluna, sem mídia, com os próprios campos: título em Archivo 800 de 24px e texto em Space Grotesk 16px. Grava sozinho enquanto digita. Nota vazia some ao fechar. Ações: WhatsApp (manda título, texto e lista com caixinhas), Copiar texto, Arquivar e Excluir. "+ Link" dá um link à nota, que passa a ser um link com texto e lista e é lida como um link novo. Dentro de uma tag, as notas vêm antes dos links. Classes <code>.lv.note</code>, <code>.nt-title</code>, <code>.nt-text</code>, <code>.lv-pick</code>.</p></header></div>
+<div class="spec"><header><h3>Lista com checkbox</h3><p>Em qualquer item, nota ou link ("+ Lista" ao lado das tags). Cada item tem caixa de 24px com área de toque de 44px, texto editável e um x para tirar. Enter cria o próximo, apagar um item vazio volta para o anterior. Feitos ficam riscados e descem para o fim. Contagem "1 de 3 feitos" em mono. Classes <code>.ck</code>, <code>.ck-it</code>, <code>.ck-box</code>.</p></header><div class="stage col" style="align-items:stretch;max-width:360px"><div class="ck"><p class="ck-n">1 de 3 feitos</p><ul class="ck-list"><li class="ck-it"><button type="button" class="ck-box" role="checkbox" aria-checked="false"></button><input class="ck-t" value="Fio de algodão"></li><li class="ck-it ok"><button type="button" class="ck-box" role="checkbox" aria-checked="true">✓</button><input class="ck-t" value="Agulha circular"></li></ul></div></div></div>
+<div class="spec"><header><h3>Cartão de nota</h3><p>Na Galeria: fundo de papel (surface), selo "Nota" em amarelo, título em Archivo 800, até 3 linhas do texto e os primeiros itens da lista com caixinhas só de leitura e a contagem. No celular só título e itens. Na Grade e na Lista: quadrado "Nota" no lugar da prévia, com os 3 primeiros itens. Link com lista mostra "2/5" no canto, no lugar da duração. Classes <code>.fb-note</code>, <code>.peek</code>.</p></header></div>
 <div class="spec"><header><h3>Busca unificada</h3><p>Tudo e Tags têm a mesma busca. Digitar na omni-bar em qualquer das duas abas mostra o mesmo resultado, e trocar de aba mantém o texto. Primeiro uma linha "Tags" com as tags cujo nome bate (<code>.thits</code>, rolagem lateral no celular), cada uma com a forma e a cor dela e a contagem de links. Tocar entra na tag e limpa a busca. Embaixo, os links que batem no título, nota, resumo, autor, endereço ou nome das tags, na visualização escolhida. Acento não importa: "musica" acha "Música". A linha de contexto diz "1 tag, 2 links". Os filtros rápidos continuam só em Tudo, porque na grade de tags não teriam efeito. Classes <code>.thits</code>, <code>.thit</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="thits"><span class="thits-l">Tags</span><div class="thits-row"><button type="button" class="tag thit" data-c="3" data-s="1"><span class="thit-t">Receitas</span><span class="thit-n">12</span></button><button type="button" class="tag thit" data-c="5" data-s="2"><span class="thit-t">Receitas rápidas</span><span class="thit-n">4</span></button></div></div></div></div>
 <div class="spec"><header><h3>Primeiro acesso</h3><p>Com zero links, a área de conteúdo vira um convite só: "Cole um link para começar", uma frase do que acontece depois, o botão Colar link em destaque e a dica do atalho com a tecla desenhada (<code>⌘V</code> no Mac e iPhone, <code>Ctrl+V</code> no resto). O botão lê a área de transferência. Sem permissão ou sem link copiado, ele explica e põe o cursor na omni-bar. Linha de contexto e filtros ficam escondidos até existir o primeiro link. Classe <code>.first</code>.</p></header><div class="stage col" style="align-items:stretch"><div class="first" style="min-height:0;padding:12px 0"><h2>Cole um link para começar</h2><p>Qualquer site, post ou vídeo. A IA lê, resume e organiza em tags para você.</p><button type="button" class="btn primary first-cta"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3" width="9" height="11" rx="1.5"/><path d="M6 3V2h4v1M6 7.5h4M6 10h3"/></svg>Colar link</button><p class="first-k">ou aperte <kbd>Ctrl+V</kbd> em qualquer lugar desta tela</p></div></div></div>
 
