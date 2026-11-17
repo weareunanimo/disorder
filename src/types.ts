@@ -1,7 +1,11 @@
 export type Plat = 'x' | 'threads' | 'instagram' | 'tiktok' | 'youtube' | 'web';
 
+/** Item de uma lista dentro de um link ou nota. */
+export interface ListItem { id: string; t: string; ok: boolean }
+
 export interface Link {
   id: string;
+  /** Vazio numa nota: item sem link, só com texto e lista. */
   url: string;
   chave: string;
   plataforma: Plat;
@@ -38,6 +42,8 @@ export interface Link {
   tema?: string;
   arquivadoEm?: number | null;
   host?: string;
+  /** Lista com checkbox (compras, a fazer). Opcional em qualquer item. */
+  lista?: ListItem[];
 }
 
 export interface Folder {

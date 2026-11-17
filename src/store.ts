@@ -14,7 +14,7 @@ export type Then =
 
 export type ModalState =
   | { kind: 'link'; id: string }
-  | { kind: 'view'; id: string }
+  | { kind: 'view'; id: string; fresh?: 'note' | 'list' }
   | { kind: 'new'; then?: Then }
   | { kind: 'edit'; id: string }
   | { kind: 'confirm'; id: string }
@@ -85,6 +85,8 @@ export interface State extends FilterState {
   buildQueue: string[];
   /** Menu de perfil aberto. */
   profileOpen: boolean;
+  /** Menu do botão Novo aberto. */
+  newMenu: boolean;
   /** Ordem da lista: data, nome ou origem. */
   sort: Sort;
 }
@@ -133,6 +135,7 @@ export const useStore = create<State>(() => ({
   building: null,
   buildQueue: [],
   profileOpen: false,
+  newMenu: false,
   sort: isSort(read('disorder.sort')) ? (read('disorder.sort') as Sort) : 'new',
   theme: (['light', 'dark', 'system'] as Theme[]).includes(read('disorder.theme') as Theme) ? (read('disorder.theme') as Theme) : 'light',
 

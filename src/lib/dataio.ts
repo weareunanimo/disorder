@@ -1,3 +1,4 @@
+import { cleanList, newNote } from './notes';
 import type { Folder, Link } from '../types';
 import { parseLink, isParsed } from './platforms';
 import { makeFolder, sameName, sortFolders } from './folders';
@@ -43,6 +44,17 @@ export function planImport(data: unknown, folders: Folder[], links: Link[]): Imp
   let dup = 0, bad = 0;
   const seen = new Set(links.map(l => l.chave));
   ls.slice(0, 5000).forEach(l => {
+    // Nota: sem link, entra se tiver algo escrito.
+    if (!str(l?.url, 2000)) {
+      const lista = cleanList(l?.lista), titulo = str(l?.titulo, 140), nota = str(l?.nota, 5000);
+      if (!lista && !titulo && !nota) { bad++; return; }
+      const pids = Array.from(new Set(tagsOf(l as { pastaIds?: unknown; pastaId?: unknown }).map(x => map[x]).filter(Boolean)));
+      const n = newNote(uid(), pids, false, Number.isFinite(l.criadoEm) ? (l.criadoEm as number) : Date.now());
+      Object.assign(n, { titulo, nota, lista });
+      if (Number.isFinite(l.arquivadoEm)) n.arquivadoEm = l.arquivadoEm as number;
+      nl.push(n);
+      return;
+    }
     const p = parseLink(str(l?.url, 2000));
     if (!isParsed(p)) { bad++; return; }
     if (seen.has(p.key)) { dup++; return; }
@@ -56,6 +68,8 @@ export function planImport(data: unknown, folders: Folder[], links: Link[]): Imp
     const ta = str(l.tituloAuto, 300), th = str(l.thumb, 2000);
     if (ta) rec.tituloAuto = ta;
     if (/^https:\/\//i.test(th)) rec.thumb = th;
+    const lista = cleanList(l.lista);
+    if (lista) rec.lista = lista;
     if (Number.isFinite(l.arquivadoEm)) rec.arquivadoEm = l.arquivadoEm as number;
     nl.push(rec);
   });

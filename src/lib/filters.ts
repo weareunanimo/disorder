@@ -63,7 +63,7 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
   const t0 = f.from ? dayStart(f.from) : 0, t1 = f.to ? dayStart(f.to) + 864e5 : 0;
   const byFolder = isHome(view) && f.fp.length > 0;
   const names = new Map(folders.map(x => [x.id, x.nome]));
-  return sortLinks(links
+  const out = sortLinks(links
     .filter(l => inView(l, view, folders))
     .filter(l => !f.plats.length || f.plats.includes(l.plataforma))
     .filter(l => !f.kinds.length || f.kinds.includes(l.categoria || 'none'))
@@ -72,8 +72,12 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
     .filter(l => {
       if (!q) return true;
       const nome = tagsOf(l).map(id => names.get(id)).filter(Boolean).join(' ');
-      return fold([l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.resumoIA, l.autor, l.url, nome].filter(Boolean).join(' ')).includes(q);
+      const itens = (l.lista || []).map(i => i.t).join(' ');
+      return fold([l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.resumoIA, l.autor, l.url, nome, itens].filter(Boolean).join(' ')).includes(q);
     }), sort);
+  // Dentro de uma tag, as notas vêm antes dos links: são o "geral" daquele assunto.
+  if (!folders.some(x => x.id === view)) return out;
+  return [...out.filter(l => !l.url), ...out.filter(l => !!l.url)];
 }
 
 /** Tags cujo nome contém o texto buscado. */

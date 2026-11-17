@@ -9,6 +9,7 @@ import type { Sort } from './lib/sort';
 import { fromShareText } from './lib/stores';
 import { hasTag, liveTags, sameTags, tagsOf, withTag, withoutTag } from './lib/tags';
 import { makeFolder, sameName, sortFolders } from './lib/folders';
+import { isNote, newItem, newNote, noteTitle } from './lib/notes';
 import { buildExport, IMPORT_MAX_BYTES, planImport } from './lib/dataio';
 import { plural, uid } from './lib/text';
 import { enrichLink, extrasOf, summarize, whySummaryFailed } from './data/previews'
@@ -653,7 +654,7 @@ const summarizing = new Set<string>();
 let bulkAi = false;
 /** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
 /** Falta passar pela IA: nunca respondeu, e ainda falta resumo ou tipo. */
-const needsAi = (l: Link) => !l.iaEm && (!l.resumoIA || !l.categoria);
+const needsAi = (l: Link) => !!l.url && !l.iaEm && (!l.resumoIA || !l.categoria);
 
 async function addSummary(id: string) {
   const l = get().links.find(x => x.id === id);
@@ -765,7 +766,7 @@ async function pool(ids: string[], force: boolean, n = 3) {
 
 export async function refreshPreviews(auto = false) {
   if (!CFG.previewApi || get().refreshing) return;
-  const ids = get().links.filter(l => !isArch(l)).slice(0, 300).map(l => l.id);
+  const ids = get().links.filter(l => !isArch(l) && !!l.url).slice(0, 300).map(l => l.id);
   if (!ids.length) { if (!auto) toast('Nenhum link para atualizar.'); return; }
   set({ refreshing: true });
   const ok = await pool(ids, true);
@@ -783,7 +784,7 @@ export function enrichPending() {
     return;
   }
   refreshTikTok();
-  void pool(links.filter(l => !l.enriquecido).slice(0, 40).map(l => l.id), false);
+  void pool(links.filter(l => !l.enriquecido && !!l.url).slice(0, 40).map(l => l.id), false);
 }
 
 /**
@@ -805,3 +806,56 @@ export function fixView() {
 }
 
 export const busy = () => !!get().modal;
+
+/* ===== Notas e listas ===== */
+/** Cria uma nota (com lista, se pedido) na tag aberta e abre para escrever. */
+export function createNote(withList: boolean) {
+  const n = newNote(uid(), currentDest(), withList);
+  n.pastaManual = true;
+  n.tituloAuto = withList ? 'Lista' : 'Nota';
+  set({ newMenu: false });
+  void save('links', n);
+  set({ modal: { kind: 'view', id: n.id, fresh: withList ? 'list' : 'note' } });
+}
+
+const pending = new Map<string, number>();
+/** Muda um item na hora e grava um pouco depois, juntando a digitação. */
+export function patchItem(id: string, patch: Partial<Link>) {
+  const l = get().links.find(x => x.id === id);
+  if (!l) return;
+  const next: Link = { ...l, ...patch };
+  if (isNote(next)) next.tituloAuto = noteTitle(next);
+  set({ links: get().links.map(x => (x.id === id ? next : x)) });
+  clearTimeout(pending.get(id));
+  pending.set(id, window.setTimeout(() => { pending.delete(id); const cur = get().links.find(x => x.id === id); if (cur) void save('links', cur); }, 500));
+}
+/** Grava já o que estava esperando (fechar a nota, sair da página). */
+export function flushItems() {
+  pending.forEach((t, id) => { clearTimeout(t); const cur = get().links.find(x => x.id === id); if (cur) void save('links', cur); });
+  pending.clear();
+}
+/** Começa uma lista num item que ainda não tem. */
+export function startList(id: string) {
+  const l = get().links.find(x => x.id === id);
+  if (l && !l.lista?.length) patchItem(id, { lista: [newItem()] });
+}
+/** Nota vazia ao fechar some sozinha: não sobra cartão em branco. */
+export function dropIfEmpty(id: string) {
+  const l = get().links.find(x => x.id === id);
+  if (!l || !isNote(l)) return;
+  const empty = !l.titulo.trim() && !l.nota.trim() && !(l.lista || []).some(i => i.t.trim());
+  if (empty) { clearTimeout(pending.get(id)); pending.delete(id); void removeMany('links', [id]); }
+}
+/** Dá um link a uma nota. Ela passa a ser um link com texto e lista, e a página é lida como num link novo. */
+export function addLinkToNote(id: string, raw: string): string | null {
+  const l = get().links.find(x => x.id === id);
+  const p = parseLink((raw.match(/https?:\/\/[^\s]+/i)?.[0] || raw).trim());
+  if (!l) return null;
+  if (!isParsed(p)) return 'Esse endereço não parece um link.';
+  if (get().links.some(x => x.chave === p.key)) return 'Esse link já está salvo.';
+  flushItems();
+  const next: Link = { ...l, url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, host: p.host,
+    enriquecido: false, iaEm: undefined, categoria: undefined, tituloAuto: undefined };
+  void save('links', next).then(() => enrich(id));
+  return null;
+}

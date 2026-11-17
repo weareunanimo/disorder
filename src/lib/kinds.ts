@@ -11,6 +11,7 @@ export const KINDS = [
   { key: 'lugar', label: 'Lugar' },
   { key: 'evento', label: 'Evento' },
   { key: 'post', label: 'Post' },
+  { key: 'nota', label: 'Nota' },
 ] as const;
 export type Kind = (typeof KINDS)[number]['key'];
 export const isKind = (v: unknown): v is Kind => KINDS.some(k => k.key === v);

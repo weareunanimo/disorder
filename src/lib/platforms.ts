@@ -117,7 +117,7 @@ export function autoTitle(l: TitleSrc): string {
     case 'youtube':
       if (l.tipo === 'Canal') return a ? 'Canal ' + a : 'Canal do YouTube';
       return (l.tipo === 'Short' ? 'Short' : l.tipo === 'Playlist' ? 'Playlist' : l.tipo === 'Live' ? 'Live' : 'Vídeo') + ' do YouTube';
-    default: return l.host || (l.url ? shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '') : 'Link');
+    default: return l.host || (l.url ? shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '') : l.tipo === 'Nota' ? 'Nota' : 'Link');
   }
 }
 
@@ -163,6 +163,7 @@ export const readLabel = (min: number) => min + ' min de leitura';
 /** Linha de origem do cartão: o nome da rede ou o domínio do site. Sem o tipo (Reel, Post, Story) e sem "Artigo". */
 export function originOf(l: Pick<Link, 'plataforma' | 'host' | 'url'>): string {
   if (l.plataforma !== 'web') return PLAT[l.plataforma].label;
+  if (!l.url) return 'Nota';
   return l.host || shortUrl(l.url).split('/')[0].replace(/^(m|mobile)\./, '');
 }
 

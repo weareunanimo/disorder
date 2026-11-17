@@ -227,3 +227,38 @@ describe('busca unificada', () => {
     expect(matchingTags(folders, '  ')).toEqual([]);
   });
 });
+
+describe('notas', () => {
+  it('nota nasce sem link, fora da IA e com a tag', async () => {
+    const { newNote, isNote, listStats, ordered, noteTitle, cleanList } = await import('../src/lib/notes');
+    const n = newNote('n1', ['f1'], true, 10);
+    expect(isNote(n)).toBe(true);
+    expect(n.iaEm).toBeTruthy();
+    expect(n.pastaIds).toEqual(['f1']);
+    expect(n.lista?.length).toBe(1);
+    const lista = [{ id: 'a', t: 'linha', ok: true }, { id: 'b', t: 'agulha', ok: false }, { id: 'c', t: '', ok: false }];
+    expect(listStats({ lista })).toEqual({ total: 2, done: 1 });
+    expect(ordered(lista).map(i => i.id)).toEqual(['b', 'c', 'a']);
+    expect(noteTitle({ titulo: '', nota: '', lista })).toBe('linha');
+    expect(noteTitle({ titulo: '', nota: '\n Comprar\nmais', lista })).toBe('Comprar');
+    expect(cleanList([{ t: 'x' }, 3, null])).toHaveLength(1);
+    expect(cleanList('x')).toBeUndefined();
+  });
+  it('na tag, notas primeiro; a busca acha item da lista', () => {
+    const folders = [{ id: 'f1', nome: 'Artesanato', cor: 0, criadaEm: 0 }] as Folder[];
+    const ls = [
+      link({ id: 'l1', titulo: 'Vídeo de tricô', pastaIds: ['f1'], criadoEm: 9 }),
+      link({ id: 'n1', url: '', chave: 'nota:n1', titulo: 'Comprar', pastaIds: ['f1'], criadoEm: 1, lista: [{ id: 'a', t: 'Agulha circular', ok: false }] }),
+    ];
+    expect(visibleLinks(ls, folders, 'f1', EMPTY_FILTERS).map(l => l.id)).toEqual(['n1', 'l1']);
+    expect(visibleLinks(ls, folders, 'all', EMPTY_FILTERS).map(l => l.id)).toEqual(['l1', 'n1']);
+    expect(visibleLinks(ls, folders, 'all', { ...EMPTY_FILTERS, q: 'agulha' }).map(l => l.id)).toEqual(['n1']);
+  });
+  it('importa nota sem link e mantém a lista', async () => {
+    const { planImport } = await import('../src/lib/dataio');
+    const r = planImport({ folders: [], links: [{ url: '', titulo: 'Compras', lista: [{ t: 'Fio', ok: false }], pastaIds: [] }, { url: '' }] }, [], []);
+    expect(r.links).toHaveLength(1);
+    expect(r.links[0].lista?.[0].t).toBe('Fio');
+    expect(r.bad).toBe(1);
+  });
+});
