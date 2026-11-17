@@ -200,7 +200,7 @@ export function deleteLink(id: string) {
   const copy = { ...l };
   set({ swipeId: null, sel: get().sel.filter(x => x !== id) });
   void removeMany('links', [id]);
-  toast('Link excluído.', 'Desfazer', () => { void save('links', copy); });
+  toast((l.url ? 'Link excluído.' : 'Nota excluída.'), 'Desfazer', () => { void save('links', copy); });
 }
 
 /** Exclui os selecionados na hora, como o Excluir do cartão. O aviso traz Desfazer, que devolve todos. */
@@ -857,5 +857,18 @@ export function addLinkToNote(id: string, raw: string): string | null {
   const next: Link = { ...l, url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, host: p.host,
     enriquecido: false, iaEm: undefined, categoria: undefined, tituloAuto: undefined };
   void save('links', next).then(() => enrich(id));
+  return null;
+}
+/** Cria uma tag e põe no item, sem fechar o que está aberto. Devolve o erro, se houver. */
+export function tagItemNew(id: string, nome: string): string | null {
+  nome = nome.trim();
+  if (!nome) return 'Dê um nome para a tag.';
+  const l = get().links.find(x => x.id === id);
+  if (!l) return null;
+  const same = get().folders.find(f => sameName(f.nome, nome));
+  if (same) { patchItem(id, { pastaIds: withTag(tagsOf(l), same.id), pastaManual: true }); return null; }
+  const rec = newFolderRec(nome);
+  void save('folders', rec);
+  patchItem(id, { pastaIds: withTag(tagsOf(l), rec.id), pastaManual: true });
   return null;
 }

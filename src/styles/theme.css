@@ -1405,3 +1405,63 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .btn:not(.sm) { padding-top: 7px; padding-bottom: 7px; line-height: 1.4; }
 .bd-btns { justify-content: flex-end; }
 @media (pointer: coarse) { .btn:not(.sm) { min-height: 44px; } .btn.sm.icon { min-width: 44px; } .sw-btn { width: 44px; height: 44px; } }
+
+/* ===== Notas e listas (v9.2) ===== */
+/* Lista com checkbox: dentro do item aberto. */
+.ck { display: flex; flex-direction: column; gap: 6px; }
+.ck-n { margin: 0; font: 700 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
+.ck-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ck-it { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 2px dashed var(--gray-line); }
+.ck-box { width: 24px; height: 24px; flex: none; display: grid; place-items: center; padding: 0; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface); color: var(--surface); cursor: pointer; position: relative; }
+.ck-box::before { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; translate: -50% -50%; }
+.ck-box svg, .peek-box svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.ck-it.ok .ck-box { background: var(--ink); }
+.ck-t { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--fg); padding: 10px 0; font: 500 16px/1.3 var(--f-body); outline: none; }
+.ck-t::placeholder { color: var(--muted-fg); }
+.ck-it:focus-within { border-bottom-style: solid; border-bottom-color: var(--ink); }
+.ck-it.ok .ck-t { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted-fg); }
+.ck-del { width: 32px; height: 32px; flex: none; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--muted-fg); cursor: pointer; opacity: 0; position: relative; }
+.ck-del::before { content: ""; position: absolute; inset: -6px; }
+.ck-del svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.ck-it:hover .ck-del, .ck-it:focus-within .ck-del { opacity: 1; }
+@media (pointer: coarse) { .ck-del { opacity: 1; } }
+.ck-del:hover { color: var(--danger); }
+.ck-add { align-self: flex-start; }
+
+/* Prévia da lista nos cartões: só leitura. */
+.peek { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.peek-it { display: flex; align-items: center; gap: 6px; min-width: 0; font: 500 13px/1.25 var(--f-body); }
+.peek-box { width: 14px; height: 14px; flex: none; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 4px; }
+.peek-box svg { width: 10px; height: 10px; }
+.peek-it.ok { opacity: .55; }
+.peek-it.ok .peek-t { text-decoration: line-through; }
+.peek-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.peek-n { font: 700 10px/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; opacity: .75; margin-top: 2px; }
+.link .peek { margin-top: 2px; }
+
+/* Cartão de nota na Galeria: papel, sem mídia. Título em cima, texto e lista no meio, tags embaixo. */
+.gcard.fb-note { background: var(--surface); }
+.gcard.fb-note .g-hit { display: flex; flex-direction: column; }
+.gcard.fb-note .g-note { position: absolute; left: var(--g-pad); right: var(--g-pad); top: calc(var(--g-pad) + var(--g-b) + 6px); bottom: calc(var(--g-pad) + var(--g-b) + 4px); display: flex; flex-direction: column; gap: 6px; overflow: hidden; color: var(--fg); }
+.gcard.fb-note .g-nt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font: 400 calc(var(--g-t) * .95)/1.35 var(--f-body); white-space: pre-line; overflow-wrap: anywhere; }
+.gcard.fb-note .peek-it { font-size: calc(var(--g-t) * .95); }
+.gcard.fb-note .g-foot { top: auto; }
+.gcard.fb-note .g-ttl { color: var(--fg); text-shadow: none; -webkit-line-clamp: 2; }
+.gcard.fb-note:has(.g-ttl) .g-note { top: calc(var(--g-pad) + var(--g-b) + 6px); }
+.gcard.fb-note .g-badge { background: var(--accent); color: var(--on-accent); }
+.gcard .g-ls { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .gcard.fb-note .peek-n, .gcard.fb-note .g-nt { display: none; } }
+
+/* Nota aberta: uma coluna só, sem mídia. Título e texto são os próprios campos. */
+.lv.note { width: min(560px, 100%); }
+.lv.note .lv-info { padding-top: 64px; max-height: 92vh; }
+.lv.note .lv-top { left: 10px; right: 10px; }
+.nt-title { width: 100%; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--fg); padding: 2px 0 6px; font: 800 24px/1.2 var(--f-display); letter-spacing: -.01em; outline: none; }
+.nt-title:focus { border-bottom-color: var(--ink); }
+.nt-text { width: 100%; min-height: 48px; border: 0; background: transparent; color: var(--fg); padding: 0; resize: none; overflow: hidden; font: 400 16px/1.5 var(--f-body); outline: none; }
+.nt-title::placeholder, .nt-text::placeholder { color: var(--muted-fg); }
+.nt-add { display: flex; gap: 12px; }
+.lv-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 2px solid var(--ink); border-radius: 12px; background: var(--bg); }
+.lv-pick .bd-pick .ck { margin-right: 6px; font-weight: 800; }
+@media (max-width: 1024px) { .lv.note { width: auto; } .lv.note .lv-info { max-height: none; } }
+.lv-pick .bd-pick { display: flex; flex-wrap: wrap; gap: 6px; }

@@ -257,8 +257,8 @@ describe('notas', () => {
   it('importa nota sem link e mantém a lista', async () => {
     const { planImport } = await import('../src/lib/dataio');
     const r = planImport({ folders: [], links: [{ url: '', titulo: 'Compras', lista: [{ t: 'Fio', ok: false }], pastaIds: [] }, { url: '' }] }, [], []);
-    expect(r.links).toHaveLength(1);
-    expect(r.links[0].lista?.[0].t).toBe('Fio');
-    expect(r.bad).toBe(1);
+    expect(r!.links).toHaveLength(1);
+    expect(r!.links[0].lista?.[0].t).toBe('Fio');
+    expect(r!.bad).toBe(1);
   });
 });

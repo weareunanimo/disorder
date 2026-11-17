@@ -11,6 +11,7 @@ import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, summaryOf, thumbOf
 import { useBase, useVisible } from '../hooks/useVisible';
 import { useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
+import { ListPeek } from './Checklist';
 import { CardMenu } from './CardMenu';
 import { GalleryCard, vtName } from './GalleryCard';
 import { IcoArchive, IcoCheck, IcoPaste, IcoRestore, IcoTrash } from './icons';
@@ -18,7 +19,7 @@ import { IcoArchive, IcoCheck, IcoPaste, IcoRestore, IcoTrash } from './icons';
 const PAGE = 60;
 
 
-type PreviewLink = Pick<Link, 'plataforma'> & Partial<Pick<Link, 'thumb' | 'duracao' | 'icone'>>;
+type PreviewLink = Pick<Link, 'plataforma'> & Partial<Pick<Link, 'thumb' | 'duracao' | 'icone' | 'url'>>;
 
 /** Quadrado do cartão. Sem imagem, mostra as iniciais da rede (ou o ícone do site, nos links comuns). Vídeo leva o selo de duração. */
 export function Preview({ link, cls, src, loading }: { link: PreviewLink; cls?: string; src?: string; loading?: boolean }) {
@@ -30,7 +31,7 @@ export function Preview({ link, cls, src, loading }: { link: PreviewLink; cls?: 
     <div className={'preview' + (cls ? ' ' + cls : '') + (loading ? ' sk' : '')} aria-hidden="true">
       {icon && !showImg && !iconBroken
         ? <img className="ico" src={icon} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} />
-        : (PLAT[link.plataforma] || PLAT.web).short}
+        : (link.url === '' ? 'Nota' : (PLAT[link.plataforma] || PLAT.web).short)}
       {showImg && <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(url)} />}
       {link.duracao ? <span className="dur">{fmtDuration(link.duracao)}</span> : null}
     </div>
@@ -68,7 +69,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <button type="button" className="t-arq" tabIndex={open ? 0 : -1} onClick={() => setArchived([l], !arq)}>{arq ? <IcoRestore /> : <IcoArchive />}<span>{arq ? 'Restaurar' : 'Arquivar'}</span></button>
       <button type="button" className="t-del" tabIndex={open ? 0 : -1} onClick={() => deleteLink(l.id)}><IcoTrash /><span>Excluir</span></button>
     </div>
-    <article className={'link k-' + kind + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} style={vtName(l.id)} data-selected={selected || undefined} aria-busy={loading || undefined}>
+    <article className={'link k-' + kind + (l.url ? '' : ' is-note') + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id} style={vtName(l.id)} data-selected={selected || undefined} aria-busy={loading || undefined}>
       <button type="button" className="pick" role="checkbox" aria-checked={selected} aria-label={'Selecionar ' + titulo}
         onClick={e => { e.preventDefault(); toggleSel(l.id, e.shiftKey); }}>
         <span className="box"><IcoCheck /></span>
@@ -80,6 +81,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
         {summary && !l.nota && <Summary text={summary} />}
         {loading && <p className="url"><span className="rd">Lendo a página</span></p>}
         {l.nota && <p className="note">{l.nota}</p>}
+        {l.lista?.some(i => i.t.trim()) && <ListPeek link={l} max={3} />}
       </div>
       <div className="acts">
         {tags.length > 0 && (

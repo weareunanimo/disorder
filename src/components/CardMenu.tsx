@@ -1,3 +1,4 @@
+import { noteText } from '../dialogs/LinkView';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
@@ -81,16 +82,16 @@ export function CardMenu({ link: l, titulo, arq, hideTrigger, anchor }: Props) {
           </button>
         );
       })}
-      <button type="button" role="menuitem" onClick={run(() => openModal({ kind: 'link', id: l.id }))}><IcoEdit />Nova tag ou editar</button>
+      <button type="button" role="menuitem" onClick={run(() => (l.url ? openModal({ kind: 'link', id: l.id }) : openLink(l.id)))}><IcoEdit />Nova tag ou editar</button>
     </>
   ) : (
     <>
       {sheet && <div className="cm-h"><span title={titulo}>{titulo}</span></div>}
       <button type="button" role="menuitem" onClick={run(() => openLink(l.id))}><IcoOpen />Abrir</button>
-      <button type="button" role="menuitem" onClick={run(() => copy(l.url))}><IcoCopy />Copiar link</button>
-      <a role="menuitem" href={'https://wa.me/?text=' + encodeURIComponent(titulo + '\n' + l.url)} target="_blank" rel="noopener noreferrer" onClick={() => setCardMenu(null)}><IcoWhats />Compartilhar no WhatsApp</a>
+      <button type="button" role="menuitem" onClick={run(() => copy(l.url || noteText(l)))}><IcoCopy />{l.url ? 'Copiar link' : 'Copiar texto'}</button>
+      <a role="menuitem" href={'https://wa.me/?text=' + encodeURIComponent(l.url ? titulo + '\n' + l.url : noteText(l))} target="_blank" rel="noopener noreferrer" onClick={() => setCardMenu(null)}><IcoWhats />Compartilhar no WhatsApp</a>
       <button type="button" role="menuitem" onClick={() => setTags(true)}><IcoTag />Tags{mine.length ? <span className="cm-n">{mine.length}</span> : null}</button>
-      <button type="button" role="menuitem" onClick={run(() => openModal({ kind: 'link', id: l.id }))}><IcoEdit />Editar</button>
+      <button type="button" role="menuitem" onClick={run(() => (l.url ? openModal({ kind: 'link', id: l.id }) : openLink(l.id)))}><IcoEdit />Editar</button>
       {sheet && <button type="button" role="menuitem" onClick={run(() => toggleSel(l.id, false))}><IcoCheck />Selecionar</button>}
       <button type="button" role="menuitem" onClick={run(() => setArchived([l], arq))}>{arq ? <IcoRestore /> : <IcoArchive />}{arq ? 'Restaurar' : 'Arquivar'}</button>
       <button type="button" role="menuitem" className="danger" onClick={run(() => deleteLink(l.id))}><IcoTrash />Excluir</button>

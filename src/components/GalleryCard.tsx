@@ -9,6 +9,8 @@ import { kindLabel } from '../lib/kinds';
 import { isArch } from '../lib/filters';
 import { isTouch } from '../hooks/useMedia';
 import { CardMenu } from './CardMenu';
+import { ListPeek } from './Checklist';
+import { listStats } from '../lib/notes';
 import { IcoCheck, IcoOpen, IcoTag } from './icons';
 
 /** Quanto tempo segurar para abrir o menu no toque. Abaixo de 400ms disputa com a rolagem, acima de 550ms parece travado. */
@@ -82,8 +84,10 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
   const titulo = l.titulo || l.tituloAuto || autoTitle(l);
   const img = thumbOf({ thumb: l.thumb });
   const [broken, setBroken] = useState(false), [iconBroken, setIconBroken] = useState(false);
-  const hasImg = !!img && !broken;
-  const fb = hasImg ? null : fallbackOf(l);
+  const note = !l.url;
+  const hasImg = !note && !!img && !broken;
+  const fb = hasImg || note ? null : fallbackOf(l);
+  const ls = listStats(l);
   const origin = originOf(l), arq = isArch(l), kind = kindLabel(l.categoria);
   const icon = l.plataforma === 'web' && l.icone && !iconBroken ? l.icone : '';
   const menuAnchor = useRef<HTMLDivElement>(null);
@@ -122,19 +126,25 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
 
   const quote = fb === 'quote' ? quoteOf(l) : '';
   return (
-    <article className={'gcard' + (fb ? ' fb fb-' + fb : '') + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id}
+    <article className={'gcard' + (note ? ' fb fb-note' : fb ? ' fb fb-' + fb : '') + (flash ? ' flash' : '') + (loading ? ' loading' : '')} data-id={l.id}
       data-c={fb && fb !== 'quote' ? hue(origin) : undefined} style={vtName(l.id)} data-selected={selected || undefined} aria-busy={loading || undefined}>
-      <a className="g-hit" href={l.url} target="_blank" rel="noopener noreferrer" aria-label={titulo + ', ' + origin + (kind ? ', ' + kind : '') + (tags.length ? ', tags: ' + tags.map(t => t.nome).join(', ') : '')}
+      <a className="g-hit" href={l.url || '#'} target="_blank" rel="noopener noreferrer" aria-label={titulo + ', ' + origin + (kind ? ', ' + kind : '') + (tags.length ? ', tags: ' + tags.map(t => t.nome).join(', ') : '')}
         onClick={onClick} onPointerDown={onPointerDown} onPointerUp={cancel} onPointerCancel={cancel} onPointerMove={onPointerMove}
         onContextMenu={e => { if (isTouch()) e.preventDefault(); }} draggable={false}>
         {hasImg && <img className="g-img" src={img} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />}
         {fb === 'icon' && <span className="g-icon">{icon ? <img src={icon} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} /> : (PLAT[l.plataforma] || PLAT.web).short}</span>}
+        {note && (
+          <span className="g-note">
+            {l.nota.trim() && <span className="g-nt">{l.nota.trim()}</span>}
+            <ListPeek link={l} max={l.nota.trim() ? 3 : 5} />
+          </span>
+        )}
         {fb === 'quote' && <blockquote className="g-quote"><span className="g-qm" aria-hidden="true">“</span><span className="g-qt">{quote}</span></blockquote>}
         <span className="g-badge">
           {icon && fb !== 'icon' ? <img src={icon} alt="" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} /> : null}
-          <span>{l.plataforma === 'web' ? origin : PLAT[l.plataforma].label}</span>
+          <span>{note ? 'Nota' : l.plataforma === 'web' ? origin : PLAT[l.plataforma].label}</span>
         </span>
-        {l.duracao ? <span className="g-dur">{fmtDuration(l.duracao)}</span> : null}
+        {l.duracao ? <span className="g-dur">{fmtDuration(l.duracao)}</span> : !note && ls.total ? <span className="g-dur g-ls">{ls.done}/{ls.total}</span> : null}
         {(showTitle || tags.length > 0) && (
           <span className="g-foot">
             {showTitle && <span className="g-ttl">{titulo}</span>}
@@ -146,7 +156,7 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
       <div className="g-over" ref={menuAnchor}>
         <span className="g-date" title={kind || undefined}>{ago(l.criadoEm || Date.now())}</span>
         <span className="g-acts">
-          <a className="g-btn" href={l.url} target="_blank" rel="noopener noreferrer" aria-label={'Abrir ' + titulo} title="Abrir o link original"><IcoOpen /></a>
+          {!note && <a className="g-btn" href={l.url} target="_blank" rel="noopener noreferrer" aria-label={'Abrir ' + titulo} title="Abrir o link original"><IcoOpen /></a>}
           <button type="button" className="g-btn" aria-label={'Tags de ' + titulo} title="Tags" data-cmenu={l.id} onClick={() => setCardMenu(l.id, true)}><IcoTag /></button>
           <CardMenu link={l} titulo={titulo} arq={arq} anchor={menuAnchor} />
         </span>
