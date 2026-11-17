@@ -134,7 +134,8 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
   useEffect(() => () => { flushItems(); dropIfEmpty(id); }, [id]);
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    close.current?.focus({ preventScroll: true });
+    // Nota nova já abre com o cursor no campo certo; o resto começa pelo Fechar.
+    if (!fresh) close.current?.focus({ preventScroll: true });
     document.body.classList.add('locked');
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); closeModal(); } };
     document.addEventListener('keydown', esc, true);

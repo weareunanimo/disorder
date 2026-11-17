@@ -78,7 +78,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
       <Preview link={l} loading={loading} />
       <div className="ltext">
         <h2 className="ttl" title={titulo}><button type="button" className="ttl-btn" onClick={() => { if (!get().sel.length) openLink(l.id); else toggleSel(l.id, false); }}>{titulo}</button></h2>
-        <p className="meta"><span>{originOf(l)}</span>{kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
+        <p className="meta"><span>{originOf(l)}</span>{l.url && kindLabel(l.categoria) && <span className="kd">{kindLabel(l.categoria)}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
         {summary && !l.nota && <Summary text={summary} />}
         {loading && <p className="url"><span className="rd">Lendo a página</span></p>}
         {l.nota && <p className="note">{l.nota}</p>}

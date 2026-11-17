@@ -1485,3 +1485,9 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .newm .nm-clip { background: var(--accent); color: var(--on-accent); margin-bottom: 6px; }
 .newm .nm-clip .pf-t span { color: inherit; opacity: .8; }
 .empty-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.prof.newm.sheet { top: auto; right: 0; left: 0; width: auto; }
+.hdr-mid { width: 100%; }
+.hdr-mid .omni { width: auto; }
+.gcard.fb-note .g-note { top: calc(var(--g-pad) + var(--g-b) + 8px); }
+.gcard.fb-note .g-note .g-ttl { position: static; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font: 800 calc(var(--g-t) * 1.1)/1.15 var(--f-display); letter-spacing: -.01em; color: var(--fg); }
+.bd-add .btn { flex: none; white-space: nowrap; }

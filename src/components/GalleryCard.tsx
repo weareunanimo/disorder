@@ -93,7 +93,7 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
   const menuAnchor = useRef<HTMLDivElement>(null);
   const tags = useMemo(() => liveTags(l, folders), [l, folders]);
   // Com foto, as tags tomam o lugar do título. Sem foto (capas de ícone e tipográfica), o título é o conteúdo e fica, com as tags embaixo.
-  const showTitle = fb !== 'quote';
+  const showTitle = fb !== 'quote' && !note;
 
   // Segurar: abre o menu e engole o clique que viria ao soltar.
   const press = useRef<{ t: number; x: number; y: number; fired: boolean } | null>(null);
@@ -135,6 +135,7 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
         {fb === 'icon' && <span className="g-icon">{icon ? <img src={icon} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} /> : (PLAT[l.plataforma] || PLAT.web).short}</span>}
         {note && (
           <span className="g-note">
+            <span className="g-ttl">{titulo}</span>
             {l.nota.trim() && <span className="g-nt">{l.nota.trim()}</span>}
             <ListPeek link={l} max={l.nota.trim() ? 3 : 5} />
           </span>
