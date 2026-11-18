@@ -3,6 +3,7 @@ import { set, useStore } from '../store';
 import { useVisible } from '../hooks/useVisible';
 import { addLinkToNote, closeModal, deleteLink, dropIfEmpty, flushItems, openModal, patchItem, setArchived, startList, tagItemNew, toast } from '../actions';
 import { Checklist } from '../components/Checklist';
+import { Jot } from '../components/Jot';
 import { isNote, ordered } from '../lib/notes';
 import { tagsOf, withTag, withoutTag } from '../lib/tags';
 import { IcoWhats } from '../components/icons';
@@ -130,6 +131,14 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [prev, next]);
+  // Teclado do celular: a janela encolhe até o topo do teclado, para o campo de anotar ficar à vista.
+  useEffect(() => {
+    const vv = window.visualViewport, el = root.current;
+    if (!vv || !el) return;
+    const fit = () => { const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); el.style.setProperty('--kb', kb + 'px'); };
+    fit(); vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); };
+  }, []);
   // Ao sair deste item (fechar ou ir para outro): grava o que faltava e some com nota vazia.
   useEffect(() => () => { flushItems(); dropIfEmpty(id); }, [id]);
   useEffect(() => {
@@ -180,6 +189,7 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
                 </button>
               : <div className="lv-empty" data-c={l.categoria ? undefined : 0}><b>{titulo}</b><span>{origem}</span></div>}
         </div>}
+        <div className="lv-side">
         <div className="lv-info">
           <p className="lv-meta"><span>{origem}</span>{kind && !note && <span className="kd">{kind}</span>}<span>{ago(l.criadoEm || Date.now())}</span></p>
           {note ? <NoteBody l={l} fresh={fresh} /> : <>
@@ -190,7 +200,6 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
           <div className="lv-tags" aria-label="Tags">
             {tags.map(t => <span key={t.id} className="tag" data-c={colorOf(t)} data-s={shapeOf(t)}>{t.nome}</span>)}
             <button type="button" className="lv-tagbtn" onClick={() => openModal({ kind: 'link', id: l.id })}>{tags.length ? 'Mudar tags' : '+ Tag'}</button>
-            {!l.lista?.length && <button type="button" className="lv-tagbtn" onClick={() => startList(l.id)}>+ Lista</button>}
           </div>
           </>}
           <div className="lv-acts">
@@ -202,6 +211,8 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
             <button type="button" className="btn outline sm icon" aria-label={arq ? 'Restaurar' : 'Arquivar'} title={arq ? 'Restaurar' : 'Arquivar'} onClick={() => { const to = next || prev; setArchived([l], arq); if (to) goTo(to); else closeModal(); }}>{arq ? <IcoRestore /> : <IcoArchive />}</button>
             <button type="button" className="btn outline sm icon danger" aria-label="Excluir" title="Excluir" onClick={() => { const to = next || prev; deleteLink(l.id); if (to) goTo(to); else closeModal(); }}><IcoTrash /></button>
           </div>
+        </div>
+        {!note && <Jot key={l.id} link={l} />}
         </div>
       </div>
     </div>

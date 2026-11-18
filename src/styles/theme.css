@@ -1501,3 +1501,36 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .login > .lnk { align-self: flex-start; }
 .modal form { display: flex; flex-direction: column; gap: 12px; }
 .login h1:focus { outline: none; }
+
+/* Anotar enquanto vê: campo fixo na janela do link (v9.3) */
+.lv-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.lv-side .lv-info { flex: 1 1 auto; min-height: 0; }
+.lv-note { white-space: pre-line; }
+.jot { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 2px solid var(--ink); background: var(--surface); }
+.jot-row { display: flex; align-items: center; gap: 8px; }
+.jot-in { flex: 1; min-width: 0; }
+.jot-row .btn { flex: none; }
+.jot-mode { flex: none; }
+.jot-mode button { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; }
+.jot-mode svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.jot-sub { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; }
+.jot-dest { display: flex; align-items: center; gap: 6px; min-width: 0; font: 700 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg); }
+.jot-dest select { min-width: 0; max-width: 220px; height: 30px; padding: 0 26px 0 8px; border: 2px solid var(--ink); border-radius: 8px; background-color: var(--surface); color: var(--fg); font: 600 13px/1 var(--f-body); text-transform: none; letter-spacing: 0; text-overflow: ellipsis; }
+.jot-ok { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px/1.2 var(--f-body); color: var(--muted-fg); }
+@media (min-width: 1025px) {
+  .lv.r9x16 .lv-side { height: min(86vh, 820px); }
+  .lv.r1x1 .lv-side { height: min(78vh, 680px); }
+}
+@media (max-width: 1024px) {
+  .lv { bottom: var(--kb, 0px); }
+  .lv:not(.note) .lv-media { position: sticky; top: 0; z-index: 2; }
+  .lv.r9x16 .lv-media { height: min(45dvh, calc(100vw * 16 / 9)); }
+  .lv.r1x1 .lv-media { max-height: 45dvh; }
+  .lv-side { flex: 1 0 auto; }
+  .lv-side .lv-info { padding-bottom: 16px; }
+  .jot { position: sticky; bottom: 0; z-index: 2; margin-top: auto; }
+  .jot-mode button { width: 44px; height: 44px; }
+  .jot-dest select { height: 36px; }
+}
+@media (pointer: coarse) { .jot-in input { font-size: 16px; } }
+@media (min-width: 1025px) { .lv.r16x9 .lv-media { max-height: 54vh; justify-self: center; width: min(100%, calc(54vh * 16 / 9)); } .lv.r16x9 { background: var(--surface); } .lv.r16x9 .lv-media { background: #121212; } }
