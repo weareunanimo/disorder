@@ -844,8 +844,12 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (min-width: 901px) { .gcard .g-badge { font-size: 10.5px; padding: 0 7px; gap: 5px; } }
 .gcard .g-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .gcard .g-badge img { width: calc(var(--g-b) - 7px); height: calc(var(--g-b) - 7px); flex: none; object-fit: contain; }
-.gcard .g-dur { position: absolute; z-index: 2; top: var(--g-pad); right: var(--g-pad); height: var(--g-b); display: inline-flex; align-items: center; padding: 0 5px; border-radius: 4px; background: rgb(10 10 10 / .82); color: #FFFDF7; font: 700 9.5px/1 var(--f-mono); }
-@media (max-width: 640px) { .gcard .g-dur { display: none; } }
+.gcard .g-dur { height: var(--g-b); display: inline-flex; align-items: center; padding: 0 5px; border-radius: 4px; background: rgb(10 10 10 / .82); color: #FFFDF7; font: 700 9.5px/1 var(--f-mono); }
+/* Canto de cima: duração, lista e nota. */
+.gcard .g-ind { position: absolute; z-index: 2; top: var(--g-pad); right: var(--g-pad); display: flex; gap: 4px; align-items: center; }
+.gcard .g-i { height: var(--g-b); display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: 4px; background: rgb(10 10 10 / .82); color: #FFFDF7; font: 700 9.5px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.gcard .g-i svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 640px) { .gcard .g-dur, .gcard .g-i > span:not(.sr) { display: none; } .gcard .g-i { padding: 0 4px; } }
 
 /* ----- Capas sem imagem ----- */
 .gcard.fb .g-ttl { color: #121212; text-shadow: none; }
@@ -885,10 +889,10 @@ button.sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (hover: hover) {
   .gcard:hover .g-img { transform: scale(1.03); }
   .gcard:hover .g-over, .gcard:focus-within .g-over { opacity: 1; translate: 0 0; }
-  .gcard:hover .g-badge, .gcard:focus-within .g-badge, .gcard:hover .g-dur, .gcard:focus-within .g-dur { opacity: 0; }
+  .gcard:hover .g-badge, .gcard:focus-within .g-badge, .gcard:hover .g-ind, .gcard:focus-within .g-ind { opacity: 0; }
 }
 @media (hover: none) { .gcard .g-over { display: none; } }
-.gcard .g-badge, .gcard .g-dur { transition: opacity .12s ease; }
+.gcard .g-badge, .gcard .g-ind { transition: opacity .12s ease; }
 .cm-hidden { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0; pointer-events: none; }
 
 /* ----- Seleção ----- */
@@ -1445,7 +1449,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .gcard.fb-note .g-ttl { color: var(--fg); text-shadow: none; -webkit-line-clamp: 2; }
 .gcard.fb-note:has(.g-ttl) .g-note { top: calc(var(--g-pad) + var(--g-b) + 6px); }
 .gcard.fb-note .g-badge { background: var(--accent); color: var(--on-accent); }
-.gcard .g-ls { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .gcard.fb-note .peek-n, .gcard.fb-note .g-nt { display: none; } }
 
 /* Nota aberta: uma coluna só, sem mídia. Título e texto são os próprios campos. */

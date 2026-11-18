@@ -9,6 +9,7 @@ import { kindLabel } from '../lib/kinds';
 import { isArch } from '../lib/filters';
 import { isTouch } from '../hooks/useMedia';
 import { CardMenu } from './CardMenu';
+import { IcoChecklist, IcoNote } from './icons';
 import { ListPeek } from './Checklist';
 import { listStats } from '../lib/notes';
 import { IcoCheck, IcoOpen, IcoTag } from './icons';
@@ -145,7 +146,13 @@ export const GalleryCard = memo(function GalleryCard({ link: l, folders, selecte
           {icon && fb !== 'icon' ? <img src={icon} alt="" referrerPolicy="no-referrer" onError={() => setIconBroken(true)} /> : null}
           <span>{note ? 'Nota' : l.plataforma === 'web' ? origin : PLAT[l.plataforma].label}</span>
         </span>
-        {l.duracao ? <span className="g-dur">{fmtDuration(l.duracao)}</span> : !note && ls.total ? <span className="g-dur g-ls">{ls.done}/{ls.total}</span> : null}
+        {(l.duracao || (!note && (ls.total || l.nota.trim()))) ? (
+          <span className="g-ind">
+            {l.duracao ? <span className="g-dur">{fmtDuration(l.duracao)}</span> : null}
+            {!note && ls.total ? <span className="g-i" title={'Lista: ' + ls.done + ' de ' + ls.total + ' feitos'}><IcoChecklist /><span>{ls.done}/{ls.total}</span><span className="sr">{', lista com ' + ls.done + ' de ' + ls.total + ' feitos'}</span></span> : null}
+            {!note && l.nota.trim() ? <span className="g-i" title="Tem nota"><IcoNote /><span className="sr">, tem nota</span></span> : null}
+          </span>
+        ) : null}
         {(showTitle || tags.length > 0) && (
           <span className="g-foot">
             {showTitle && <span className="g-ttl">{titulo}</span>}
