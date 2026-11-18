@@ -1210,10 +1210,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .login .sent-ico { width: 52px; height: 52px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 3px 3px 0 var(--sh); }
 .login .sent-ico svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .login .lead b { color: var(--fg); overflow-wrap: anywhere; }
-.login .code { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 2px solid var(--ink); }
-.login .code-row { display: flex; gap: 8px; }
-.login .code-row .inw { flex: 1 1 auto; }
-.login #login-code { font: 700 22px/1 var(--f-mono); letter-spacing: .3em; text-align: center; }
 .login .sent-tips { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; line-height: 1.45; color: var(--muted-fg); }
 .login .sent-acts { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .login .lnk { border: 0; background: transparent; color: var(--fg); font: 700 14px/1 var(--f-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 0; }
@@ -1491,3 +1487,17 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .gcard.fb-note .g-note { top: calc(var(--g-pad) + var(--g-b) + 8px); }
 .gcard.fb-note .g-note .g-ttl { position: static; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font: 800 calc(var(--g-t) * 1.1)/1.15 var(--f-display); letter-spacing: -.01em; color: var(--fg); }
 .bd-add .btn { flex: none; white-space: nowrap; }
+
+/* Entrar com e-mail e senha */
+.login-tabs { align-self: flex-start; }
+.login-tabs button { padding: 0 16px; font-weight: 600; }
+.inw.pw { display: flex; align-items: center; }
+.inw.pw input { flex: 1; min-width: 0; padding-right: 92px; }
+.pw-t { position: absolute; right: 6px; top: 50%; translate: 0 -50%; min-height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); font: 700 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
+.pw-t:hover { background: var(--muted); }
+.pw-t:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+.inw.pw { position: relative; }
+.f-h { font-size: 12px; color: var(--muted-fg); }
+.login > .lnk { align-self: flex-start; }
+.modal form { display: flex; flex-direction: column; gap: 12px; }
+.login h1:focus { outline: none; }

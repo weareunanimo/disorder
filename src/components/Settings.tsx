@@ -96,6 +96,12 @@ export function Settings() {
         )}
         {mode === 'cloud' && (
           <div className="srow">
+            <div className="st"><b>Senha</b><span>Para entrar com e-mail e senha. Se você entrava só por link no e-mail, defina uma aqui.</span></div>
+            <button type="button" className="btn" onClick={() => openModal({ kind: 'password' })}>Definir senha</button>
+          </div>
+        )}
+        {mode === 'cloud' && (
+          <div className="srow">
             <div className="st"><b>Sair</b><span>Encerra a sessão neste aparelho. Seus links continuam na conta.</span></div>
             <button type="button" className="btn" onClick={signOut}>Sair da conta</button>
           </div>

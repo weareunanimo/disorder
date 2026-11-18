@@ -20,6 +20,7 @@ export type ModalState =
   | { kind: 'confirm'; id: string }
   | { kind: 'archive-folder'; id: string }
   | { kind: 'purge'; ids: string[] }
+  | { kind: 'password'; recovery?: boolean }
   | { kind: 'guide'; part?: 'app' | 'share' };
 
 export interface Draft { id: string; titulo: string; nota: string; tags: string[] }

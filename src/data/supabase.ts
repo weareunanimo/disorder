@@ -4,6 +4,8 @@ import type { Backend } from './backend';
 import type { Col, Folder, Link } from '../types';
 
 let client: SupabaseClient | null = null;
+let onRecovery: (() => void) | null = null;
+export const whenRecovery = (fn: () => void) => { onRecovery = fn; };
 export const getClient = () => client;
 
 /** O Supabase só é baixado quando existe configuração, para a tela inicial abrir mais rápido. */
@@ -11,22 +13,75 @@ export async function connect(): Promise<Session | null | 'off'> {
   if (!CFG.supabaseUrl || !CFG.supabaseAnonKey) return 'off';
   const { createClient } = await import('@supabase/supabase-js');
   client = createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+  // O link de esqueci a senha chega com type=recovery no endereço; o evento confirma depois de ler a sessão.
+  recovery = /type=recovery/.test(location.hash);
+  client.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') { recovery = true; try { sessionStorage.setItem('disorder.recovery', '1'); } catch { /* */ } onRecovery?.(); } });
   const r = await client.auth.getSession();
   return r.data.session;
 }
 
-export async function sendLoginLink(email: string): Promise<boolean> {
-  if (!client) return false;
-  const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin } });
-  return !error;
+/** Resultado de uma ação de conta: deu certo, ou a mensagem para mostrar. */
+export type AuthResult = { ok: true; confirm?: boolean } | { ok: false; msg: string; unconfirmed?: boolean };
+
+/** Traduz os erros do Supabase para frases do app. Erro desconhecido vira uma frase genérica, sem detalhe técnico. */
+function why(e: { message?: string; status?: number; code?: string } | null): string {
+  const m = (e?.message || '').toLowerCase(), c = e?.code || '';
+  if (c === 'invalid_credentials' || m.includes('invalid login')) return 'E-mail ou senha errados. Se você entrava por link, use Esqueci a senha para criar uma.';
+  if (c === 'email_not_confirmed' || m.includes('not confirmed')) return 'Falta confirmar o e-mail. Abra o link que mandamos no cadastro.';
+  if (c === 'user_already_exists' || m.includes('already registered')) return 'Esse e-mail já tem conta. Entre com a sua senha.';
+  if (c === 'weak_password' || m.includes('password should')) return 'Senha fraca. Use pelo menos 8 caracteres.';
+  if (c === 'over_email_send_rate_limit' || c === 'over_request_rate_limit' || e?.status === 429) return 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.';
+  if (c === 'same_password') return 'A senha nova é igual à atual.';
+  if (m.includes('fetch') || m.includes('network')) return 'Sem conexão. Confira a internet e tente de novo.';
+  return 'Não deu certo. Tente de novo em alguns segundos.';
 }
 
-/** Entrar com o código de 6 dígitos do e-mail (útil no app instalado no iPhone, que não recebe o clique do link). */
-export async function verifyLoginCode(email: string, token: string): Promise<boolean> {
-  if (!client) return false;
-  const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
-  return !error;
+export async function signIn(email: string, password: string): Promise<AuthResult> {
+  if (!client) return { ok: false, msg: why(null) };
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (!error) return { ok: true };
+  const unconfirmed = error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message);
+  return { ok: false, msg: why(error), unconfirmed };
 }
+
+/** Cria a conta. Se o projeto pede confirmação de e-mail, não há sessão ainda: confirm = true. */
+export async function signUp(email: string, password: string): Promise<AuthResult> {
+  if (!client) return { ok: false, msg: why(null) };
+  const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
+  if (error) return { ok: false, msg: why(error) };
+  // E-mail já cadastrado: o Supabase devolve um usuário sem identidades, sem dizer que existe.
+  if (data.user && !data.user.identities?.length) return { ok: false, msg: why({ code: 'user_already_exists' }) };
+  return { ok: true, confirm: !data.session };
+}
+
+export async function resendConfirm(email: string): Promise<AuthResult> {
+  if (!client) return { ok: false, msg: why(null) };
+  const { error } = await client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin } });
+  return error ? { ok: false, msg: why(error) } : { ok: true };
+}
+
+/** Manda o link para criar uma senha nova. Serve também para quem tinha conta só com link por e-mail. */
+export async function sendReset(email: string): Promise<AuthResult> {
+  if (!client) return { ok: false, msg: why(null) };
+  const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+  return error ? { ok: false, msg: why(error) } : { ok: true };
+}
+
+/** Define ou troca a senha de quem já está dentro (Ajustes ou link de esqueci a senha). */
+export async function setPassword(password: string): Promise<AuthResult> {
+  if (!client) return { ok: false, msg: why(null) };
+  const { error } = await client.auth.updateUser({ password });
+  return error ? { ok: false, msg: why(error) } : { ok: true };
+}
+
+/** Veio do link de esqueci a senha: o app abre direto o pedido de senha nova. */
+let recovery = false;
+export const takeRecovery = () => {
+  let r = recovery;
+  try { r = r || sessionStorage.getItem('disorder.recovery') === '1'; sessionStorage.removeItem('disorder.recovery'); } catch { /* sem armazenamento */ }
+  recovery = false;
+  return r;
+};
 
 export function onSignedIn(fn: () => void) {
   client?.auth.onAuthStateChange((_ev, s) => { if (s) fn(); });

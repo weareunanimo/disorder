@@ -8,6 +8,8 @@ import { CFG } from '../config';
 import { useSortedFolders } from '../hooks/useVisible';
 import { Preview } from '../components/LinkList';
 import { Modal } from './Modal';
+import { PasswordField } from '../components/Login';
+import { setPassword } from '../data/supabase';
 import { Guide } from './Guide';
 import { LinkView } from './LinkView';
 import { TagPicker } from '../components/TagPicker';
@@ -127,6 +129,30 @@ function Purge({ ids }: { ids: string[] }) {
   );
 }
 
+/** Definir ou trocar a senha. Também abre sozinho quando a pessoa chega pelo link de esqueci a senha. */
+function PasswordDialog({ recovery }: { recovery?: boolean }) {
+  const [pw, setPw] = useState(''), [busy, setBusy] = useState(false), [err, setErr] = useState('');
+  const submit = async () => {
+    if (pw.length < 8) { setErr('A senha precisa de pelo menos 8 caracteres.'); return; }
+    setBusy(true); setErr('');
+    const r = await setPassword(pw);
+    setBusy(false);
+    if (!r.ok) { setErr(r.msg); return; }
+    closeModal(); toast('Senha salva. Use e-mail e senha para entrar nos outros aparelhos.');
+  };
+  return (
+    <Modal labelledBy="mt" onClose={cancelModal}>
+      <h2 id="mt">{recovery ? 'Crie a senha nova' : 'Senha'}</h2>
+      <p>{recovery ? 'Você entrou pelo link do e-mail. Escolha a senha que vai usar daqui em diante.' : 'Defina ou troque a senha que você usa para entrar com e-mail.'}</p>
+      <form onSubmit={e => { e.preventDefault(); void submit(); }} noValidate>
+        <PasswordField id="pw-new" label="Senha nova" value={pw} onChange={v => { setPw(v); setErr(''); }} autoComplete="new-password" err={!!err} hint="Pelo menos 8 caracteres." />
+        {err && <p className="msg err" role="alert">{err}</p>}
+        <div className="row"><button type="button" className="btn outline" onClick={cancelModal}>{recovery ? 'Depois' : 'Cancelar'}</button><button type="submit" className="btn primary" disabled={busy}>{busy ? 'Salvando' : 'Salvar senha'}</button></div>
+      </form>
+    </Modal>
+  );
+}
+
 export function ModalHost() {
   const m = useStore(s => s.modal);
   const link = useStore(s => (m?.kind === 'link' ? s.links.find(x => x.id === m.id) : undefined));
@@ -134,6 +160,7 @@ export function ModalHost() {
   if (m.kind === 'link') return link ? <LinkDialog key={m.id} link={link} /> : null;
   if (m.kind === 'view') return <LinkView key={m.id} id={m.id} fresh={m.fresh} />;
   if (m.kind === 'purge') return <Purge ids={m.ids} />;
+  if (m.kind === 'password') return <PasswordDialog recovery={m.recovery} />;
   if (m.kind === 'confirm') return <ConfirmFolder id={m.id} />;
   if (m.kind === 'archive-folder') return <ArchiveFolder id={m.id} />;
   if (m.kind === 'guide') return <Guide part={m.part} />;

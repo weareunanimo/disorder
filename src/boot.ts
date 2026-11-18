@@ -3,7 +3,7 @@ import { applyTheme, busy, checkClipboard, enrichPending, fixView, capture, hold
 import { SHARE_HASH, linkIn } from './lib/setup';
 import { localBackend, type Snapshot } from './data/backend';
 import { normLink } from './lib/tags';
-import { connect, getClient, onSignedIn, supabaseBackend } from './data/supabase';
+import { connect, getClient, onSignedIn, supabaseBackend, takeRecovery, whenRecovery } from './data/supabase';
 
 const SHARE = 'disorder.share';
 
@@ -64,5 +64,8 @@ export async function boot() {
     const b = backend();
     set({ mode: b.mode, phase: 'ready' });
     await b.start(onData, onError);
+    // Chegou pelo link de esqueci a senha: pede a senha nova logo de cara.
+    if (takeRecovery()) set({ modal: { kind: 'password', recovery: true } });
+    whenRecovery(() => set({ modal: { kind: 'password', recovery: true } }));
   } catch { onError(); }
 }
