@@ -73,7 +73,7 @@ export function visibleLinks(links: Link[], folders: Folder[], view: View, f: Fi
       if (!q) return true;
       const nome = tagsOf(l).map(id => names.get(id)).filter(Boolean).join(' ');
       const itens = (l.lista || []).map(i => i.t).join(' ');
-      return fold([l.titulo, l.tituloAuto, autoTitle(l), l.nota, l.resumoIA, l.autor, l.url, nome, itens].filter(Boolean).join(' ')).includes(q);
+      return fold([l.titulo, l.tituloIA, l.tituloAuto, autoTitle(l), l.nota, l.resumoIA, l.autor, l.url, nome, itens].filter(Boolean).join(' ')).includes(q);
     }), sort);
   // Dentro de uma tag, as notas vêm antes dos links: são o "geral" daquele assunto.
   if (!folders.some(x => x.id === view)) return out;

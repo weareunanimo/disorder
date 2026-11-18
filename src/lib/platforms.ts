@@ -104,6 +104,11 @@ export const shortUrl = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '');
 type TitleSrc = Pick<Link, 'plataforma' | 'tipo' | 'autor'> & { host?: string; url?: string };
 
 /** Título provisório, usado até o preview trazer o título de verdade. */
+/** Título que aparece: o editado à mão, senão o da IA, senão o da página, senão um montado da origem. */
+export function titleOf(l: TitleSrc & { titulo?: string; tituloIA?: string; tituloAuto?: string }): string {
+  return (l.titulo || '').trim() || (l.tituloIA || '').trim() || (l.tituloAuto || '').trim() || autoTitle(l);
+}
+
 export function autoTitle(l: TitleSrc): string {
   const a = l.autor;
   switch (l.plataforma) {

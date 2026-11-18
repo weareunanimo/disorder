@@ -1,5 +1,5 @@
 import type { Link } from '../types';
-import { autoTitle, originOf } from './platforms';
+import { originOf, titleOf } from './platforms';
 
 export type Sort = 'new' | 'old' | 'name' | 'name-desc' | 'origin';
 export const SORTS: { key: Sort; label: string }[] = [
@@ -12,7 +12,7 @@ export const SORTS: { key: Sort; label: string }[] = [
 export const isSort = (v: unknown): v is Sort => SORTS.some(s => s.key === v);
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
-const nameOf = (l: Link) => (l.titulo || l.tituloAuto || autoTitle(l) || '').trim();
+const nameOf = (l: Link) => titleOf(l);
 const when = (l: Link) => l.criadoEm || 0;
 
 /** Ordena sem mexer na lista original. Empate sempre desempata pelo mais recente, para a ordem não pular. */

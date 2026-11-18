@@ -44,7 +44,7 @@ export async function enrichLink(l: Link): Promise<EnrichResult> {
   } catch { return null; }
 }
 
-export type Resumo = { resumo: string; tema: string; categoria: string };
+export type Resumo = { titulo: string; resumo: string; tema: string; categoria: string };
 
 /** Como foi a última chamada de resumo: 200, o código HTTP da falha, ou 0 quando nem chegou ao servidor. Serve para explicar por que não funcionou. */
 export let lastSummarizeStatus = 200;
@@ -86,8 +86,8 @@ export async function summarize(l: Pick<Link, 'titulo' | 'tituloAuto' | 'descric
         return null;
       }
       const d = (await r.json()) as Partial<Resumo> & { tipo?: string };
-      const resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim(), categoria = isKind(d.tipo) ? d.tipo : '';
-      return resumo || tema || categoria ? { resumo, tema, categoria } : null;
+      const tituloIA = (d.titulo || '').trim(), resumo = (d.resumo || '').trim(), tema = (d.tema || '').trim(), categoria = isKind(d.tipo) ? d.tipo : '';
+      return tituloIA || resumo || tema || categoria ? { titulo: tituloIA, resumo, tema, categoria } : null;
     } catch { lastSummarizeStatus = 0; return null; }
   }
   return null;

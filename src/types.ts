@@ -18,6 +18,8 @@ export interface Link {
   criadoEm: number;
   enriquecido: boolean;
   tituloAuto?: string;
+  /** Título curto escrito pela IA a partir das palavras-chave do título da página. Perde para o título editado à mão. */
+  tituloIA?: string;
   thumb?: string;
   /** Metadados lidos da página (todos opcionais): resumo da própria página, duração em segundos, minutos de leitura, data de publicação e ícone do site. */
   descricao?: string;

@@ -67,6 +67,8 @@ export function planImport(data: unknown, folders: Folder[], links: Link[]): Imp
     };
     const ta = str(l.tituloAuto, 300), th = str(l.thumb, 2000);
     if (ta) rec.tituloAuto = ta;
+    const ti = str(l.tituloIA, 120);
+    if (ti) rec.tituloIA = ti;
     if (/^https:\/\//i.test(th)) rec.thumb = th;
     const lista = cleanList(l.lista);
     if (lista) rec.lista = lista;

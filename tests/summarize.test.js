@@ -28,7 +28,7 @@ fake.listen(0, async () => {
   process.env.AI_GATEWAY_API_KEY = 'teste';
   assert.strictEqual((await call({}, 'GET')).status, 405);
   r = await call({ titulo: '', descricao: '' });
-  assert.deepStrictEqual(r.body, { resumo: '', tema: '', tipo: '' }); // sem texto, nem chama a IA
+  assert.deepStrictEqual(r.body, { titulo: '', resumo: '', tema: '', tipo: '' }); // sem texto, nem chama a IA
   r = await call({ titulo: 'Bolo de cenoura', site: 'Receitas' });
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.body.resumo, 'Receita de bolo fofinho de cenoura, com cobertura'); // sem travessão
@@ -40,5 +40,10 @@ fake.listen(0, async () => {
   r = await call({ titulo: 'Bolo' }); r = await call({ titulo: 'Bolo' });
   assert.strictEqual(r.status, 429);
   assert.strictEqual(handler.parseAnswer('sem json'), null);
+  // Título da IA: sem hashtag, emoji, arroba, aspas ou travessão, e cortado numa palavra inteira.
+  const t = handler.parseAnswer(JSON.stringify({ titulo: '✨ "3 jeitos de tricotar" com agulha circular 🧶 #tricot @fulana — fácil', resumo: 'x', tema: '', tipo: '' }));
+  assert.strictEqual(t.titulo, '3 jeitos de tricotar com agulha circular, fácil');
+  const long = handler.parseAnswer(JSON.stringify({ titulo: 'palavra '.repeat(20), resumo: '' }));
+  assert.ok(long.titulo.length <= 70 && !long.titulo.endsWith(' '));
   console.log('ok'); fake.close();
 });

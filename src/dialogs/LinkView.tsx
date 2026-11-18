@@ -7,7 +7,7 @@ import { isNote, ordered } from '../lib/notes';
 import { tagsOf, withTag, withoutTag } from '../lib/tags';
 import { IcoWhats } from '../components/icons';
 import type { Link } from '../types';
-import { PLAT, ago, autoTitle, originOf, summaryOf, thumbOf } from '../lib/platforms';
+import { PLAT, ago, titleOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
 import { kindLabel } from '../lib/kinds';
 import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
@@ -143,7 +143,7 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
   }, []);
   if (!l) return null;
   const note = isNote(l);
-  const titulo = l.titulo || l.tituloAuto || autoTitle(l);
+  const titulo = titleOf(l);
   const media = mediaOf(l), tags = liveTags(l, folders), arq = isArch(l);
   const resumo = summaryOf(l), kind = kindLabel(l.categoria), origem = originOf(l);
   const where = l.plataforma === 'web' ? 'no site' : 'no ' + PLAT[l.plataforma].label;

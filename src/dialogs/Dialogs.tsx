@@ -46,7 +46,7 @@ function LinkDialog({ link: l }: { link: Link }) {
       </div>
       {unreadable && <p className="hint">Este {l.plataforma === 'web' ? 'site' : 'link'} não deixou ler o título e a imagem. O link foi salvo assim mesmo, e você pode escrever o título abaixo.</p>}
       <form className="mform" noValidate onSubmit={e => { e.preventDefault(); submit(); }}>
-        <label className="f">Título<span className="inw"><input type="text" name="titulo" maxLength={140} autoComplete="off" placeholder={l.tituloAuto || autoTitle(l)} value={titulo} onChange={e => setTitulo(e.target.value)} /></span></label>
+        <label className="f">Título<span className="inw"><input type="text" name="titulo" maxLength={140} autoComplete="off" placeholder={l.tituloIA || l.tituloAuto || autoTitle(l)} value={titulo} onChange={e => setTitulo(e.target.value)} /></span></label>
         {!arch && (
           <TagPicker id="lt-tags" label="Tags" folders={folders} value={tags} onChange={setPastas} onNew={() => {
             set({ draft: { id: l.id, titulo, nota, tags } });

@@ -260,7 +260,7 @@ export function cancelModal() {
 /* ===== Salvar links ===== */
 
 interface SaveOutcome { saved: Link[]; dup: Link | null; bad: string | null; total: number; dest: string[] }
-export interface PvSnap { key: string; data: PreviewData | null; ai?: { resumo: string; tema: string; categoria: string } | null }
+export interface PvSnap { key: string; data: PreviewData | null; ai?: { titulo?: string; resumo: string; tema: string; categoria: string } | null }
 
 function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome {
   const found = raw.match(/https?:\/\/[^\s]+/gi);
@@ -283,7 +283,7 @@ function saveLinks(raw: string, dest: string[], pv?: PvSnap | null): SaveOutcome
     };
     if (pv && pv.key === p.key && pv.data) { Object.assign(rec, extrasOf(pv.data)); rec.enriquecido = true; }
     // O diálogo de salvar já pediu o resumo: aproveita, para não gastar outro pedido.
-    if (pv && pv.key === p.key && pv.ai && get().ai) { if (pv.ai.resumo) rec.resumoIA = pv.ai.resumo; if (pv.ai.tema) rec.tema = pv.ai.tema; if (pv.ai.categoria) rec.categoria = pv.ai.categoria; rec.iaEm = Date.now(); }
+    if (pv && pv.key === p.key && pv.ai && get().ai) { if (pv.ai.titulo) rec.tituloIA = pv.ai.titulo; if (pv.ai.resumo) rec.resumoIA = pv.ai.resumo; if (pv.ai.tema) rec.tema = pv.ai.tema; if (pv.ai.categoria) rec.categoria = pv.ai.categoria; rec.iaEm = Date.now(); }
     r.saved.push(rec);
   });
   if (r.saved.length) {
@@ -654,7 +654,7 @@ const summarizing = new Set<string>();
 let bulkAi = false;
 /** Pede a frase de resumo e o tema de um link, se a IA estiver ligada e o link ainda não tiver. Falha em silêncio: o cartão segue com o resumo da página. */
 /** Falta passar pela IA: nunca respondeu, e ainda falta resumo ou tipo. */
-const needsAi = (l: Link) => !!l.url && !l.iaEm && (!l.resumoIA || !l.categoria);
+const needsAi = (l: Link) => !!l.url && !l.iaEm && (!l.resumoIA || !l.categoria || !l.tituloIA);
 
 async function addSummary(id: string) {
   const l = get().links.find(x => x.id === id);
@@ -664,7 +664,7 @@ async function addSummary(id: string) {
   try {
     const s = await summarize(l);
     const now = get().links.find(x => x.id === id);
-    if (s && now) await save('links', { ...now, ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}), ...(s.categoria ? { categoria: s.categoria } : {}), iaEm: Date.now() });
+    if (s && now) await save('links', { ...now, ...(s.titulo ? { tituloIA: s.titulo } : {}), ...(s.resumo ? { resumoIA: s.resumo } : {}), ...(s.tema ? { tema: s.tema } : {}), ...(s.categoria ? { categoria: s.categoria } : {}), iaEm: Date.now() });
     if (s && s.tema && !bulkAi) void organize();
   } finally { summarizing.delete(id); set({ aiBusy: get().aiBusy.filter(x => x !== id) }); }
 }
@@ -728,7 +728,8 @@ export async function confirmCapture(id: string, titulo: string, tagIds: string[
   if (made.length) await saveMany('folders', made);
   const pastaIds = [...new Set([...tagIds, ...made.map(f => f.id)])];
   const names = pastaIds.map(t => folderById(t)?.nome || made.find(f => f.id === t)?.nome).filter(Boolean);
-  await save('links', { ...l, ...extra, titulo: titulo === (l.tituloAuto || '').trim() ? '' : titulo, pastaIds, pastaManual: true });
+  const auto = [l.tituloIA, l.tituloAuto].map(x => (x || '').trim());
+  await save('links', { ...l, ...extra, titulo: auto.includes(titulo) ? '' : titulo, pastaIds, pastaManual: true });
   set({ flash: id });
   nextBuild(id);
   toast('Salvo com ' + (names.length === 1 ? 'a tag ' : 'as tags ') + names.join(', ') + '.');
@@ -778,6 +779,7 @@ export function enrichPending() {
   let done = false;
   try { done = localStorage.getItem('disorder.refresh.v1') === '1'; } catch { /* sem armazenamento */ }
   const { links } = get();
+  aiTitles();
   if (!done && links.length) {
     try { localStorage.setItem('disorder.refresh.v1', '1'); } catch { /* sem armazenamento */ }
     void refreshPreviews(true);
@@ -791,6 +793,18 @@ export function enrichPending() {
  * Uma vez: links do TikTok que ficaram sem capa ou com o título genérico "TikTok · Nome" (o oEmbed do TikTok
  * parou de mandar esses dados em nov/2026). Busca de novo e deixa a IA reler, agora com a pista de vídeo ou fotos.
  */
+/** Uma vez por aparelho: passa a IA nos links antigos que ainda não têm título curto. Não mexe em título editado à mão. */
+function aiTitles() {
+  if (!get().ai || !CFG.summarizeApi) return;
+  try { if (localStorage.getItem('disorder.aititles1') === '1') return; localStorage.setItem('disorder.aititles1', '1'); } catch { return; }
+  const old = get().links.filter(l => !isArch(l) && !!l.url && !l.tituloIA && !l.titulo.trim() && !!l.iaEm);
+  if (!old.length) return;
+  void saveMany('links', old.map(l => ({ ...l, iaEm: undefined }))).then(async () => {
+    bulkAi = true;
+    try { for (const l of old) await addSummary(l.id); } finally { bulkAi = false; }
+  });
+}
+
 function refreshTikTok() {
   try { if (localStorage.getItem('disorder.refresh.tt1') === '1') return; localStorage.setItem('disorder.refresh.tt1', '1'); } catch { return; }
   const bad = get().links.filter(l => !isArch(l) && l.plataforma === 'tiktok' && (!l.thumb || /^TikTok\s*·/.test(l.tituloAuto || '')));
@@ -855,7 +869,7 @@ export function addLinkToNote(id: string, raw: string): string | null {
   if (get().links.some(x => x.chave === p.key)) return 'Esse link já está salvo.';
   flushItems();
   const next: Link = { ...l, url: p.url, chave: p.key, plataforma: p.plataforma, tipo: p.tipo, autor: p.autor, host: p.host,
-    enriquecido: false, iaEm: undefined, categoria: undefined, tituloAuto: undefined };
+    enriquecido: false, iaEm: undefined, categoria: undefined, tituloAuto: undefined, tituloIA: undefined };
   void save('links', next).then(() => enrich(id));
   return null;
 }

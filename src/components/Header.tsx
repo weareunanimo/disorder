@@ -57,7 +57,7 @@ function Building() {
     if (!l || !done || filled === l.id) return;
     setFilled(l.id); setTried(false); setNova('');
     const loja = storeOf(l.url);
-    setTitulo((l.titulo || l.tituloAuto || loja?.title || '').trim());
+    setTitulo((l.titulo || l.tituloIA || l.tituloAuto || loja?.title || '').trim());
     // Loja que não deixa ler a página: sem tema da IA, sugere a tag de compras.
     const tema = (l.tema || '').trim() || (loja ? 'Compras' : '');
     const mine = tagsOf(l).filter(t => live.some(f => f.id === t));

@@ -7,7 +7,7 @@ import { filterCount, isArch, viewTitle } from '../lib/filters';
 import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { kindLabel } from '../lib/kinds';
-import { PLAT, ago, autoTitle, fmtDuration, kindOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
+import { PLAT, ago, titleOf, fmtDuration, kindOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
 import { useBase, useVisible } from '../hooks/useVisible';
 import { useWide } from '../hooks/useMedia';
 import { TRAY_W, useSwipe } from '../hooks/useSwipe';
@@ -61,7 +61,7 @@ const LinkCard = memo(function LinkCard({ link: l, folders, selected, flash, loa
   // Fechou por fora (outro cartão abriu, toque em outro lugar, Esc): volta para a posição inicial.
   useEffect(() => { if (!ref.current?.classList.contains('dragging')) apply(open ? -TRAY_W : 0, true); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const arq = isArch(l);
-  const titulo = l.titulo || l.tituloAuto || autoTitle(l);
+  const titulo = titleOf(l);
   const tags = useMemo(() => liveTags(l, folders), [l, folders]);
   const kind = kindOf(l), summary = summaryOf(l);
   return (

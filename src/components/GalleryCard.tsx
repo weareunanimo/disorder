@@ -4,7 +4,7 @@ import { colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { get } from '../store';
 import { openLink, setCardMenu, toggleSel } from '../actions';
-import { PLAT, ago, autoTitle, fmtDuration, originOf, thumbOf } from '../lib/platforms';
+import { PLAT, ago, titleOf, fmtDuration, originOf, thumbOf } from '../lib/platforms';
 import { kindLabel } from '../lib/kinds';
 import { isArch } from '../lib/filters';
 import { isTouch } from '../hooks/useMedia';
@@ -81,7 +81,7 @@ interface Props { link: Link; folders: Folder[]; selected: boolean; flash: boole
  * Clique abre o link. No mouse, passar por cima revela data e ações. No toque, segurar abre o menu.
  */
 export const GalleryCard = memo(function GalleryCard({ link: l, folders, selected, flash, loading, selecting }: Props) {
-  const titulo = l.titulo || l.tituloAuto || autoTitle(l);
+  const titulo = titleOf(l);
   const img = thumbOf({ thumb: l.thumb });
   const [broken, setBroken] = useState(false), [iconBroken, setIconBroken] = useState(false);
   const note = !l.url;
