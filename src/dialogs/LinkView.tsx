@@ -4,6 +4,7 @@ import { useVisible } from '../hooks/useVisible';
 import { addLinkToNote, closeModal, deleteLink, dropIfEmpty, flushItems, openModal, patchItem, setArchived, startList, tagItemNew, toast } from '../actions';
 import { Checklist } from '../components/Checklist';
 import { Jot } from '../components/Jot';
+import { useKeyboardInset } from '../hooks/useKeyboard';
 import { isNote, ordered } from '../lib/notes';
 import { tagsOf, withTag, withoutTag } from '../lib/tags';
 import { IcoWhats } from '../components/icons';
@@ -132,13 +133,7 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
     return () => document.removeEventListener('keydown', onKey);
   }, [prev, next]);
   // Teclado do celular: a janela encolhe até o topo do teclado, para o campo de anotar ficar à vista.
-  useEffect(() => {
-    const vv = window.visualViewport, el = root.current;
-    if (!vv || !el) return;
-    const fit = () => { const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); el.style.setProperty('--kb', kb + 'px'); };
-    fit(); vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
-    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); };
-  }, []);
+  useKeyboardInset(root);
   // Ao sair deste item (fechar ou ir para outro): grava o que faltava e some com nota vazia.
   useEffect(() => () => { flushItems(); dropIfEmpty(id); }, [id]);
   useEffect(() => {

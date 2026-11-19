@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { get, set, useStore, type Theme } from '../store';
 import { acceptClip, createNote, openModal, openGuide, cancelBuild, containsLink, capture, confirmCapture, go, skipBuild, looksLikeLink, pasteFromClipboard, setAi, setProfileOpen, setTheme, signOut } from '../actions';
 import { useCounts } from '../hooks/useVisible';
-import { isTouch } from '../hooks/useMedia';
+import { isTouch, useMedia } from '../hooks/useMedia';
+import { useKeyboardInset } from '../hooks/useKeyboard';
 import { CFG } from '../config';
 import { kindLabel } from '../lib/kinds';
 import { tagsOf } from '../lib/tags';
@@ -52,7 +53,17 @@ function Building() {
   // Formulário de confirmação: preenchido uma vez, quando a IA termina.
   const [titulo, setTitulo] = useState(''), [sel, setSel] = useState<string[]>([]), [novas, setNovas] = useState<string[]>([]);
   const [nova, setNova] = useState(''), [filled, setFilled] = useState(''), [tried, setTried] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null), panel = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null), panel = useRef<HTMLDivElement>(null);
+  // No celular vira folha na base, acima do teclado, com Cancelar e Salvar sempre à vista.
+  const sheet = useMedia('(max-width: 640px)') && !!l;
+  useKeyboardInset(panel, sheet);
+  useEffect(() => {
+    if (!sheet) return;
+    document.body.classList.add('locked');
+    return () => document.body.classList.remove('locked');
+  }, [sheet]);
+  // Título cresce até 3 linhas.
+  useEffect(() => { const t = titleRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 92) + 'px'; } }, [titulo, done]);
   useEffect(() => {
     if (!l || !done || filled === l.id) return;
     setFilled(l.id); setTried(false); setNova('');
@@ -87,40 +98,57 @@ function Building() {
     setTried(true);
     if (!titulo.trim() || !nTags) { (!titulo.trim() ? titleRef.current : document.getElementById('bd-nova'))?.focus(); return; }
     const from = panel.current?.getBoundingClientRect() || null;
+    (document.activeElement as HTMLElement | null)?.blur?.();
     const names = [...novas, ...sel.map(t => live.find(f => f.id === t)?.nome || '')].filter(Boolean);
     void confirmCapture(l.id, titulo.trim(), sel, novas, loja && !l.categoria ? { categoria: 'loja' } : undefined).then(() => flyToCard(l.id, from, titulo.trim(), names, thumbOf(l)));
   };
-  return (
-    <div className="building" ref={panel} role="region" aria-label="Novo link">
+  // Passos concluídos viram uma linha só na hora de confirmar: sobra espaço para título e tags.
+  const resumoPassos = [
+    read ? (l.notaColada && !l.thumb ? 'Título do texto colado' : 'Página lida') : loja ? loja.name + ' não deixa ler' : 'Página não deixou ler',
+    aiOn && l.resumoIA ? 'resumo pronto' : '',
+    kt,
+  ].filter(Boolean).join(', ');
+  const order = [...live.filter(f => sel.includes(f.id)), ...live.filter(f => !sel.includes(f.id))];
+  const box = (
+    <div className={'building' + (sheet ? ' sheet' : '')} ref={panel} role={sheet ? 'dialog' : 'region'} aria-modal={sheet || undefined} aria-label="Novo link">
       <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
         <button type="button" className="bd-x" aria-label="Cancelar e descartar o link" title="Cancelar" onClick={cancelBuild}><IcoX /></button></div>
-      <ol className="steps" aria-live="polite">
-        <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? (l.notaColada && !l.thumb ? 'Título tirado do texto que veio com o link' : 'Título e imagem lidos') : loja ? loja.name + ' não deixa ler a página' + (loja.title ? ', o nome veio do endereço' : '. Escreva o nome do produto') : 'A página não deixou ler, preencha você'} />
-        {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
-        {loja && !read ? <Step state="done" text="Loja, reconhecida pelo endereço" /> : aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
-        <Step state={done ? 'run' : 'wait'} text={done ? 'Confirme o título e as tags' : 'Sugerir título e tags'} />
-      </ol>
+      {!done && (
+        <ol className="steps" aria-live="polite">
+          <Step state={reading ? 'run' : read ? 'done' : 'skip'} text={reading ? 'Lendo a página' : read ? (l.notaColada && !l.thumb ? 'Título tirado do texto que veio com o link' : 'Título e imagem lidos') : loja ? loja.name + ' não deixa ler a página' + (loja.title ? ', o nome veio do endereço' : '. Escreva o nome do produto') : 'A página não deixou ler, preencha você'} />
+          {aiOn && <Step state={ai === 'done' && !l.resumoIA ? 'skip' : ai} text={ai === 'run' ? 'Resumindo o conteúdo' : ai === 'done' ? (l.resumoIA ? 'Resumo pronto' : 'Sem resumo desta vez') : ai === 'skip' ? 'Sem resumo' : 'Resumir o conteúdo'} />}
+          {loja && !read ? <Step state="done" text="Loja, reconhecida pelo endereço" /> : aiOn && <Step state={ai === 'done' && !kt ? 'skip' : ai} text={ai === 'run' ? 'Identificando o que é e o tema' : ai === 'done' ? (kt || 'Tipo e tema não identificados') : ai === 'skip' ? 'Sem tipo' : 'Identificar o que é'} />}
+          <Step state="wait" text="Sugerir título e tags" />
+        </ol>
+      )}
       {done && (
         <form className="bd-form" onSubmit={e => { e.preventDefault(); confirm(); }} noValidate>
-          {l.resumoIA && <p className="bd-sum">{l.resumoIA}</p>}
-          <label className="f" htmlFor="bd-t">Título{!titulo.trim() && <span className="bd-req"> obrigatório</span>}
-            <span className="inw"><input ref={titleRef} id="bd-t" type="text" value={titulo} placeholder="Escreva um título" aria-invalid={tried && !titulo.trim() || undefined} onChange={e => setTitulo(e.target.value)} /></span>
-          </label>
-          <div className="f" role="group" aria-labelledby="bd-tl">
-            <span id="bd-tl">Tags{!nTags && <span className="bd-req"> escolha ao menos uma</span>}</span>
-            <div className="bd-pick">
-              {novas.map(n => <button key={'n' + n} type="button" className="chip tp" aria-pressed="true" data-c="0" onClick={() => setNovas(v => v.filter(x => x !== n))}><span className="ck" aria-hidden="true">✓</span>{n}<span className="bd-new"> nova</span></button>)}
-              {live.map(f => {
-                const on = sel.includes(f.id);
-                return <button key={f.id} type="button" className="chip tp" aria-pressed={on} data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => setSel(v => on ? v.filter(x => x !== f.id) : [...v, f.id])}>{on && <span className="ck" aria-hidden="true">✓</span>}{f.nome}</button>;
-              })}
+          <div className="bd-scroll">
+            <p className="bd-done" aria-live="polite"><span className="sb" aria-hidden="true" />{resumoPassos}</p>
+            {l.resumoIA && <p className="bd-sum">{l.resumoIA}</p>}
+            <label className="f" htmlFor="bd-t">Título{!titulo.trim() && <span className="bd-req"> obrigatório</span>}
+              <span className="inw bd-tw">
+                <textarea ref={titleRef} id="bd-t" rows={1} value={titulo} placeholder="Escreva um título" aria-invalid={tried && !titulo.trim() || undefined} enterKeyHint="done"
+                  onChange={e => setTitulo(e.target.value.replace(/\s*\n+\s*/g, ' '))} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }} />
+                {titulo && <button type="button" className="bd-clear" aria-label="Limpar o título" title="Limpar" onClick={() => { setTitulo(''); titleRef.current?.focus(); }}><IcoX /></button>}
+              </span>
+            </label>
+            <div className="f" role="group" aria-labelledby="bd-tl">
+              <span id="bd-tl">Tags{!nTags && <span className="bd-req"> escolha ao menos uma</span>}</span>
+              <div className="bd-pick">
+                {novas.map(n => <button key={'n' + n} type="button" className="chip tp" aria-pressed="true" data-c="0" onClick={() => setNovas(v => v.filter(x => x !== n))}><span className="ck" aria-hidden="true">✓</span>{n}<span className="bd-new"> nova</span></button>)}
+                {order.map(f => {
+                  const on = sel.includes(f.id);
+                  return <button key={f.id} type="button" className="chip tp" aria-pressed={on} data-c={colorOf(f)} data-s={shapeOf(f)} onClick={() => setSel(v => on ? v.filter(x => x !== f.id) : [...v, f.id])}>{on && <span className="ck" aria-hidden="true">✓</span>}{f.nome}</button>;
+                })}
+              </div>
+              <span className="bd-add">
+                <span className="inw"><input id="bd-nova" type="text" value={nova} placeholder="Nova tag" aria-label="Nova tag" enterKeyHint="done" onChange={e => setNova(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNova(); } }} /></span>
+                <button type="button" className="btn outline sm" onClick={addNova} disabled={!nova.trim()}>Adicionar</button>
+              </span>
             </div>
-            <span className="bd-add">
-              <span className="inw"><input id="bd-nova" type="text" value={nova} placeholder="Nova tag" aria-label="Nova tag" onChange={e => setNova(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNova(); } }} /></span>
-              <button type="button" className="btn outline sm" onClick={addNova} disabled={!nova.trim()}>Adicionar</button>
-            </span>
+            {tried && (!titulo.trim() || !nTags) && <p className="msg err" role="alert">{!titulo.trim() ? 'Escreva um título.' : 'Escolha ou crie uma tag.'}</p>}
           </div>
-          {tried && (!titulo.trim() || !nTags) && <p className="msg err" role="alert">{!titulo.trim() ? 'Escreva um título.' : 'Escolha ou crie uma tag.'}</p>}
           <div className="bd-btns">
             <button type="button" className="btn outline" onClick={cancelBuild}>Cancelar</button>
             <button type="submit" className="btn primary">Salvar</button>
@@ -129,6 +157,7 @@ function Building() {
       )}
     </div>
   );
+  return sheet ? createPortal(<><div className="cmenu-bd" aria-hidden="true" />{box}</>, document.body) : box;
 }
 
 /**
@@ -210,6 +239,7 @@ function NewButton() {
   const btn = useRef<HTMLButtonElement>(null), pop = useRef<HTMLDivElement>(null);
   const [raw, setRaw] = useState('');
   const sheet = open && isTouch();
+  useKeyboardInset(pop, sheet);
   const close = (focus = false) => { set({ newMenu: false }); setRaw(''); if (focus) btn.current?.focus(); };
   // Atalho N abre o menu, fora de campos de texto.
   useEffect(() => {

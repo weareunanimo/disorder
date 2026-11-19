@@ -5,13 +5,17 @@
 export function flyToCard(id: string, from: DOMRect | null, titulo: string, tags: string[], thumb: string) {
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Espera o React desenhar o cartão atualizado.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // No celular, espera o teclado fechar e a tela assentar antes de medir.
+  const wait = window.matchMedia('(hover: none)').matches ? 280 : 0;
+  setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>('#list [data-id="' + CSS.escape(id) + '"]');
     if (!card) return;
     const land = () => { card.classList.remove('landed'); void card.offsetWidth; card.classList.add('landed'); setTimeout(() => card.classList.remove('landed'), 700); };
     if (calm || !from || !card.animate) { land(); return; }
     let to = card.getBoundingClientRect();
-    if (to.bottom < 0 || to.top > window.innerHeight) { card.scrollIntoView({ block: 'center' }); to = card.getBoundingClientRect(); }
+    // Cartão escondido atrás do cabeçalho ou fora da tela: traz para o meio antes do voo.
+    const top = document.querySelector('.hdr')?.getBoundingClientRect().bottom ?? 0;
+    if (to.top < top || to.bottom > window.innerHeight) { card.scrollIntoView({ block: 'center' }); to = card.getBoundingClientRect(); }
     const g = document.createElement('div');
     g.className = 'fly-ghost';
     g.setAttribute('aria-hidden', 'true');
@@ -31,5 +35,5 @@ export function flyToCard(id: string, from: DOMRect | null, titulo: string, tags
     ], { duration: 620, easing: 'cubic-bezier(.3, .7, .2, 1)', fill: 'forwards' });
     const end = () => { g.remove(); card.style.visibility = ''; land(); };
     a.onfinish = end; a.oncancel = end;
-  }));
+  })), wait);
 }
