@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { set, useStore } from '../store';
 import { useVisible } from '../hooks/useVisible';
-import { addLinkToNote, closeModal, deleteLink, dropIfEmpty, flushItems, openModal, patchItem, setArchived, startList, tagItemNew, toast } from '../actions';
+import { addLinkToNote, closeModal, dropIfEmpty, flushItems, openModal, patchItem, setArchived, startList, tagItemNew, toast } from '../actions';
 import { Checklist } from '../components/Checklist';
 import { Jot } from '../components/Jot';
 import { useKeyboardInset } from '../hooks/useKeyboard';
@@ -11,7 +11,7 @@ import { IcoWhats } from '../components/icons';
 import type { Link } from '../types';
 import { PLAT, ago, titleOf, originOf, summaryOf, thumbOf } from '../lib/platforms';
 import { kindLabel } from '../lib/kinds';
-import { colorOf, shapeOf } from '../lib/folders';
+import { byName, colorOf, shapeOf } from '../lib/folders';
 import { liveTags } from '../lib/tags';
 import { isArch } from '../lib/filters';
 import { IcoArchive, IcoBack, IcoCopy, IcoEdit, IcoOpen, IcoRestore, IcoTrash, IcoX } from '../components/icons';
@@ -58,7 +58,7 @@ function TagPick({ l }: { l: Link }) {
   const folders = useStore(s => s.folders);
   const [nova, setNova] = useState(''), [err, setErr] = useState('');
   const mine = tagsOf(l);
-  const live = folders.filter(f => !f.arquivadaEm);
+  const live = byName(folders.filter(f => !f.arquivadaEm));
   return (
     <div className="lv-pick">
       <div className="bd-pick">
@@ -204,7 +204,7 @@ export function LinkView({ id, fresh }: { id: string; fresh?: 'note' | 'list' })
             <button type="button" className="btn outline sm icon" aria-label={note ? 'Copiar texto' : 'Copiar link'} title={note ? 'Copiar texto' : 'Copiar link'} onClick={note ? () => navigator.clipboard?.writeText(noteText(l)).then(() => toast('Texto copiado.'), () => toast('Não consegui copiar.')) : copy}><IcoCopy /></button>
             {!note && <button type="button" className="btn outline sm icon" aria-label="Editar" title="Editar" onClick={() => openModal({ kind: 'link', id: l.id })}><IcoEdit /></button>}
             <button type="button" className="btn outline sm icon" aria-label={arq ? 'Restaurar' : 'Arquivar'} title={arq ? 'Restaurar' : 'Arquivar'} onClick={() => { const to = next || prev; setArchived([l], arq); if (to) goTo(to); else closeModal(); }}>{arq ? <IcoRestore /> : <IcoArchive />}</button>
-            <button type="button" className="btn outline sm icon danger" aria-label="Excluir" title="Excluir" onClick={() => { const to = next || prev; deleteLink(l.id); if (to) goTo(to); else closeModal(); }}><IcoTrash /></button>
+            <button type="button" className="btn outline sm icon danger" aria-label="Excluir" title="Excluir" onClick={() => openModal({ kind: 'delete', ids: [l.id], then: next || prev || undefined, back: l.id })}><IcoTrash /></button>
           </div>
         </div>
         {!note && <Jot key={l.id} link={l} />}

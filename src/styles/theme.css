@@ -1579,4 +1579,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1.5px solid var(--ink); b
 .building .bd-pick .chip, .lv-pick .bd-pick .chip { display: inline-flex; align-items: center; white-space: nowrap; }
 .building .bd-pick .chip .ck { margin-right: 6px; font-weight: 800; }
 /* Com folha ou janela aberta, o aviso sobe para o topo e não cobre Cancelar e Salvar. */
-body.locked .toast { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
+body.locked .toast, body:has(.overlay, .cmenu-bd) .toast { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
+
+/* Aviso sempre por cima de janelas e folhas: copiar, excluir e desfazer precisam ser vistos. */
+.toast { z-index: 90; }

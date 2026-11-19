@@ -20,6 +20,8 @@ export type ModalState =
   | { kind: 'confirm'; id: string }
   | { kind: 'archive-folder'; id: string }
   | { kind: 'purge'; ids: string[] }
+  /** Confirmar exclusão. then: item que abre em seguida (veio da janela do item). */
+  | { kind: 'delete'; ids: string[]; then?: string; back?: string }
   | { kind: 'password'; recovery?: boolean }
   | { kind: 'guide'; part?: 'app' | 'share' };
 

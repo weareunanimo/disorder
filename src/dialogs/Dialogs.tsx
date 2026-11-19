@@ -1,6 +1,7 @@
+import { byName } from '../lib/folders';
 import { useState } from 'react';
 import { get, set, useStore, type ModalState } from '../store';
-import { archiveFolder, cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast } from '../actions';
+import { archiveFolder, cancelModal, closeModal, deleteFolder, folderById, openModal, purge, save, setArchived, submitFolder, toast, deleteLink, deleteSelected } from '../actions';
 import type { Link } from '../types';
 import { isArch } from '../lib/filters';
 import { PLAT, autoTitle, fmtDate, fmtDuration, shortUrl } from '../lib/platforms';
@@ -16,7 +17,7 @@ import { TagPicker } from '../components/TagPicker';
 import { tagsOf, hasTag } from '../lib/tags';
 
 function LinkDialog({ link: l }: { link: Link }) {
-  const folders = useSortedFolders();
+  const folders = byName(useSortedFolders());
   const d = get().draft?.id === l.id ? get().draft : null;
   const [titulo, setTitulo] = useState(d ? d.titulo : l.titulo || ''), [nota, setNota] = useState(d ? d.nota : l.nota || '');
   const [tags, setPastas] = useState<string[]>(d ? d.tags : tagsOf(l));
@@ -118,6 +119,27 @@ function ConfirmFolder({ id }: { id: string }) {
   );
 }
 
+/** Confirma antes de excluir (cartão, janela do item ou seleção). Depois, o aviso ainda traz Desfazer. */
+function ConfirmDelete({ ids, then, back }: { ids: string[]; then?: string; back?: string }) {
+  const all = useStore(s => s.links);
+  const links = all.filter(l => ids.includes(l.id));
+  const n = links.length, notes = links.filter(l => !l.url).length;
+  const what = n === 1 ? (notes ? 'esta nota' : 'este link') : n + (notes === n ? ' notas' : notes ? ' itens' : ' links');
+  const go = () => {
+    if (n === 1) deleteLink(ids[0]); else deleteSelected();
+    if (then) openModal({ kind: 'view', id: then }); else closeModal();
+  };
+  // Cancelar volta para a janela do item, se veio dela.
+  const cancel = () => (back ? openModal({ kind: 'view', id: back }) : cancelModal());
+  return (
+    <Modal labelledBy="mt" onClose={cancel}>
+      <h2 id="mt">{'Excluir ' + what + '?'}</h2>
+      <p>{n === 1 ? 'Some do disorder. Se quiser só tirar da frente, arquive.' : 'Somem do disorder. Se quiser só tirar da frente, arquive.'} Logo depois de excluir dá para desfazer.</p>
+      <div className="row"><button className="btn outline" onClick={cancel} autoFocus>Cancelar</button><button className="btn destructive" onClick={go}>Excluir</button></div>
+    </Modal>
+  );
+}
+
 function Purge({ ids }: { ids: string[] }) {
   const n = ids.length;
   return (
@@ -160,6 +182,7 @@ export function ModalHost() {
   if (m.kind === 'link') return link ? <LinkDialog key={m.id} link={link} /> : null;
   if (m.kind === 'view') return <LinkView key={m.id} id={m.id} fresh={m.fresh} />;
   if (m.kind === 'purge') return <Purge ids={m.ids} />;
+  if (m.kind === 'delete') return <ConfirmDelete ids={m.ids} then={m.then} back={m.back} />;
   if (m.kind === 'password') return <PasswordDialog recovery={m.recovery} />;
   if (m.kind === 'confirm') return <ConfirmFolder id={m.id} />;
   if (m.kind === 'archive-folder') return <ArchiveFolder id={m.id} />;

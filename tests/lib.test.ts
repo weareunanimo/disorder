@@ -262,3 +262,10 @@ describe('notas', () => {
     expect(r!.bad).toBe(1);
   });
 });
+
+describe('tags em ordem alfabética', () => {
+  it('ignora acento e maiúscula', async () => {
+    const { byName } = await import('../src/lib/folders');
+    expect(byName([{ nome: 'Viagem' }, { nome: 'arte' }, { nome: 'Ácido' }, { nome: 'Música' }, { nome: 'casa' }]).map(f => f.nome)).toEqual(['Ácido', 'arte', 'casa', 'Música', 'Viagem']);
+  });
+});

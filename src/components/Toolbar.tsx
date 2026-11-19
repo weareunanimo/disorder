@@ -7,6 +7,7 @@ import { KINDS } from '../lib/kinds';
 import { datePreset, filterCount, viewTitle } from '../lib/filters';
 import { tagsOf } from '../lib/tags';
 import { PLAT, PLAT_KEYS } from '../lib/platforms';
+import { byName } from '../lib/folders';
 import { useBase, useSortedFolders, useTagHits, useVisible } from '../hooks/useVisible';
 import { useSearching } from '../hooks/useSearching';
 import { plural } from '../lib/text';
@@ -30,7 +31,7 @@ const DATE_OPTS: { k: string; label: string; days?: number }[] = [
 export function FilterGroups() {
   const view = useStore(s => s.view), plats = useStore(s => s.plats), kinds = useStore(s => s.kinds), fp = useStore(s => s.fp);
   const from = useStore(s => s.from), to = useStore(s => s.to);
-  const folders = useSortedFolders(), base = useBase();
+  const folders = byName(useSortedFolders()), base = useBase();
 
   const stats = useMemo(() => {
     const kind = new Map<string, number>(), plat = new Map<string, number>(), folder = new Map<string, number>(), known = new Set(folders.map(f => f.id));

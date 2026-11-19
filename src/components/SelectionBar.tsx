@@ -1,6 +1,7 @@
+import { byName } from '../lib/folders';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { set, useStore } from '../store';
-import { archiveSelected, bulkClearTags, deleteSelected, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
+import { archiveSelected, bulkClearTags, bulkTag, clearSel, openModal, pruneSel, selectAll } from '../actions';
 import { colorOf, shapeOf } from '../lib/folders';
 import { hasTag, tagsOf } from '../lib/tags';
 import { useSortedFolders, useVisible } from '../hooks/useVisible';
@@ -9,7 +10,7 @@ import { IcoArchive, IcoChevron, IcoMove, IcoRestore, IcoTrash, IcoX } from './i
 export function SelectionBar() {
   const sel = useStore(s => s.sel), menu = useStore(s => s.menu), arch = useStore(s => s.view === 'archived');
   const links = useStore(s => s.links);
-  const visible = useVisible(), folders = useSortedFolders();
+  const visible = useVisible(), folders = byName(useSortedFolders());
   const bar = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
 
   // Link que saiu da tela (filtro, outra tag, arquivado) sai da seleção.
@@ -55,7 +56,7 @@ export function SelectionBar() {
       ) : (
         <>
           <button type="button" data-move ref={trigger} aria-haspopup="menu" aria-expanded={menu} aria-label="Tags" onClick={() => set({ menu: !menu })}><IcoMove /><span className="lbl">Tags</span><IcoChevron /></button>
-          <button type="button" className="warn" aria-label="Excluir" title="Excluir" onClick={deleteSelected}><IcoTrash /><span className="lbl">Excluir</span></button>
+          <button type="button" className="warn" aria-label="Excluir" title="Excluir" onClick={() => openModal({ kind: 'delete', ids: sel.slice() })}><IcoTrash /><span className="lbl">Excluir</span></button>
           <button type="button" className="strong" onClick={() => archiveSelected(true)}><IcoArchive />Arquivar</button>
           {menu && (
             <div className="menu" role="menu" aria-label="Tags dos links selecionados">

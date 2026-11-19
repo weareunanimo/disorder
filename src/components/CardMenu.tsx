@@ -1,8 +1,9 @@
+import { byName } from '../lib/folders';
 import { noteText } from '../dialogs/LinkView';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
-import { deleteLink, openLink, openModal, setArchived, setCardMenu, toast, toggleLinkTag, toggleSel } from '../actions';
+import { openLink, openModal, setArchived, setCardMenu, toast, toggleLinkTag, toggleSel } from '../actions';
 import type { Link } from '../types';
 import { useSortedFolders } from '../hooks/useVisible';
 import { colorOf, shapeOf } from '../lib/folders';
@@ -25,7 +26,7 @@ interface Props { link: Link; titulo: string; arq: boolean; hideTrigger?: boolea
  */
 export function CardMenu({ link: l, titulo, arq, hideTrigger, anchor }: Props) {
   const open = useStore(s => s.cardMenu === l.id), startTags = useStore(s => s.cardMenuTags);
-  const folders = useSortedFolders();
+  const folders = byName(useSortedFolders());
   const btn = useRef<HTMLButtonElement>(null), menu = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; right: number; up: boolean } | null>(null);
   const [tags, setTags] = useState(false);
@@ -94,7 +95,7 @@ export function CardMenu({ link: l, titulo, arq, hideTrigger, anchor }: Props) {
       <button type="button" role="menuitem" onClick={run(() => (l.url ? openModal({ kind: 'link', id: l.id }) : openLink(l.id)))}><IcoEdit />Editar</button>
       {sheet && <button type="button" role="menuitem" onClick={run(() => toggleSel(l.id, false))}><IcoCheck />Selecionar</button>}
       <button type="button" role="menuitem" onClick={run(() => setArchived([l], arq))}>{arq ? <IcoRestore /> : <IcoArchive />}{arq ? 'Restaurar' : 'Arquivar'}</button>
-      <button type="button" role="menuitem" className="danger" onClick={run(() => deleteLink(l.id))}><IcoTrash />Excluir</button>
+      <button type="button" role="menuitem" className="danger" onClick={run(() => openModal({ kind: 'delete', ids: [l.id] }))}><IcoTrash />Excluir</button>
     </>
   );
 

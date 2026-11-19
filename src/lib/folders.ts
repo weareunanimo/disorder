@@ -26,3 +26,6 @@ export function makeFolder(nome: string, existing: Folder[]): Folder {
 }
 
 export const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
+/** Tags em ordem alfabética, para escolher numa lista (acento e maiúscula não contam). */
+export const byName = <T extends { nome: string }>(fs: T[]): T[] => [...fs].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base', numeric: true }));

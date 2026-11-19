@@ -14,7 +14,7 @@ import { shortUrl, thumbOf } from '../lib/platforms';
 import { flyToCard } from '../lib/fly';
 import { temaKey } from '../lib/auto';
 import { sameName } from '../lib/folders';
-import { colorOf, shapeOf } from '../lib/folders';
+import { byName, colorOf, shapeOf } from '../lib/folders';
 import { FilterGroups } from './Toolbar';
 import { IcoApp, IcoArchive, IcoCheck, IcoGear, IcoChecklist, IcoNote, IcoPaste, IcoPlus, IcoSearch, IcoTag, IcoUser, IcoX } from './icons';
 
@@ -108,7 +108,7 @@ function Building() {
     aiOn && l.resumoIA ? 'resumo pronto' : '',
     kt,
   ].filter(Boolean).join(', ');
-  const order = [...live.filter(f => sel.includes(f.id)), ...live.filter(f => !sel.includes(f.id))];
+  const order = byName(live);
   const box = (
     <div className={'building' + (sheet ? ' sheet' : '')} ref={panel} role={sheet ? 'dialog' : 'region'} aria-modal={sheet || undefined} aria-label="Novo link">
       <div className="bd-h"><b>{done ? 'Confira e salve' : 'Montando o cartão'}{queued > 1 ? ' (1 de ' + queued + ')' : ''}</b>
