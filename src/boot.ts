@@ -1,5 +1,5 @@
 import { backend, get, set, setBackend } from './store';
-import { applyTheme, busy, checkClipboard, enrichPending, fixView, capture, holdInstall, markSetup, mergeFresh } from './actions';
+import { toast, applyTheme, busy, checkClipboard, enrichPending, fixView, capture, holdInstall, markSetup, mergeFresh } from './actions';
 import { linkIn } from './lib/setup';
 import { localBackend, type Snapshot } from './data/backend';
 import { normLink } from './lib/tags';
@@ -16,10 +16,14 @@ function takeShare() {
     const q = new URLSearchParams(location.search);
     // Atalho do iPhone: "salvar=" seguido do link, no fragmento (#salvar=) ou na busca (?salvar=), codificado ou não.
     const raw = safeDecode(location.hash + ' ' + location.search);
-    const salvar = raw.match(/salvar=(\S+)/)?.[1] || '';
-    if (!salvar && !q.has('url') && !q.has('text') && !q.has('title')) return;
-    const url = linkIn(safeDecode(salvar), q.get('url'), q.get('text'), q.get('title'));
+    // O que vem depois de "salvar=" pode ser só o link ou um texto com o link no meio (com espaços).
+    const hit = /salvar(=|%3D)/i.test(raw);
+    const salvar = hit ? raw.slice(raw.search(/salvar(=|%3D)/i)).replace(/^salvar(=|%3D)/i, '') : '';
+    if (!hit && !q.has('url') && !q.has('text') && !q.has('title')) return;
+    const url = linkIn(safeDecode(safeDecode(salvar)), q.get('url'), q.get('text'), q.get('title'));
     if (url) { localStorage.setItem(SHARE, JSON.stringify({ url, at: Date.now() })); markSetup('share'); }
+    // O atalho abriu o app, mas sem link dentro: avisa, em vez de não acontecer nada.
+    else localStorage.setItem(SHARE + '.miss', String(Date.now()));
     history.replaceState(null, '', location.pathname);
   } catch { /* sem armazenamento */ }
 }
@@ -41,7 +45,7 @@ export async function boot() {
   applyTheme(get().theme);
   takeShare();
   // Atalho do iPhone com o disorder já aberto: só o fragmento muda, a página não recarrega.
-  window.addEventListener('hashchange', () => { takeShare(); if (get().loaded) applyShare(); });
+  window.addEventListener('hashchange', () => { takeShare(); if (get().loaded && !applyShare()) missNotice(); });
   window.addEventListener('beforeinstallprompt', holdInstall);
   window.addEventListener('appinstalled', () => markSetup('app'));
   if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('/sw.js').catch(() => { /* instalação é opcional */ });
@@ -52,9 +56,17 @@ export async function boot() {
     const folders = mergeFresh('folders', d.folders), links = mergeFresh('links', d.links);
     set({ folders: folders.filter(f => !f.arquivadaEm), foldersArq: folders.filter(f => f.arquivadaEm), links: links.map(normLink), loaded: true, loadError: false });
     fixView();
-    if (first) { first = false; if (!applyShare()) void checkClipboard(); enrichPending(); }
+    if (first) { first = false; if (!applyShare()) { missNotice(); void checkClipboard(); } enrichPending(); }
   };
   const onError = () => set({ loadError: true });
+  /** Depois de carregar: avisa se o atalho chegou sem link. */
+  const missNotice = () => {
+    try {
+      const at = Number(localStorage.getItem(SHARE + '.miss') || 0);
+      localStorage.removeItem(SHARE + '.miss');
+      if (at && Date.now() - at < 30 * 60 * 1000) toast('O atalho abriu o disorder, mas não mandou nenhum link. Confira a ação Abrir URLs do atalho.');
+    } catch { /* sem armazenamento */ }
+  };
 
   try {
     const session = await connect();

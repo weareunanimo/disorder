@@ -280,3 +280,11 @@ describe('leitura atrasada do servidor', () => {
     expect(r).toEqual(['novo', 'outro']);
   });
 });
+
+describe('link do atalho', () => {
+  it('acha o link mesmo com texto e espaços junto', async () => {
+    const { linkIn } = await import('../src/lib/setup');
+    const raw = decodeURIComponent('salvar=Veja%20este%20post%20https%3A%2F%2Fwww.instagram.com%2Fp%2Fabc%2F%3Figsh%3D1%20legal').replace(/^salvar=/, '');
+    expect(linkIn(raw)).toBe('https://www.instagram.com/p/abc/?igsh=1');
+  });
+});
