@@ -134,7 +134,7 @@ export function Guide({ part }: { part?: 'app' | 'share' }) {
               <p className="gd-why">O iPhone não deixa apps da web aparecerem no Compartilhar. Um atalho do app Atalhos faz esse papel.</p>
               <Steps items={[
                 <>Abra o app <b>Atalhos</b> e toque em <b>+</b>. Dê o nome <b>Salvar no disorder</b>.</>,
-                <>Toque em <b>ⓘ</b> e ligue <b>Mostrar ao Compartilhar</b>.</>,
+                <>Volte para a lista de atalhos, <b>toque e segure</b> o atalho, escolha <b>Detalhes</b> e ligue <b>Mostrar ao Compartilhar</b>. Dentro do atalho, também dá para tocar no <b>nome</b> no topo e escolher <b>Detalhes</b>.</>,
                 <>Adicione a ação <b>Abrir URLs</b>. No endereço, cole o texto abaixo e, logo depois dele, toque em <b>Entrada do Atalho</b>.</>,
                 <>Pronto. Em qualquer app, <b>Compartilhar</b> e <b>Salvar no disorder</b>.</>,
               ]} />
