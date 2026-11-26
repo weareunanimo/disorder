@@ -35,6 +35,25 @@ const upsertAll = <T extends { id: string }>(arr: T[], recs: T[]): T[] => {
 /** Verdadeiro enquanto a IA mexe nos links. Uma troca de tag feita por ela não conta como escolha da pessoa. */
 let autoWriting = false;
 
+/**
+ * Gravações recentes deste aparelho. Uma leitura do servidor que começou antes da gravação terminar
+ * chega sem ela (ou com a versão velha); por alguns segundos, o que foi gravado aqui vale mais.
+ */
+const recent = new Map<string, { at: number; rec: Folder | Link | null }>();
+const FRESH_MS = 8000;
+const mark = (col: Col, id: string, rec: Folder | Link | null) => recent.set(col + ':' + id, { at: Date.now(), rec });
+/** Junta o que veio do servidor com o que acabou de ser gravado ou excluído aqui. */
+export function mergeFresh<T extends { id: string }>(col: Col, server: T[]): T[] {
+  const now = Date.now(), out = new Map(server.map(x => [x.id, x]));
+  recent.forEach((v, k) => {
+    if (now - v.at > FRESH_MS) { recent.delete(k); return; }
+    const [c, id] = [k.slice(0, k.indexOf(':')), k.slice(k.indexOf(':') + 1)];
+    if (c !== col) return;
+    if (v.rec) out.set(id, v.rec as unknown as T); else out.delete(id);
+  });
+  return [...out.values()];
+}
+
 export async function saveMany(col: Col, recs: (Folder | Link)[], failMsg = 'Não consegui salvar agora. Tente de novo.') {
   if (!recs.length) return;
   if (col === 'links' && !autoWriting) {
@@ -45,13 +64,16 @@ export async function saveMany(col: Col, recs: (Folder | Link)[], failMsg = 'Nã
   set(col === 'links'
     ? { links: upsertAll(get().links, recs as Link[]) }
     : { folders: upsertAll(get().folders, recs as Folder[]) });
+  recs.forEach(x => mark(col, x.id, x));
   const r = await Promise.allSettled(recs.map(x => backend().set(col, x.id, x)));
+  recs.forEach(x => mark(col, x.id, x));
   if (r.some(x => x.status === 'rejected')) toast(failMsg);
 }
 export const save = (col: Col, rec: Folder | Link, failMsg?: string) => saveMany(col, [rec], failMsg);
 
 export async function removeMany(col: Col, ids: string[]) {
   const gone = new Set(ids);
+  ids.forEach(id => mark(col, id, null));
   set(col === 'links' ? { links: get().links.filter(x => !gone.has(x.id)) } : { folders: get().folders.filter(x => !gone.has(x.id)) });
   const r = await Promise.allSettled(ids.map(id => backend().remove(col, id)));
   if (r.some(x => x.status === 'rejected')) toast('Não consegui excluir agora. Tente de novo.');

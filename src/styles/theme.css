@@ -1583,3 +1583,7 @@ body.locked .toast, body:has(.overlay, .cmenu-bd) .toast { bottom: auto; top: ca
 
 /* Aviso sempre por cima de janelas e folhas: copiar, excluir e desfazer precisam ser vistos. */
 .toast { z-index: 90; }
+
+/* Entrar com um link esperando (veio do atalho ou do Compartilhar) */
+.login-share { margin: 0; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 14px; line-height: 1.4; }
+.login-share span { display: block; margin-top: 4px; font: 500 12px/1.3 var(--f-mono); overflow-wrap: anywhere; }

@@ -33,3 +33,11 @@ export const setupDone = (s: Setup) => (s.app ? 1 : 0) + (s.share ? 1 : 0);
 export function linkIn(...parts: (string | null | undefined)[]): string | null {
   return parts.filter(Boolean).join(' ').match(/https?:\/\/[^\s]+/i)?.[0] ?? null;
 }
+
+/** Link que chegou de fora e ainda espera para ser salvo (por exemplo, enquanto a pessoa entra na conta). */
+export function pendingShare(): string | null {
+  try {
+    const s = JSON.parse(localStorage.getItem('disorder.share') || 'null') as { url?: string; at?: number } | null;
+    return s?.url && Date.now() - (s.at || 0) < 30 * 60 * 1000 ? s.url : null;
+  } catch { return null; }
+}

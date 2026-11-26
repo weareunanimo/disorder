@@ -1,6 +1,6 @@
 import { backend, get, set, setBackend } from './store';
-import { applyTheme, busy, checkClipboard, enrichPending, fixView, capture, holdInstall, markSetup } from './actions';
-import { SHARE_HASH, linkIn } from './lib/setup';
+import { applyTheme, busy, checkClipboard, enrichPending, fixView, capture, holdInstall, markSetup, mergeFresh } from './actions';
+import { linkIn } from './lib/setup';
 import { localBackend, type Snapshot } from './data/backend';
 import { normLink } from './lib/tags';
 import { connect, getClient, onSignedIn, supabaseBackend, takeRecovery, whenRecovery } from './data/supabase';
@@ -14,9 +14,11 @@ const SHARE = 'disorder.share';
 function takeShare() {
   try {
     const q = new URLSearchParams(location.search);
-    const h = location.hash.startsWith(SHARE_HASH) ? safeDecode(location.hash.slice(SHARE_HASH.length)) : '';
-    if (!h && !q.has('url') && !q.has('text') && !q.has('title')) return;
-    const url = linkIn(h, q.get('url'), q.get('text'), q.get('title'));
+    // Atalho do iPhone: "salvar=" seguido do link, no fragmento (#salvar=) ou na busca (?salvar=), codificado ou não.
+    const raw = safeDecode(location.hash + ' ' + location.search);
+    const salvar = raw.match(/salvar=(\S+)/)?.[1] || '';
+    if (!salvar && !q.has('url') && !q.has('text') && !q.has('title')) return;
+    const url = linkIn(safeDecode(salvar), q.get('url'), q.get('text'), q.get('title'));
     if (url) { localStorage.setItem(SHARE, JSON.stringify({ url, at: Date.now() })); markSetup('share'); }
     history.replaceState(null, '', location.pathname);
   } catch { /* sem armazenamento */ }
@@ -46,7 +48,9 @@ export async function boot() {
 
   let first = true;
   const onData = (d: Snapshot) => {
-    set({ folders: d.folders.filter(f => !f.arquivadaEm), foldersArq: d.folders.filter(f => f.arquivadaEm), links: d.links.map(normLink), loaded: true, loadError: false });
+    // Leitura do servidor que chega atrasada não apaga o que acabou de ser gravado aqui (ex.: link vindo do atalho).
+    const folders = mergeFresh('folders', d.folders), links = mergeFresh('links', d.links);
+    set({ folders: folders.filter(f => !f.arquivadaEm), foldersArq: folders.filter(f => f.arquivadaEm), links: links.map(normLink), loaded: true, loadError: false });
     fixView();
     if (first) { first = false; if (!applyShare()) void checkClipboard(); enrichPending(); }
   };

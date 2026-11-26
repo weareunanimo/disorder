@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { resendConfirm, sendReset, signIn, signUp } from '../data/supabase';
 import { Brand } from './Bits';
+import { pendingShare } from '../lib/setup';
+import { shortUrl } from '../lib/platforms';
 
 type Mode = 'entrar' | 'criar' | 'esqueci';
 type Sent = { kind: 'confirm' | 'reset'; email: string } | null;
@@ -39,6 +41,7 @@ export function Login() {
   const [busy, setBusy] = useState(false), [err, setErr] = useState(''), [unconfirmed, setUnconfirmed] = useState(false);
   const [sent, setSent] = useState<Sent>(null), [note, setNote] = useState('');
   const title = useRef<HTMLHeadingElement>(null);
+  const [share] = useState(pendingShare);
   // Ao trocar de tela, o foco vai para o título (leitor de tela anuncia). Não na primeira abertura.
   const first = useRef(true);
   useEffect(() => { if (first.current) { first.current = false; return; } title.current?.focus(); }, [mode, sent]);
@@ -105,6 +108,7 @@ export function Login() {
             <button type="button" aria-pressed={mode === 'criar'} onClick={() => go('criar')}>Criar conta</button>
           </div>
         )}
+        {share && mode !== 'esqueci' && <p className="login-share" role="status"><b>Link recebido.</b> Entre e ele já abre para você salvar: <span>{shortUrl(share)}</span></p>}
         <h1 ref={title} tabIndex={-1} className={mode === 'esqueci' ? '' : 'sr'}>{T[0]}</h1>
         <p className="lead">{T[1]}</p>
         <form onSubmit={e => { e.preventDefault(); void submit(); }} noValidate>
