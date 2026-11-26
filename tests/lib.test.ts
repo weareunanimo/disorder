@@ -273,8 +273,6 @@ describe('tags em ordem alfabética', () => {
 describe('leitura atrasada do servidor', () => {
   it('não apaga o que acabou de ser gravado nem traz de volta o que foi excluído', async () => {
     const { mergeFresh, saveMany, removeMany } = await import('../src/actions');
-    const { setBackend, localBackend } = await import('../src/data/backend').catch(() => ({} as never));
-    if (setBackend && localBackend) setBackend(localBackend());
     const novo = link({ id: 'novo', titulo: 'Recém salvo' }), velho = link({ id: 'velho', titulo: 'Velho' });
     await saveMany('links', [novo]).catch(() => {});
     await removeMany('links', ['velho']).catch(() => {});
